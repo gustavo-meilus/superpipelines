@@ -178,11 +178,25 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
 </overview>
 
-## v1.0.1 — Standardized Architecture (2026-05-04)
+## v1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
 
-This release finalizes the standalone architecture by removing all remaining legacy Superpowers artifacts and standardizing on the v2 scope-aware patterns.
+This release implements the repository-wide refactoring of all core skills, agents, and commands to the Scribius v1 documentation standard. It introduces semantically anchored XML envelopes for machine-readability and master manifests for high-performance context retrieval.
 
-<release_entry version="1.0.1" status="STABLE">
+<release_entry version="1.0.2" status="STABLE">
+
+### Added
+- **Scribius v1 Standardization**: All 20+ core skills migrated to semantically anchored XML envelopes (`<overview>`, `<protocol>`, `<invariants>`, `<rationalization_table>`).
+- **AI-Ready Indexing**: Added `llms.txt` and `llms-full.txt` master manifests for optimized LLM context injection.
+- **Integrity Verification**: Verified 100% semantic alignment between pre-refactor baselines and standardized documentation via a multi-agent audit protocol.
+- **Automated Registry**: Added `generate_llms_full.py` script for periodic manifest updates.
+
+### Improved
+- **Protocol Clarity**: Refined operational gates in `systematic-debugging`, `tdd`, and `verification-before-completion` for sharper agent adherence.
+- **Structural Voice**: Standardized all documentation to third-person impersonal voice to reinforce protocol objectivity.
+
+</release_entry>
+
+## v1.0.2 — Standardized Architecture (2026-05-04)
 
 ### Added
 - **Scope-aware deployment**: Pipelines support `project`, `local`, and `user` scopes with path resolution via `sk-pipeline-paths`.
@@ -236,7 +250,21 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
-## 1.0.1 — v2 Redesign
+## 1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
+
+### Documentation & AI-Readiness
+
+- **Scribius v1 Refactor** — Migrated all core workflow, foundation, and engineering skills to semantically anchored XML envelopes (`<protocol>`, `<invariants>`, `<rationalization_table>`).
+- **Master Manifests** — Added `llms.txt` (discovery index) and `llms-full.txt` (complete documentation suite) to the repository root.
+- **Automation** — Added `scripts/generate_llms_full.py` for periodic doc-suite synchronization.
+- **Integrity Verified** — Performed a multi-agent semantic audit confirming 100% information persistence between pre-refactor baselines and Scribius v1 versions.
+
+### Engineering Protocols
+
+- **Gate Enforcement** — Formalized operational gates in `systematic-debugging` (Root Cause), `tdd` (Red-Green), and `verification-before-completion` (Evidence-Before-Claim).
+- **Structural Voice** — Enforced third-person impersonal voice throughout all documentation to maintain architectural objectivity.
+
+## 1.0.2 — v2 Redesign
 
 ### Architecture
 
@@ -490,13 +518,11 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 <protocol>
 ### PHASE 0: GIT PREFLIGHT
-- Verify the current workspace is a valid git repository.
-- **Failures**: Prompt the user to proceed without git (disabling worktree patterns), initialize git, or cancel.
+- <HARD-GATE>Run git preflight FIRST — before any other action. STOP if the workspace is not a valid git repository and present the user with three options: (a) proceed without git (Pattern 1 or 4 only), (b) initialize git, (c) cancel. Do NOT advance to Phase 1 until this gate is resolved.</HARD-GATE>
 - **Goal**: Ensure the environment supports the isolation requirements of the selected pattern.
 
 ### PHASE 1: SCOPE & IDENTITY
-- Select scope (`local`, `project`, or `user`) and resolve paths via `sk-pipeline-paths`.
-- Validate the pipeline name: lowercase/hyphens, ≤48 chars, and unique in the registry.
+- <HARD-GATE>Ask the user to choose a deployment scope (`local`, `project`, or `user`) and a pipeline name BEFORE proceeding to Phase 2. Resolve all paths via `sk-pipeline-paths`. Validate the name: lowercase/hyphens only, ≤48 chars, unique in the scope's `registry.json`. Do NOT advance to Phase 2 without a confirmed scope and a valid, unique pipeline name.</HARD-GATE>
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
@@ -508,8 +534,8 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect**: Generate `spec.md`, `plan.md`, `tasks.md`, `topology.json`, and all step-specific agents/skills.
-- **Dispatch Auditor**: Review all generated files.
-- <HARD-GATE>If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
+- **Dispatch Auditor**: Review all generated files in DELTA mode.
+- <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
 
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.
@@ -518,6 +544,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 ### PHASE 6: FINALIZATION
 - Generate the entry skill (`run-{P}/SKILL.md`) for full orchestration.
 - Register the pipeline in `registry.json` with the latest audit results.
+- Initialize state at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json` via `sk-pipeline-state`.
 </protocol>
 
 <invariants>
@@ -528,9 +555,11 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 </invariants>
 
 ## Red Flags — STOP
+- "The brief is detailed enough, I'll skip git preflight and scope selection." → **STOP**. Phases 0 and 1 are mandatory regardless of brief quality. A detailed brief does not substitute for git verification or scope confirmation.
 - "The audit only found SEV-2 issues, let's proceed." → **STOP**. SEV-0/1 must be zero before the human gate.
 - "The user said skip the spec." → **STOP**. The spec is the non-negotiable contract for parallel execution.
 - "I'll skip the human gate to save time." → **STOP**. One misunderstanding at this stage wastes all downstream implementation.
+- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
 
 ## Rationalization Table
 
@@ -4584,6 +4613,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 - "One more iteration should fix it." → **STOP**. Hard cap at 3 iterations without measurable progress; escalate per Pattern 3.
 - "The reviewer and executor can be the same." → **STOP**. Write/review isolation is a non-negotiable security boundary.
 - "Skip the worktree for a small change." → **STOP**. If the pattern requires isolation, the safety protocol is mandatory.
+- "The brief is detailed, I'll skip git preflight and scope selection." → **STOP**. `creating-a-pipeline` Phases 0 and 1 are mandatory. Run them before the 4D analysis.
 
 ## Rationalization Table
 
@@ -4593,6 +4623,8 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | "I'll read the skill file directly." | Using `Read` instead of `Skill` tool breaks discovery, caching, and body-loading logic. |
 | "The user said it's urgent, skip audit." | A 30-second audit prevents silent topology gaps that lead to catastrophic runtime failure. |
 | "The state file is too complex." | Standardized state is the only path to reliable resumption and multi-step recovery. |
+| "The brief is complete, skip preflight." | Git preflight and scope selection are non-negotiable. A rich brief does not substitute for environment validation or deployment scope confirmation. |
+| "I'll write state to `tmp/`." | The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The `tmp/` path is a retired v1.0.0 pattern. |
 </rationalization_table>
 
 ## Reference Files

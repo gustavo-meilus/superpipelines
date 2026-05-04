@@ -50,6 +50,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 - "One more iteration should fix it." → **STOP**. Hard cap at 3 iterations without measurable progress; escalate per Pattern 3.
 - "The reviewer and executor can be the same." → **STOP**. Write/review isolation is a non-negotiable security boundary.
 - "Skip the worktree for a small change." → **STOP**. If the pattern requires isolation, the safety protocol is mandatory.
+- "The brief is detailed, I'll skip git preflight and scope selection." → **STOP**. `creating-a-pipeline` Phases 0 and 1 are mandatory. Run them before the 4D analysis.
 
 ## Rationalization Table
 
@@ -59,6 +60,8 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | "I'll read the skill file directly." | Using `Read` instead of `Skill` tool breaks discovery, caching, and body-loading logic. |
 | "The user said it's urgent, skip audit." | A 30-second audit prevents silent topology gaps that lead to catastrophic runtime failure. |
 | "The state file is too complex." | Standardized state is the only path to reliable resumption and multi-step recovery. |
+| "The brief is complete, skip preflight." | Git preflight and scope selection are non-negotiable. A rich brief does not substitute for environment validation or deployment scope confirmation. |
+| "I'll write state to `tmp/`." | The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The `tmp/` path is a retired v1.0.0 pattern. |
 </rationalization_table>
 
 ## Reference Files

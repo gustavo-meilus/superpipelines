@@ -21,13 +21,11 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 <protocol>
 ### PHASE 0: GIT PREFLIGHT
-- Verify the current workspace is a valid git repository.
-- **Failures**: Prompt the user to proceed without git (disabling worktree patterns), initialize git, or cancel.
+- <HARD-GATE>Run git preflight FIRST — before any other action. STOP if the workspace is not a valid git repository and present the user with three options: (a) proceed without git (Pattern 1 or 4 only), (b) initialize git, (c) cancel. Do NOT advance to Phase 1 until this gate is resolved.</HARD-GATE>
 - **Goal**: Ensure the environment supports the isolation requirements of the selected pattern.
 
 ### PHASE 1: SCOPE & IDENTITY
-- Select scope (`local`, `project`, or `user`) and resolve paths via `sk-pipeline-paths`.
-- Validate the pipeline name: lowercase/hyphens, ≤48 chars, and unique in the registry.
+- <HARD-GATE>Ask the user to choose a deployment scope (`local`, `project`, or `user`) and a pipeline name BEFORE proceeding to Phase 2. Resolve all paths via `sk-pipeline-paths`. Validate the name: lowercase/hyphens only, ≤48 chars, unique in the scope's `registry.json`. Do NOT advance to Phase 2 without a confirmed scope and a valid, unique pipeline name.</HARD-GATE>
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
@@ -39,8 +37,8 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect**: Generate `spec.md`, `plan.md`, `tasks.md`, `topology.json`, and all step-specific agents/skills.
-- **Dispatch Auditor**: Review all generated files.
-- <HARD-GATE>If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
+- **Dispatch Auditor**: Review all generated files in DELTA mode.
+- <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
 
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.
@@ -49,6 +47,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 ### PHASE 6: FINALIZATION
 - Generate the entry skill (`run-{P}/SKILL.md`) for full orchestration.
 - Register the pipeline in `registry.json` with the latest audit results.
+- Initialize state at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json` via `sk-pipeline-state`.
 </protocol>
 
 <invariants>
@@ -59,9 +58,11 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 </invariants>
 
 ## Red Flags — STOP
+- "The brief is detailed enough, I'll skip git preflight and scope selection." → **STOP**. Phases 0 and 1 are mandatory regardless of brief quality. A detailed brief does not substitute for git verification or scope confirmation.
 - "The audit only found SEV-2 issues, let's proceed." → **STOP**. SEV-0/1 must be zero before the human gate.
 - "The user said skip the spec." → **STOP**. The spec is the non-negotiable contract for parallel execution.
 - "I'll skip the human gate to save time." → **STOP**. One misunderstanding at this stage wastes all downstream implementation.
+- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
 
 ## Rationalization Table
 
