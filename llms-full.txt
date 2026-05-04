@@ -540,11 +540,19 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.
 - **Approval Required**: Do NOT generate the entry skill until the user explicitly approves the design.
+- <HARD-GATE>When the user approves, proceed DIRECTLY to Phase 6 (scaffold generation). Do NOT ask for runtime inputs (e.g., "what's the topic?"). The pipeline does not run here — it is scaffolded. Running is a separate command (`/superpipelines:run-pipeline`).</HARD-GATE>
 
 ### PHASE 6: FINALIZATION
-- Generate the entry skill (`run-{P}/SKILL.md`) for full orchestration.
-- Register the pipeline in `registry.json` with the latest audit results.
-- Initialize state at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json` via `sk-pipeline-state`.
+- <HARD-GATE>Write ALL of the following to disk before ending the session. Do NOT tell the user the pipeline is ready until every file is confirmed written:
+  1. `<scope-root>/superpipelines/pipelines/{P}/spec.md`
+  2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
+  3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
+  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json`
+  5. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
+  6. All step agents and skills under `<scope-root>/agents/superpipelines/{P}/` and `<scope-root>/skills/superpipelines/{P}/`
+  7. Updated `<scope-root>/superpipelines/registry.json`
+</HARD-GATE>
+- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it."
 </protocol>
 
 <invariants>
@@ -556,6 +564,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ## Red Flags — STOP
 - "The brief is detailed enough, I'll skip git preflight and scope selection." → **STOP**. Phases 0 and 1 are mandatory regardless of brief quality. A detailed brief does not substitute for git verification or scope confirmation.
+- "The user approved, what's the topic for the first run?" → **STOP**. Approval triggers Phase 6 (scaffold generation), not a run. Writing files to disk comes first. Running is `/superpipelines:run-pipeline`.
 - "The audit only found SEV-2 issues, let's proceed." → **STOP**. SEV-0/1 must be zero before the human gate.
 - "The user said skip the spec." → **STOP**. The spec is the non-negotiable contract for parallel execution.
 - "I'll skip the human gate to save time." → **STOP**. One misunderstanding at this stage wastes all downstream implementation.
