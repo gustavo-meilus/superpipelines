@@ -17,6 +17,20 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.1
 ```
 
+## 1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
+
+### Documentation & AI-Readiness
+
+- **Scribius v1 Refactor** — Migrated all core workflow, foundation, and engineering skills to semantically anchored XML envelopes (`<protocol>`, `<invariants>`, `<rationalization_table>`).
+- **Master Manifests** — Added `llms.txt` (discovery index) and `llms-full.txt` (complete documentation suite) to the repository root.
+- **Automation** — Added `scripts/generate_llms_full.py` for periodic doc-suite synchronization.
+- **Integrity Verified** — Performed a multi-agent semantic audit confirming 100% information persistence between pre-refactor baselines and Scribius v1 versions.
+
+### Engineering Protocols
+
+- **Gate Enforcement** — Formalized operational gates in `systematic-debugging` (Root Cause), `tdd` (Red-Green), and `verification-before-completion` (Evidence-Before-Claim).
+- **Structural Voice** — Enforced third-person impersonal voice throughout all documentation to maintain architectural objectivity.
+
 ## 1.0.1 — v2 Redesign
 
 ### Architecture

@@ -1,6 +1,6 @@
 # Superpipelines Release Notes
 
-## v1.0.1 — v2 Redesign (2026-05-04)
+## v1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
 
 # Superpipelines — Release Notes
 
@@ -10,11 +10,25 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
 </overview>
 
+## v1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
+
+This release implements the repository-wide refactoring of all core skills, agents, and commands to the Scribius v1 documentation standard. It introduces semantically anchored XML envelopes for machine-readability and master manifests for high-performance context retrieval.
+
+<release_entry version="1.0.2" status="STABLE">
+
+### Added
+- **Scribius v1 Standardization**: All 20+ core skills migrated to semantically anchored XML envelopes (`<overview>`, `<protocol>`, `<invariants>`, `<rationalization_table>`).
+- **AI-Ready Indexing**: Added `llms.txt` and `llms-full.txt` master manifests for optimized LLM context injection.
+- **Integrity Verification**: Verified 100% semantic alignment between pre-refactor baselines and standardized documentation via a multi-agent audit protocol.
+- **Automated Registry**: Added `generate_llms_full.py` script for periodic manifest updates.
+
+### Improved
+- **Protocol Clarity**: Refined operational gates in `systematic-debugging`, `tdd`, and `verification-before-completion` for sharper agent adherence.
+- **Structural Voice**: Standardized all documentation to third-person impersonal voice to reinforce protocol objectivity.
+
+</release_entry>
+
 ## v1.0.1 — Standardized Architecture (2026-05-04)
-
-This release finalizes the standalone architecture by removing all remaining legacy Superpowers artifacts and standardizing on the v2 scope-aware patterns.
-
-<release_entry version="1.0.1" status="STABLE">
 
 ### Added
 - **Scope-aware deployment**: Pipelines support `project`, `local`, and `user` scopes with path resolution via `sk-pipeline-paths`.
