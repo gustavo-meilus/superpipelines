@@ -9,7 +9,7 @@
     {
       "name": "superpipelines",
       "description": "Design, generate, and run multi-agent AI pipelines (spec-driven, write/review-isolated, worktree-safe) following AI_PIPELINES_LLM.md conventions",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "source": "./",
       "author": {
         "name": "Gustavo Meilus",

@@ -161,14 +161,14 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.0.1
+- **Project Version**: v1.0.2
 
 
 # File: RELEASE-NOTES.md
 ----------------------------------------
 # Superpipelines Release Notes
 
-## v1.0.1 — v2 Redesign (2026-05-04)
+## v1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
 
 # Superpipelines — Release Notes
 
@@ -233,7 +233,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 **Pin to a specific version:**
 
 ```text
-/plugin install superpipelines@superpipelines-marketplace --version v1.0.1
+/plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
 ## 1.0.1 — v2 Redesign
@@ -276,7 +276,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - **Removed:** `tests/` directory (5 Superpowers-era test suites).
 - **Updated:** `README.md` — full rewrite for v2 architecture.
 - **Updated:** `.claudeignore` — `tmp/pipeline-*` replaced with `.claude/superpipelines/temp/`.
-- **Synced:** `package.json` version to `1.0.1`.
+- **Synced:** `package.json` version to `1.0.2`.
 
 ## 1.0.0 — Initial release
 

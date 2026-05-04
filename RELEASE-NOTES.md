@@ -28,7 +28,7 @@ This release implements the repository-wide refactoring of all core skills, agen
 
 </release_entry>
 
-## v1.0.1 — Standardized Architecture (2026-05-04)
+## v1.0.2 — Standardized Architecture (2026-05-04)
 
 ### Added
 - **Scope-aware deployment**: Pipelines support `project`, `local`, and `user` scopes with path resolution via `sk-pipeline-paths`.

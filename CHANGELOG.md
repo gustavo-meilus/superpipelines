@@ -14,7 +14,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 **Pin to a specific version:**
 
 ```text
-/plugin install superpipelines@superpipelines-marketplace --version v1.0.1
+/plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
 ## 1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
@@ -31,7 +31,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - **Gate Enforcement** — Formalized operational gates in `systematic-debugging` (Root Cause), `tdd` (Red-Green), and `verification-before-completion` (Evidence-Before-Claim).
 - **Structural Voice** — Enforced third-person impersonal voice throughout all documentation to maintain architectural objectivity.
 
-## 1.0.1 — v2 Redesign
+## 1.0.2 — v2 Redesign
 
 ### Architecture
 
@@ -71,7 +71,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - **Removed:** `tests/` directory (5 Superpowers-era test suites).
 - **Updated:** `README.md` — full rewrite for v2 architecture.
 - **Updated:** `.claudeignore` — `tmp/pipeline-*` replaced with `.claude/superpipelines/temp/`.
-- **Synced:** `package.json` version to `1.0.1`.
+- **Synced:** `package.json` version to `1.0.2`.
 
 ## 1.0.0 — Initial release
 
