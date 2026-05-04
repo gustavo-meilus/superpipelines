@@ -44,4 +44,4 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.0.2
+- **Project Version**: v1.0.3

@@ -17,6 +17,14 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 1.0.3 — Adherence Cleanup (2026-05-04)
+
+### Documentation & Maintenance
+
+- **Adherence Audit** — Verified 100% compliance with the v1.0.2 specification.
+- **Marketplace Sync** — Updated marketplace description to remove stale references and align with plugin capabilities.
+- **Structural Integrity** — Removed corrupted lines in `skill-architect.md` and consolidated duplicate headers in `RELEASE-NOTES.md`.
+
 ## 1.0.2 — Scribius v1 AI-Readiness (2026-05-04)
 
 ### Documentation & AI-Readiness

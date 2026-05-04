@@ -6,9 +6,24 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
 </overview>
 
+## v1.0.3 — Adherence Cleanup (2026-05-04)
+
+This release ensures 100% adherence to the framework's core architectural standards. It resolves cosmetic and structural issues identified during a comprehensive audit, including stale marketplace metadata, corrupted agent definitions, and structural inconsistencies in the release history.
+
+<release_entry version="1.0.3" status="STABLE">
+
+### Added
+- **Adherence Audit Verified**: Confirmed 100% compliance with all 16 core architectural requirements (Git preflight, multi-pipeline isolation, scope-aware pathing, temp lifecycle).
+
+### Improved
+- **Marketplace Metadata**: Synchronized marketplace description with canonical plugin capabilities, removing stale documentation references.
+- **Structural Integrity**: Resolved file corruption in `skill-architect.md` and consolidated duplicate history headers in `RELEASE-NOTES.md`.
+
+</release_entry>
+
 ## v1.0.2 — Scribius v1 & Standardized Architecture (2026-05-04)
 
-This release implements a repository-wide refactoring to the Scribius v1 documentation standard and finalizes the v2 scope-aware architecture. It introduces semantically anchored XML envelopes for machine-readability, master manifests for high-performance context retrieval, and granular step-level management.
+This release implements a repository-wide refactoring to the Scribius v1 documentation standard and finalizes the v2 scope-aware architecture. It introduces semantically anchored XML envelopes for machine-readability and master manifests for high-performance context retrieval.
 
 <release_entry version="1.0.2" status="STABLE">
 
@@ -16,7 +31,7 @@ This release implements a repository-wide refactoring to the Scribius v1 documen
 - **Scribius v1 Standardization**: All 20+ core skills migrated to semantically anchored XML envelopes (`<overview>`, `<protocol>`, `<invariants>`, `<rationalization_table>`).
 - **AI-Ready Indexing**: Added `llms.txt` and `llms-full.txt` master manifests for optimized LLM context injection.
 - **Integrity Verification**: Verified 100% semantic alignment between pre-refactor baselines and standardized documentation via a multi-agent audit protocol.
-- **Automated Registry**: Added `scripts/generate_llms_full.py` script for periodic manifest updates.
+- **Automated Registry**: Added `generate_llms_full.py` script for periodic manifest updates.
 - **Scope-aware deployment**: Pipelines support `project`, `local`, and `user` scopes with path resolution via `sk-pipeline-paths`.
 - **Multi-pipeline support**: Multiple named pipelines coexist per workspace in isolated directories.
 - **Step management commands**: `/superpipelines:new-step`, `/superpipelines:update-step`, and `/superpipelines:delete-step` enable granular pipeline mutations.
