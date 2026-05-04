@@ -5,138 +5,76 @@ disable-model-invocation: true
 user-invocable: false
 ---
 
-# Write/Review Isolation — Two-Stage Review
+# Write/Review Isolation — Two-Stage Review Protocol
 
-`WRITE_REVIEW_ISOLATION: TRUE` is a non-negotiable invariant. The agent that writes code never reviews it. Stage 1 gates Stage 2.
+> Enforces a non-negotiable separation between the agent authoring code and the agent reviewing it. Trigger when dispatching reviewers, authoring multi-stage pipelines, or implementing any task requiring formal verification against a specification.
 
-This skill defines how the rule is enforced in pipelines and what each stage must check.
+<overview>
+`WRITE_REVIEW_ISOLATION: TRUE` is a fundamental invariant of the Superpipelines architecture. By separating the writer from the reviewer and splitting the review process into Stage 1 (Spec Compliance) and Stage 2 (Code Quality), we prevent context bleed, detect over-build early, and ensure that only verified code is promoted.
+</overview>
 
----
+<glossary>
+  <term name="Stage 1 (Spec Compliance)">A binary check answering: "Does the output match the spec exactly?"</term>
+  <term name="Stage 2 (Code Quality)">A qualitative check answering: "Is the code maintainable, idiomatic, and robust?"</term>
+  <term name="Over-build">Adding features or logic not explicitly requested by the specification; results in a Stage 1 FAIL.</term>
+</glossary>
 
-## The rule
+## The Two-Stage Protocol
 
-- Writing agent ≠ reviewing agent (always separate instances).
-- `REVIEW_STAGES: TWO` — spec compliance first, code quality second.
-- `REVIEW_LOOP`: reviewer finds issues → implementer fixes → reviewer re-reviews. Terminate only when reviewer approves, not after one pass.
-- `OVER_BUILD_IS_SPEC_FAILURE`: adding unrequested features fails Stage 1, NOT Stage 2.
+<protocol>
+### STAGE 1 — SPEC COMPLIANCE REVIEW
+- **Agent**: `pipeline-spec-reviewer`.
+- **Inputs**: `spec.md`, output files, and the executor's status report.
+- **Goal**: Verify every acceptance criterion is present and verifiable. Flag any unrequested output as **Over-build**.
+- **HARD-GATE**: Stage 2 cannot begin until Stage 1 returns a `PASS`.
+
+### STAGE 2 — CODE QUALITY REVIEW
+- **Agent**: `pipeline-quality-reviewer`.
+- **Inputs**: Same as Stage 1, plus the Stage 1 `PASS` verdict.
+- **Goal**: Evaluate maintainability, naming, separation of concerns, and edge-case handling.
+- **Exit Condition**: Terminal `PASS` only when all critical and major issues are resolved.
+</protocol>
 
 <EXTREMELY-IMPORTANT>
-Stage 1 spec compliance review MUST pass before Stage 2 code quality review begins.
-This order is not optional. Running Stage 2 on spec-noncompliant output is wasted work.
+Stage 1 spec compliance review MUST pass before Stage 2 code quality review begins. This order is not optional. Running Stage 2 on spec-noncompliant output is wasted work and risks propagating incorrect logic.
 </EXTREMELY-IMPORTANT>
 
----
+## The Review Loop
 
-## Stage 1 — Spec Compliance Review
+<loop_diagram>
+1. **Executor**: Writes output for a given task.
+2. **SpecReviewer**: Reviews for compliance (Stage 1).
+   - **FAIL**: Executor fixes issues → Re-run Stage 1.
+   - **PASS**: Proceed to Stage 2.
+3. **QualityReviewer**: Reviews for quality (Stage 2).
+   - **FAIL (Critical/Major)**: Executor fixes issues → **Re-run Stage 1** (to ensure the fix didn't break compliance).
+   - **PASS**: Task complete; update `pipeline-state.json`.
+</loop_diagram>
 
-**Reviewer:** `pipeline-spec-reviewer` agent.
-
-**Question answered:** Does the output match the spec exactly? Under-build AND over-build both fail.
-
-**Inputs:**
-
-- `spec.md` (or task description from `tasks.md`)
-- The executor's output files
-- The executor's status report
-
-**Checks:**
-
-- Every acceptance criterion in the spec/task: present in output? Verifiable?
-- Any output not requested by the spec? → **FAIL (over-build).**
-- Any required output missing? → **FAIL (under-build).**
-- Are file names, paths, schemas, signatures aligned with the spec?
-
-**Output schema:**
-
-```json
-{
-  "stage": 1,
-  "verdict": "PASS | FAIL",
-  "under_build": ["AC-3 missing", "..."],
-  "over_build": ["unrequested helper module added", "..."],
-  "notes": "<text>"
-}
-```
-
-**Gate token:** Stage 2 dispatch is conditional on `verdict: "PASS"`.
-
----
-
-## Stage 2 — Code Quality Review
-
-**Reviewer:** `pipeline-quality-reviewer` agent.
-
-**Question answered:** Is the output well-written, maintainable, idiomatic?
-
-**Inputs:** same files Stage 1 reviewed, plus Stage 1 verdict (must be PASS).
-
-**Checks:**
-
-- Idiomatic for the language / framework / project conventions?
-- Naming, structure, separation of concerns?
-- Edge cases handled per the spec? (NB: not "edge cases I think of" — those would be over-build flagged in Stage 1.)
-- Tests present and meaningful?
-- No dead code, no commented-out experiments, no TODO without ticket reference?
-
-**Output schema:**
-
-```json
-{
-  "stage": 2,
-  "verdict": "PASS | FAIL",
-  "issues": [
-    { "severity": "critical | major | minor", "file": "...", "line": 42, "fix": "..." }
-  ]
-}
-```
-
----
-
-## Review loop
-
-```
-Executor.write(task)
-  ↓
-SpecReviewer.review() → Stage 1 verdict
-  ├── FAIL → Executor.fix(verdict.issues) → re-Stage 1
-  └── PASS
-      ↓
-QualityReviewer.review() → Stage 2 verdict
-  ├── FAIL critical/major → Executor.fix(issues) → re-Stage 1 (full re-review, not just Stage 2)
-  ├── FAIL minor only → orchestrator decides: ship vs fix (configurable)
-  └── PASS → mark task done in pipeline-state.json
-```
-
-**Why re-Stage 1 after Stage 2 fix:** the fix may introduce over-build or break a previously-met AC. Always re-run from Stage 1 after any code change.
-
----
-
-## Common mistakes
-
-- Sending the executor and the spec-reviewer in the same Task call → context bleed; isolation broken.
-- Treating "the executor said it was done" as Stage 1 PASS → executors do NOT review themselves.
-- Stage 1 reviewer flagging code quality issues → out of scope. Write them in `notes` for Stage 2 to consider.
-- Stage 2 reviewer flagging missing acceptance criteria → out of scope. Re-dispatch Stage 1.
-- One-pass reviews → review LOOP is mandatory until PASS.
+<invariants>
+- **Instance Isolation**: The writing agent and reviewing agent must be separate model instances with fresh context.
+- **Full Re-review**: Any code change triggered by Stage 2 MUST trigger a fresh Stage 1 review.
+- **No Scope Creep**: Reviewers must stay within their defined stage scope (e.g., Stage 1 does not flag formatting; Stage 2 does not flag missing ACs).
+</invariants>
 
 ## Red Flags — STOP
-
-- "The executor agent's output looks fine, I'll skip Stage 1" → NO. Spec compliance is the most-skipped check and the leading cause of "looks correct, fails in production."
-- "Stage 1 passed, but I noticed a small AC issue, I'll mention it in Stage 2" → re-Stage 1. Do not let AC issues leak into Stage 2.
-- "I added a helper that wasn't in the spec, but it's clearly needed" → **over-build**, Stage 1 FAIL. Either update the spec (re-architect) or remove the helper.
+- "The output looks fine, I'll skip Stage 1." → **STOP**. Spec compliance is the primary defense against production regressions.
+- "I'll mention this AC issue in the Stage 2 report." → **STOP**. Re-dispatch Stage 1 immediately.
+- "I added a helper that wasn't in the spec, but it's clearly needed." → **STOP**. This is over-build. Re-architect the spec or remove the helper.
 
 ## Rationalization Table
 
+<rationalization_table>
 | Excuse | Reality |
-|--------|---------|
-| "The reviewer is the same model — separate instances are pointless" | Same model, fresh context = different reasoning. Isolation is about context, not architecture. |
-| "Stage 1 is just a quick sanity check" | Stage 1 catches the most expensive class of bugs (wrong output). Treat it as the primary gate. |
-| "Re-Stage 1 after Stage 2 fix is over-engineering" | Stage 2 fixes can break ACs. Skipping re-Stage 1 has caused production regressions in real pipelines. |
-| "Over-build is fine, the user will appreciate the extra feature" | Over-build invalidates the spec contract that parallel workers depend on. Always Stage 1 FAIL. |
+| :--- | :--- |
+| "Separate instances are pointless." | Fresh context forces new reasoning paths and prevents "assumption blindness." |
+| "Stage 1 is just a sanity check." | Stage 1 catches the most expensive bugs (wrong logic/output). It is the primary gate. |
+| "Re-Stage 1 is over-engineering." | Code quality fixes often break specification compliance. Re-verification is mandatory. |
+| "Over-build is a bonus for the user." | Over-build invalidates the contract that parallel workers and dependent steps rely on. |
+</rationalization_table>
 
-## Cross-references
-
-- `sk-pipeline-patterns` `references/ai-pipelines-trimmed.md` — full conventions reference.
-- `pipeline-spec-reviewer`, `pipeline-quality-reviewer` — agent definitions.
-- `running-a-pipeline` — invokes the loop.
-- `sk-rationalization-resistance` — tag formats and Red Flags conventions.
+## Reference Files
+- `sk-pipeline-patterns/SKILL.md` — Pattern 5 integration.
+- `pipeline-spec-reviewer.md` — Spec reviewer blueprint.
+- `pipeline-quality-reviewer.md` — Quality reviewer blueprint.
+- `sk-rationalization-resistance/SKILL.md` — Resistance mechanism standards.

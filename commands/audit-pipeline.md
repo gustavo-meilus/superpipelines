@@ -3,26 +3,37 @@ description: Audit one or all pipelines against layout, frontmatter, topology, a
 argument-hint: [pipeline-name | --all | path/glob]
 ---
 
-# /superpipelines:audit-pipeline
+# Audit Pipeline — Command Reference
 
-Dispatch the `pipeline-auditor` subagent.
+> Audits one or all pipelines against layout, frontmatter, topology, and runtime-safety standards. Produces a severity-classified report (SEV-0 to SEV-3) with cited evidence.
 
-Target: $ARGUMENTS (defaults to all pipelines in all scopes if empty)
+<args>
+- **$ARGUMENTS**: Optional. Accepts a pipeline name, `--all`, or a file path/glob. Defaults to all pipelines if empty.
+</args>
 
-Mode selection:
+<operating_modes>
+- **Named Pipeline/Path** → `FULL` mode: Audits the complete bundle or specific files.
+- **`--all`** → `SCOPE-WIDE` mode: Audits every pipeline across all available scopes.
+</operating_modes>
 
-- **No argument or pipeline name** → `FULL` mode: audit the named pipeline's complete bundle (agents, skills, `topology.json`, registry entry, entry skill contract).
-- **`--all`** → `SCOPE-WIDE` mode: audit every pipeline across all available scopes.
-- **File path or glob** → `FULL` mode on the specified files only.
+<protocol>
+### 1. INITIALIZATION
+- Dispatch the `pipeline-auditor` subagent.
+- Resolve targets and scope roots via `sk-pipeline-paths`.
 
-The auditor will:
+### 2. CLASSIFICATION & AUDIT
+- Classify files into categories: subagent, internal skill, entry skill, reference, topology, or registry.
+- Apply the 20-criterion compliance matrix across the four standard bands.
+- Execute topology graph rules, including edge consistency and cycle checks.
 
-1. Resolve target pipeline(s) and scope roots via `sk-pipeline-paths`.
-2. Classify each file: subagent / internal step skill / entry skill / reference / topology / registry.
-3. Apply the 20-criterion compliance matrix (`pipeline-auditor-references/compliance-matrix.md`) across 4 bands: layout & registry, frontmatter, topology, runtime safety.
-4. Apply topology graph rules (`pipeline-auditor-references/topology-rules.md`): coverage, edge consistency, cycle check, entry-skill contract, registry consistency.
-5. Classify all findings by severity (SEV-0 / SEV-1 / SEV-2 / SEV-3).
-6. Write the report to `<scope-root>/superpipelines/pipelines/{P}/audit/latest.md` and update `registry.json` `last_audit`.
-7. Present the executive summary inline.
+### 3. REPORTING
+- Classify all findings by severity (SEV-0 to SEV-3).
+- Write the report to `<scope-root>/superpipelines/pipelines/{P}/audit/latest.md`.
+- Update the `last_audit` timestamp in `registry.json`.
+- Present the executive summary inline to the user.
+</protocol>
 
-Read-only by default. To apply SEV-0/1 fixes, ask explicitly — the auditor hands off to `pipeline-architect` with a remediation plan.
+<invariants>
+- The command is read-only by default.
+- SEV-0/1 fixes require explicit user authorization and are routed to the `pipeline-architect` with a remediation plan.
+</invariants>

@@ -5,181 +5,90 @@ disable-model-invocation: true
 user-invocable: false
 ---
 
-# Spec-Driven Development (SDD) — Reference
+# Spec-Driven Development (SDD) — Workflow Reference
 
-Reference template for the SDD workflow used by `creating-a-pipeline` and `pipeline-architect`. Maps directly to Pattern 5 in `sk-pipeline-patterns`.
+> Establishes a formal spec→plan→tasks→implement contract for multi-step feature work and pipeline authoring. Trigger when building new features, refactoring systems, or whenever a request is too ambiguous for direct execution.
 
-Trigger SDD when: building a new feature, refactoring a system, authoring a multi-step pipeline, or when the request is ambiguous and needs a contract before execution.
+<overview>
+Spec-Driven Development (SDD) minimizes hallucinations and misaligned outputs by front-loading requirements analysis. It ensures that every task is rooted in a verified specification and that parallel execution is protected by a mandatory human gate and precise acceptance criteria.
+</overview>
 
-When NOT to use: typo fixes, config flag flips, renames, exploratory research where the spec IS the deliverable, interactive pair-programming where each step is negotiated live. For those, use Pattern 1 / 3 or plain RPI.
-
----
+<glossary>
+  <term name="spec.md">The canonical contract defining WHAT and WHY, focusing on user journeys and success criteria.</term>
+  <term name="plan.md">The technical architecture document defining HOW, including stack, API contracts, and risk mitigations.</term>
+  <term name="tasks.md">A decomposition of the plan into small, independent, and verifiable units of work (T-1, T-2, etc.).</term>
+</glossary>
 
 ## The Four Phases
 
-### Phase 1 — SPECIFY (`/specify`)
+<protocol>
+### 1. SPECIFY (`/specify`)
+- **Goal**: Define the outcome without implementation details.
+- Capture user journeys, success criteria (AC), non-goals, and constraints.
+- **Invariant**: The spec must be readable without code; it must answer "What does done look like?"
 
-Generate `spec.md` capturing WHAT and WHY. No implementation details.
+### 2. PLAN (`/plan`)
+- **Goal**: Design the technical implementation.
+- Define the tech stack, architecture (contracts/schemas), dependency matrix, and risks.
+- Resolve ambiguities surfaced in the spec via `/clarify`.
 
-- User journeys / user stories
-- Success criteria / acceptance criteria
-- Non-goals
-- Constraints (regulatory, performance, compatibility, timeline)
-- Open questions (defer to `/clarify`)
+### 3. TASKS (`/tasks`)
+- **Goal**: Decompose the plan into chunks (5–30 min per agent session).
+- Each task requires a stable ID, description, file list, and verifiable AC.
+- **Validation**: BLOCK implementation if any spec AC lacks a corresponding task.
 
-**Gate:** `spec.md` must be readable without looking at code. If a reader can't answer "what does done look like?" the spec is incomplete.
-
-### Phase 1.5 — CLARIFY (`/clarify`, optional)
-
-Resolve ambiguities surfaced in `spec.md`. Ask targeted questions; do NOT move forward with hidden assumptions.
-
-### Phase 2 — PLAN (`/plan`)
-
-Generate `plan.md` — the HOW.
-
-- Tech stack, libraries, versions
-- Architecture (layer diagram, data flow, contracts)
-- API contracts (schemas, signatures, I/O)
-- Dependency matrix
-- Risks + mitigations
-- Rollout strategy
-- Explicit design decisions (not "we'll figure it out")
-
-### Phase 3 — TASKS (`/tasks`)
-
-Generate `tasks.md` — break `plan.md` into small, reviewable chunks.
-
-Each task MUST have:
-
-- `id` — stable identifier (T-1, T-2, …)
-- `description` — one sentence
-- `files` — list of files touched
-- `acceptance_criteria` — verifiable outcomes (a command that returns pass/fail)
-- `dependencies` — upstream task IDs
-- `granularity` — 1 Agent Session / Task (5–30 min of work)
-
-### Phase 3.5 — ANALYZE / CHECKLIST (`/analyze`, `/checklist`, optional)
-
-Validate `tasks.md` for:
-
-- All spec acceptance criteria covered by tasks
-- No orphan tasks
-- Dependency graph has no cycles
-- Each task has acceptance criteria
-
-**BLOCK `/implement` if any acceptance criterion lacks a task.**
-
-### Phase 4 — HUMAN APPROVAL GATE
+### 4. IMPLEMENT (`/implement`)
+- **Goal**: Execute tasks in parallel where dependencies allow.
+- Each task runs through an isolated RPI loop (Research, Plan, Implement).
+- Reconcile `pipeline-state.json` upon completion or failure of each task.
+</protocol>
 
 <HARD-GATE>
-Before dispatching parallel implementation, present `spec.md` and `tasks.md` to the user with:
-
-"Spec and tasks written. Review before I begin parallel implementation. [APPROVE | REVISE]"
-
-Wait for APPROVE. If REVISE, return to Phase 1 or 2 based on the feedback type.
-
-Rationale: Phase 5 dispatches N parallel agents. A misunderstood spec means N agents produce wrong output simultaneously. Gate cost: ~1 minute. Ungated mistake cost: discard all parallel work and restart from spec.
+**MANDATORY HUMAN APPROVAL**: Before dispatching parallel implementation, present `spec.md` and `tasks.md` to the user. Wait for explicit `APPROVE`. A misunderstood spec at this stage will cause all parallel workers to fail simultaneously.
 </HARD-GATE>
 
-### Phase 5 — IMPLEMENT (`/implement`)
+## Artifact Skeletons
 
-Execute tasks in parallel where dependencies allow, each through its own RPI loop:
+<artifacts>
+### `spec.md`
+- **Context**: Motivation for the change.
+- **User Journeys**: Scenarios and expected outcomes.
+- **Success Criteria**: Numbered list of verifiable ACs.
+- **Non-Goals**: Explicit out-of-scope items.
 
-- **Research**: fill context with discovery (Read, Glob, Grep, search).
-- **Plan**: compress findings into the task's mini-spec.
-- **Implement**: fresh context window, only the plan artifacts loaded.
+### `plan.md`
+- **Architecture**: Layer diagrams and data flow.
+- **API Contracts**: Schemas and signatures.
+- **Dependency Matrix**: Upstream/downstream component mapping.
 
-Each task: write → verify (typecheck, lint, tests) → report pass/fail → reconcile `pipeline-state.json`.
+### `tasks.md`
+- **ID**: `T-1`, `T-2`, etc.
+- **Acceptance**: A concrete command or check that returns pass/fail.
+- **Depends On**: Upstream task IDs.
+</artifacts>
 
-### Phase 6 — RECONCILE
+## Pattern Mapping
 
-Update `pipeline-state.json` with completion status per task. Re-run `/analyze` if tasks drifted.
+<mapping_table>
+| SDD Command | Pattern 5 Phase | Outcome |
+| :--- | :--- | :--- |
+| `/specify` | Phase 1 | `spec.md` |
+| `/plan` | Phase 2 | `plan.md` |
+| `/tasks` | Phase 3 | `tasks.md` |
+| `/analyze` | Phase 4 | Pre-gate validation |
+| **Approval** | Phase 4b | Human authorization |
+| `/implement` | Phase 5 | Parallel execution |
+</mapping_table>
 
----
+<invariants>
+- Every acceptance criterion in `spec.md` MUST be mapped to at least one task in `tasks.md`.
+- Tasks must be small enough for a single agent session (avoiding context bloat).
+- Maintain strict write/review isolation during the implementation phase.
+</invariants>
 
-## Artifact Templates
+## Reference Files
 
-### `spec.md` skeleton
-
-```markdown
-# Feature: {name}
-
-## Context & motivation
-{why now, what prompted this}
-
-## User journeys
-{scenario → outcome}
-
-## Success criteria (AC)
-- [ ] AC-1: {verifiable outcome}
-- [ ] AC-2: …
-
-## Non-goals
-{out-of-scope}
-
-## Constraints
-{regulatory, perf, compat, timeline}
-
-## Open questions
-{for /clarify}
-```
-
-### `plan.md` skeleton
-
-```markdown
-# Plan: {feature name}
-
-## Tech stack
-{libs, versions, runtimes}
-
-## Architecture
-{layer diagram, sequence diagram, data flow}
-
-## API contracts
-{schemas, signatures, I/O}
-
-## Dependency matrix
-| Component | Depends on | Owned by |
-
-## Risks & mitigations
-{risk → mitigation}
-
-## Rollout plan
-{staged, flags, canary}
-```
-
-### `tasks.md` skeleton
-
-```markdown
-# Tasks
-
-## T-1: {short name}
-- Description: {one sentence}
-- Files: {list}
-- Acceptance: {verifiable command}
-- Depends on: {T-0 or none}
-
-## T-2: …
-```
-
----
-
-## Pattern 5 mapping
-
-| Spec Kit command | Pattern 5 phase |
-|------------------|-----------------|
-| `/specify` | Phase 1 |
-| `/clarify` + `/plan` | Phase 2 |
-| `/tasks` | Phase 3 |
-| `/analyze` + `/checklist` | Phase 4 (preflight) |
-| (human gate) | Phase 4b |
-| `/implement` | Phase 5 |
-| (automatic) | Phase 6 |
-
-## Cross-references
-
-- `sk-4d-method` — every SDD phase runs through the 4D wrapper.
-- `sk-pipeline-state` — `pipeline-state.json` schema.
-- `sk-write-review-isolation` — how Stage 1/2 review applies inside `/implement`.
-- `sk-pipeline-patterns` `references/ai-pipelines-trimmed.md` — Pattern 5 full conventions.
-- GitHub Spec Kit — https://github.com/github/spec-kit
+- `sk-4d-method/SKILL.md` — Per-invocation wrapper.
+- `sk-pipeline-patterns/SKILL.md` — Pattern 5 definition.
+- `sk-write-review-isolation/SKILL.md` — Implementation review loop.
+- `sk-pipeline-state/SKILL.md` — State reconciliation rules.

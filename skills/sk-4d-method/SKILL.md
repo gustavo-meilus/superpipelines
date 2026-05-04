@@ -7,101 +7,74 @@ user-invocable: false
 
 # 4D Method — Per-Invocation Processing Wrapper
 
-Reference template embedded in pipeline agent skills frontmatter. Runs INSIDE every Pattern (1–5) on each agent turn; never replaces them.
+> A systematic four-phase framework for processing ambiguous requests, resolving missing context, and handling iterative feedback. Trigger when an agent receives a vague brief or requires precise task deconstruction.
 
-The 4D Method: **Deconstruct → Diagnose → Develop → Deliver**.
+<overview>
+The 4D Method (Deconstruct, Diagnose, Develop, Deliver) ensures that every agent invocation begins with a rigorous analysis of intent and constraints. It prevents hallucinations and misaligned outputs by enforcing a "hard gate" on missing information and providing a structured path for re-entry based on feedback.
+</overview>
 
-Compatibility: Claude 4.6 (Sonnet/Opus/Haiku), Claude 4.7 Opus. Aligned with `sk-pipeline-patterns` Pattern 6.
+<glossary>
+  <term name="4D">Deconstruct → Diagnose → Develop → Deliver.</term>
+  <term name="Hard-Gate">A mandatory stop point if critical information (audience, format, goal, constraints, scope) is missing.</term>
+  <term name="Re-entry">Returning to a specific 4D phase based on the type of user feedback received.</term>
+</glossary>
 
----
+<protocol>
+### 1. DECONSTRUCT (Intent & Entities)
+- **Goal**: Strip the request to its core intent.
+- Identify noun-level entities, explicit constraints, and target audience.
+- Surface implicit assumptions and missing context.
+- **HARD-GATE**: If ≥3 critical slots are missing, STOP and ask the user targeted questions.
 
-## When this fires
+### 2. DIAGNOSE (Specs & Guardrails)
+- **Goal**: Transform vague terms into concrete specifications.
+- Replace subjective language ("clean," "professional") with measurable metrics.
+- Separate overloaded asks into a numbered sub-task list.
+- Anticipate the top 2–3 failure modes and design build-time guardrails.
 
-- A pipeline agent receives a vague or ambiguous brief.
-- The orchestrator passes a brief that's missing audience, format, scope, or success criteria.
-- Feedback arrives from a downstream reviewer and the worker must re-enter at the right phase.
-- The user explicitly says "show 4D" or "walk me through it."
+### 3. DEVELOP (Tactics & Strategy)
+- **Goal**: Match the task type to the optimal execution strategy.
+- Select the appropriate model (Sonnet/Opus) and effort level.
+- Define output format precisely (schemas, bullet counts, code languages).
+- Layer constraints using primacy and recency (critical rules first and last).
 
-When NOT to use: trivial single-step requests (rename, typo, config flip), pure read-only Q&A.
-
----
-
-## Phase 1 — DECONSTRUCT (strip it down)
-
-Goal: never assume the request was understood on first read.
-
-1. Identify the core intent. Separate goal from output format.
-2. Extract all explicit entities (every noun, constraint, audience, platform, product, proper name).
-3. Surface implicit assumptions. Common gaps: target audience, tone, length, platform/format, success criteria, scope.
-4. Map intent to output. Restate the request as a precise task definition.
-
-**Decision point (HARD-GATE):** If three or more critical slots are missing (audience, format, goal, constraints, scope), STOP and ask 3–5 targeted questions framed as options. Otherwise state assumptions explicitly and proceed.
-
----
-
-## Phase 2 — DIAGNOSE (break what's vague)
-
-Goal: turn gaps into concrete specifications.
-
-1. Flag subjective terms ("compelling," "clean," "professional"). Replace with measurable specs.
-2. Identify overloaded asks. If the brief contains multiple deliverables, separate into a numbered sub-task list.
-3. Resolve conflicting constraints ("short but comprehensive"). Name the tension; ask the user to prioritize OR make and state a reasoned tradeoff.
-4. Anticipate top 2–3 failure modes and build guardrails.
-
----
-
-## Phase 3 — DEVELOP (choose the right tactics)
-
-Goal: design the response based on task type, output logic, and model strengths.
-
-1. Match task type to strategy:
-   - Creative: tone cues, style refs, audience empathy, exemplar patterns.
-   - Technical: constraint logic, schemas, validation rules, precision language.
-   - Analytical: structured reasoning, evidence requirements, explicit chain-of-thought.
-   - Multi-step: decomposition into stages with explicit handoffs.
-2. Assign a role only if domain expertise sharpens output (e.g. "senior security reviewer").
-3. Define output format precisely (headings, bullet count, code-block language, table structure).
-4. Layer constraints with primacy + recency — critical rules first AND last, never buried.
-
----
-
-## Phase 4 — DELIVER (format the ask, guide the output)
-
-Goal: a well-designed response can still fail if it's messy or ignores the user's environment.
-
-1. Inverted pyramid: conclusion first, supporting detail second, context third.
-2. Match the user's medium (Slack-tight vs. report-structured vs. runnable code).
-3. End with an actionable next step.
-4. Self-review: does this answer the actual question? Anything unnecessary? Anything inaccurate?
-
----
-
-## Behavioral rules
-
-- Run all four phases internally. Show them only on "show 4D" / "walk me through it."
-- Compress to a single mental pass for trivially simple requests; the full method exists for complex / ambiguous / high-stakes outputs.
-- On feedback: re-enter at the matching phase using the routing table below.
+### 4. DELIVER (Formatting & Scannability)
+- **Goal**: Ensure the response is optimized for the user's environment.
+- Use an inverted pyramid structure (conclusion first).
+- Match the medium (Slack-tight vs. report-structured).
+- Provide an actionable next step for the user.
+</protocol>
 
 ## 4D Feedback Routing
 
-| Feedback signal | Re-entry |
-|-----------------|----------|
-| "That's not what I asked" / response addressed a different problem | re-Deconstruct |
-| "This is incorrect" / wrong values, formats, technically right but misses point | re-Diagnose |
-| "Use a different approach" / strategy critique, not output critique | re-Develop |
-| "Make it shorter / change format / cosmetic only" | re-Deliver |
+<routing_table>
+| Feedback Signal | Re-entry Phase | Rationale |
+| :--- | :--- | :--- |
+| "Not what I asked" | **Deconstruct** | Misaligned intent or goal. |
+| "This is incorrect" | **Diagnose** | Technical failure or missed edge case. |
+| "Use a different approach" | **Develop** | Correct intent, wrong implementation strategy. |
+| "Format/style change" | **Deliver** | Cosmetic or presentation refinement. |
+</routing_table>
 
 ## Quick Reference
 
-| Phase | Question | Key action |
-|-------|----------|------------|
-| Deconstruct | "What is actually being asked?" | Separate intent from output; surface missing info |
-| Diagnose | "Where will this break?" | Replace vague terms; resolve conflicts; anticipate failures |
-| Develop | "What's the best approach?" | Match task type to strategy; assign role; define format |
-| Deliver | "Is this ready for the user?" | Organize for scannability; match context; add next steps |
+<quick_reference>
+| Phase | Core Question | Key Action |
+| :--- | :--- | :--- |
+| **Deconstruct** | "What is actually being asked?" | Separate intent from output; surface gaps. |
+| **Diagnose** | "Where will this break?" | Replace vague terms; resolve conflicts. |
+| **Develop** | "What's the best approach?" | Match strategy to task; define format. |
+| **Deliver** | "Is this ready for the user?" | Organize for scannability; match context. |
+</quick_reference>
 
-## Cross-references
+<invariants>
+- Run all four phases internally; show them only on explicit request ("show 4D").
+- The HARD-GATE in Phase 1 is non-negotiable for high-stakes tasks.
+- Match model selection and effort level to the phase requirements per project standards.
+</invariants>
 
-- **Pattern 6** in `sk-pipeline-patterns` — canonical definition.
-- `sk-spec-driven-development` — when 4D surfaces a multi-step feature, hand off to SDD.
-- `sk-claude-code-conventions` — model selection and effort scaling per phase.
+## Reference Files
+
+- `sk-pipeline-patterns/SKILL.md` — Pattern 6 definition.
+- `sk-spec-driven-development/SKILL.md` — SDD handoff rules.
+- `sk-claude-code-conventions/SKILL.md` — Scaling and model selection.

@@ -3,23 +3,41 @@ description: Delete a step from an existing pipeline — select pipeline, select
 argument-hint: [optional: step name]
 ---
 
-# /superpipelines:delete-step
+# Delete Step — Command Reference
 
-Invoke the `deleting-a-pipeline-step` skill.
+> Deletes a step from an existing pipeline. Performs mandatory gap analysis and optional rewiring, followed by a delta audit and human approval before execution.
 
-Step hint: $ARGUMENTS (if provided, skips the step-selection prompt when unambiguous)
+<args>
+- **$ARGUMENTS**: Optional step name. If provided, skips the selection prompt when unambiguous.
+</args>
 
-The skill will:
+<protocol>
+### 1. SELECTION
+- Read registries and present the pipeline list.
+- Parse `topology.json` and display current steps.
+- Resolve the target step to delete.
 
-1. Read all registries; present pipeline list. `AskUserQuestion` — which pipeline?
-2. Parse `topology.json`; display current steps. Ask which step to delete (skipped if `$ARGUMENTS` identifies it).
-3. **Gap analysis** — identify all predecessors and successors of the target step. Classify the gap: none / through-gap (rewire needed) / blocking-gap (no valid rewire exists). Surface analysis to user.
-4. If gap exists: present rewire options (`Rewire edges | Cancel deletion`). On rewire: collect the wiring plan from the user.
-5. Dispatch `pipeline-architect` in STEP-DELETE mode to stage the deletion and any rewiring to `temp/{P}/edit-{ts}/`.
-6. **Mandatory delta audit** — `pipeline-auditor` DELTA mode on affected neighbors + updated entry skill. SEV-0/1 must clear before promotion.
-7. **Human gate** — show exactly what will be deleted and what (if anything) will be rewired. Wait for `APPROVE | CANCEL`.
-8. **Atomic promotion** — execute deletion and rewire from staging; update `topology.json`, `tasks.md`, entry skill, and `registry.json`.
+### 2. GAP ANALYSIS
+Identify predecessors and successors of the target step. Classify the gap:
+- **None**: No dependent successors.
+- **Through-gap**: Rewire required.
+- **Blocking-gap**: No valid rewire path exists.
 
-<HARD-GATE>
-Never delete a step that creates an unresolvable gap without explicit user confirmation and a rewire plan. Never skip the delta audit. On CANCEL at the human gate: discard all staged changes.
-</HARD-GATE>
+### 3. DESIGN & STAGING
+- Present rewire options if a gap exists.
+- Dispatch `pipeline-architect` in STEP-DELETE mode to stage changes to `temp/{P}/edit-{ts}/`.
+
+### 4. VERIFICATION
+- **Delta Audit**: Execute `pipeline-auditor` in DELTA mode on affected neighbors and the entry skill.
+- SEV-0 and SEV-1 findings must be cleared before promotion.
+
+### 5. DELIVERY
+- **Human Gate**: Present a summary of deletions and rewiring for approval.
+- **Atomic Promotion**: Upon approval, move staged files to final paths and update the registry and topology.
+</protocol>
+
+<invariants>
+- NEVER delete a step that creates an unresolvable gap without a verified rewire plan and explicit confirmation.
+- NEVER skip the delta audit during the deletion process.
+- On CANCEL at the human gate, all staged changes MUST be discarded.
+</invariants>

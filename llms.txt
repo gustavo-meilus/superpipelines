@@ -1,0 +1,38 @@
+# Superpipelines — Multi-Agent Orchestration Framework
+
+Multi-agent AI pipelines with guaranteed spec compliance, write/review isolation, and full crash recovery. Superpipelines enables complex task decomposition into coordinated subagents with automated verification and state persistence.
+
+## Key Features
+- **Spec-Driven Development (SDD)**: Tasks are decomposed into specifications, implementation plans, and itemized task lists.
+- **Write/Review Isolation**: Structural separation of implementation and verification roles.
+- **Scope-Aware State**: State persistence to project, local, or user scopes with full recovery.
+- **Multi-Pipeline Isolation**: Support for multiple named pipelines per workspace.
+- **Slash Command Integration**: Commands for creating, running, auditing, and mutating pipelines.
+
+## Core Documentation
+- [README.md](file:///d:/Github/superpipelines/README.md): High-level overview and installation guide.
+- [CLAUDE.md](file:///d:/Github/superpipelines/CLAUDE.md): Architectural invariants and authoring rules.
+- [RELEASE-NOTES.md](file:///d:/Github/superpipelines/RELEASE-NOTES.md): Versioned feature history.
+- [CHANGELOG.md](file:///d:/Github/superpipelines/CHANGELOG.md): Granular record of changes.
+
+## Workflow Skills
+- [using-superpipelines](file:///d:/Github/superpipelines/skills/using-superpipelines/SKILL.md): Core orchestration and routing protocols.
+- [creating-a-pipeline](file:///d:/Github/superpipelines/skills/creating-a-pipeline/SKILL.md): End-to-end pipeline scaffolding.
+- [running-a-pipeline](file:///d:/Github/superpipelines/skills/running-a-pipeline/SKILL.md): Registry-driven execution launcher.
+- [adding-a-pipeline-step](file:///d:/Github/superpipelines/skills/adding-a-pipeline-step/SKILL.md): Topology mutation (Add).
+- [updating-a-pipeline-step](file:///d:/Github/superpipelines/skills/updating-a-pipeline-step/SKILL.md): topology mutation (Update).
+- [deleting-a-pipeline-step](file:///d:/Github/superpipelines/skills/deleting-a-pipeline-step/SKILL.md): Topology mutation (Delete).
+
+## Foundational Skills
+- [sk-4d-method](file:///d:/Github/superpipelines/skills/sk-4d-method/SKILL.md): Deconstruction intake (Define, Diagnose, Design, Deliver).
+- [sk-spec-driven-development](file:///d:/Github/superpipelines/skills/sk-spec-driven-development/SKILL.md): Full SDD lifecycle.
+- [sk-write-review-isolation](file:///d:/Github/superpipelines/skills/sk-write-review-isolation/SKILL.md): Two-stage review protocol.
+- [sk-pipeline-paths](file:///d:/Github/superpipelines/skills/sk-pipeline-paths/SKILL.md): Scope-aware path resolution.
+- [sk-pipeline-state](file:///d:/Github/superpipelines/skills/sk-pipeline-state/SKILL.md): Atomic state management.
+- [sk-worktree-safety](file:///d:/Github/superpipelines/skills/sk-worktree-safety/SKILL.md): Isolated integration verification.
+
+## Engineering Standards
+- [systematic-debugging](file:///d:/Github/superpipelines/skills/systematic-debugging/SKILL.md): Root cause protocol.
+- [test-driven-development](file:///d:/Github/superpipelines/skills/test-driven-development/SKILL.md): Red-Green-Refactor cycle.
+- [verification-before-completion](file:///d:/Github/superpipelines/skills/verification-before-completion/SKILL.md): Evidence-before-claim protocol.
+- [brainstorming](file:///d:/Github/superpipelines/skills/brainstorming/SKILL.md): Exploratory design workflow.

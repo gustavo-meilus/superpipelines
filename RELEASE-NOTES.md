@@ -2,7 +2,26 @@
 
 ## v1.0.1 — v2 Redesign (2026-05-04)
 
-This release completes the transition to the superpipelines v2 architecture. All state management, path resolution, and agent frontmatter have been standardized. Legacy Superpowers-era documentation and infrastructure have been removed.
+# Superpipelines — Release Notes
+
+> Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
+
+<overview>
+Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
+</overview>
+
+## v1.0.1 — Standardized Architecture (2026-05-04)
+
+This release finalizes the standalone architecture by removing all remaining legacy Superpowers artifacts and standardizing on the v2 scope-aware patterns.
+
+<release_entry version="1.0.1" status="STABLE">
+
+### Added
+- **Scope-aware deployment**: Pipelines support `project`, `local`, and `user` scopes with path resolution via `sk-pipeline-paths`.
+- **Multi-pipeline support**: Multiple named pipelines coexist per workspace in isolated directories.
+- **Step management commands**: `/superpipelines:new-step`, `/superpipelines:update-step`, and `/superpipelines:delete-step` enable granular pipeline mutations.
+- **Compliance Matrix**: A 20-criterion audit system for layout, frontmatter, topology, and runtime safety.
+- **Local Memory**: Agents may utilize `memory: local` for persisting cross-run heuristics.
 
 ### Breaking changes
 
@@ -11,26 +30,18 @@ This release completes the transition to the superpipelines v2 architecture. All
 - **`.claudeignore` updated.** The ignore pattern changed from `tmp/pipeline-*` to `.claude/superpipelines/temp/`.
 - **Agent `permissionMode` now required.** All agents declare `permissionMode` in frontmatter (`acceptEdits` for executors, `plan` for reviewers/architects). Agents without `permissionMode` will use the default behavior.
 
-### What's new
-
-- **Scope-aware deployment.** Pipelines can target `project`, `local`, or `user` scope. Paths resolved by `sk-pipeline-paths`.
-- **Multi-pipeline support.** Multiple named pipelines coexist per workspace in isolated `{P}/` directories.
-- **Step management commands.** `/superpipelines:new-step`, `/superpipelines:update-step`, `/superpipelines:delete-step` for granular pipeline mutations with topology rewiring and delta audits.
-- **20-criterion compliance matrix.** `audit-pipeline` now checks layout (5), frontmatter (6), topology (5), and runtime safety (4) criteria across 4 severity bands.
-- **`memory: local` allowed.** Agents that need to persist cross-run heuristics may now use `memory: local`. `memory: project` remains forbidden.
-
-### What's removed
-
-- `docs/AI_PIPELINES_LLM.md` — replaced by `ai-pipelines-trimmed.md`, compliance matrix, and agent-frontmatter-schema.
-- `docs/ai-pipelines-improvement-plan.md` — historical gap analysis, no longer relevant.
-- `docs/superpowers-vs-ai-pipelines.md` — comparison of two predecessor projects.
-- `docs/claude-plugins-complete-guide.md` — Superpowers plugin creation guide.
-- `docs/testing.md` — Superpowers integration test documentation.
-- `docs/windows/`, `docs/plans/`, `docs/superpowers/`, `docs/examples/` — legacy directories.
-- `RELEASE-NOTES.md` — replaced by this file (Superpowers v3.1–v5.0.7 history removed).
-- `tests/` — Superpowers-era test suites (brainstorm-server, skill-triggering, etc.).
+### Removed
+- `docs/AI_PIPELINES_LLM.md` — Replaced by `ai-pipelines-trimmed.md` and agent-frontmatter-schema.
+- `docs/ai-pipelines-improvement-plan.md` — Legacy gap analysis.
+- `docs/superpowers-vs-ai-pipelines.md`, `docs/claude-plugins-complete-guide.md`, `docs/testing.md`.
+- `docs/windows/`, `docs/plans/`, `docs/superpowers/`, `docs/examples/` — Legacy directories.
+- `tests/` — Legacy Superpowers-era test suites.
 - Visual companion server scripts from `skills/brainstorming/`.
+
+</release_entry>
 
 ## v1.0.0 — Initial Release (2026-05-03)
 
-First release of superpipelines as a standalone Claude Code plugin. Established the core pipeline framework with 7 agents, 6 execution patterns, and spec-driven development workflow.
+<release_entry version="1.0.0" status="INITIAL">
+First standalone release of Superpipelines. Established the core framework with 7 agents, 6 execution patterns, and the spec-driven development (SDD) workflow.
+</release_entry>

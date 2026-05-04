@@ -3,20 +3,31 @@ description: List all pipelines in the current workspace (all scopes) and run th
 argument-hint: [optional: --resume]
 ---
 
-# /superpipelines:run-pipeline
+# Run Pipeline — Command Reference
 
-Invoke the `running-a-pipeline` skill.
+> Orchestrates the execution of a selected pipeline. Handles registry discovery, state initialization, and support for run resumption.
 
-Args: $ARGUMENTS
+<args>
+- **$ARGUMENTS**: Optional flags, such as `--resume`.
+</args>
 
-The skill will:
+<protocol>
+### 1. DISCOVERY
+- Read `registry.json` from all scopes (`local`, `project`, `user`).
+- Present a deduplicated list of available pipelines with scope labels.
 
-1. Read `registry.json` from all three scopes (`local`, `project`, `user`). Present a deduplicated list with scope labels.
-2. `AskUserQuestion` — which pipeline to run?
-3. If `--resume`: present available `runId`s from `temp/{P}/` for the chosen pipeline; ask which run to resume.
-4. Initialize run state in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
-5. Invoke the chosen pipeline's entry skill (`run-{P}`), which orchestrates full execution.
-6. On terminal `DONE`: delete `<scope-root>/superpipelines/temp/{P}/{runId}/`.
-7. On `ESCALATED | FAILED | BLOCKED`: preserve the temp directory and print its absolute path.
+### 2. INITIALIZATION
+- Resolve the pipeline to run via user selection.
+- **Resume Mode**: If `--resume` is active, present available `runId`s from staging for selection.
+- Initialize run state in the canonical `pipeline-state.json` file.
 
-Do NOT auto-resume an `escalated` or `failed` state without explicit user confirmation.
+### 3. EXECUTION
+- Invoke the pipeline's entry skill (`run-{P}`) to begin orchestration.
+- **Success Path**: On terminal `DONE`, delete the temporary run directory.
+- **Failure Path**: On `ESCALATED`, `FAILED`, or `BLOCKED`, preserve the temporary state for diagnosis.
+</protocol>
+
+<invariants>
+- NEVER auto-resume an `escalated` or `failed` state without explicit user confirmation.
+- Always provide the absolute path to the temporary state directory if execution does not reach `DONE`.
+</invariants>

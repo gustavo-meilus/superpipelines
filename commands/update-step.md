@@ -3,22 +3,39 @@ description: Update an existing step in a pipeline — select pipeline, select s
 argument-hint: [description of changes to the step]
 ---
 
-# /superpipelines:update-step
+# Update Step — Command Reference
 
-Invoke the `updating-a-pipeline-step` skill.
+> Updates an existing step in a pipeline. Includes mandatory edge re-validation, change propagation, and delta audits before promoting changes.
 
-Brief: $ARGUMENTS
+<args>
+- **$ARGUMENTS**: Description of the changes to be applied to the step.
+</args>
 
-The skill will:
+<protocol>
+### 1. SELECTION & ANALYSIS
+- Read registries and present the pipeline list.
+- Parse `topology.json` and display current steps for selection.
+- Run the 4D Method on the change brief to identify impacts on input/output schemas or internal behavior.
 
-1. Read all registries; present pipeline list. `AskUserQuestion` — which pipeline?
-2. Parse `topology.json`; display current steps. `AskUserQuestion` — which step to update?
-3. Show the user a summary of the chosen step (agent file, declared inputs/outputs, current effort/model/tools).
-4. Run the 4D Method on the change brief; explicitly identify whether the change affects the step's input schema, output schema, or internal behavior only.
-5. **Edge re-validation planning** — if input/output schema changes: identify affected predecessor and successor steps; present an impact analysis and ask user to confirm propagation before proceeding.
-6. Dispatch `pipeline-architect` in UPDATE mode to apply changes and propagate edge updates. All edits staged to `temp/{P}/edit-{ts}/`.
-7. **Mandatory delta audit** — `pipeline-auditor` DELTA mode on updated step + neighbors + entry skill. SEV-0/1 must clear before promotion.
-8. **Human gate** — diff summary of all changed files; wait for `APPROVE | REVISE`.
-9. **Atomic promotion** — move staged files to final paths; update `registry.json`.
+### 2. IMPACT PROPAGATION
+- **Edge Re-validation**: If schemas change, identify affected predecessor and successor steps.
+- Present an impact analysis to the user and confirm propagation before proceeding.
 
-Do NOT apply changes to final paths before the delta audit passes. Do NOT skip edge re-validation.
+### 3. DESIGN & STAGING
+- Dispatch `pipeline-architect` in UPDATE mode to apply changes and propagate edge updates.
+- Stage all edits to `temp/{P}/edit-{ts}/`.
+
+### 4. VERIFICATION
+- **Delta Audit**: Execute `pipeline-auditor` in DELTA mode on the updated step, its neighbors, and the entry skill.
+- SEV-0 and SEV-1 findings must be cleared before promotion.
+
+### 5. DELIVERY
+- **Human Gate**: Present a diff summary of all changed files for approval.
+- **Atomic Promotion**: Move staged files to final paths and update the registry.
+</protocol>
+
+<invariants>
+- NEVER apply changes to final paths before the delta audit returns a PASS.
+- NEVER skip the edge re-validation or impact analysis phases.
+- Maintain atomic consistency between the component code and the `topology.json` graph.
+</invariants>

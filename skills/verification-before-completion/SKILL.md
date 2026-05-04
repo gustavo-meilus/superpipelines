@@ -3,137 +3,71 @@ name: verification-before-completion
 description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
 ---
 
-# Verification Before Completion
+# Verification Before Completion — Success Protocol
 
-## Overview
+> Requires absolute evidence before any claim of task completion, bug resolution, or system readiness. Trigger when about to conclude a task, fixed a bug, or claim a system state is passing before committing changes or creating PRs.
 
-Claiming work is complete without verification is dishonesty, not efficiency.
+<overview>
+Verification Before Completion is governed by the Iron Law: **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE**. It prohibits the use of "should," "probably," or "seems to" in favor of documented command output and logs, ensuring that success is a verifiable fact rather than an assumption.
+</overview>
 
-**Core principle:** Evidence before claims, always.
+<glossary>
+  <term name="Gate Function">A mandatory five-step sequence (Identify, Run, Read, Verify, Claim) that must be completed before communicating success.</term>
+  <term name="Evidence before Claim">The requirement to execute a verification command and analyze its output before stating a status.</term>
+  <term name="Regression Verification">A Red-Green cycle proving that a test not only passes now but would have failed without the fix.</term>
+</glossary>
 
-**Violating the letter of this rule is violating the spirit of this rule.**
+## The Success Protocol
 
-## The Iron Law
+<protocol>
+### THE GATE FUNCTION
+1. **IDENTIFY**: Determine exactly which command or action proves the claim.
+2. **RUN**: Execute the full, fresh verification command.
+3. **READ**: Analyze the complete output, check exit codes, and count failures.
+4. **VERIFY**: Confirm the output matches the success criteria of the original requirement.
+5. **CLAIM**: State the completion status alongside the supporting evidence.
 
-```
-NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
-```
+<invariant>Skip any step = failure of the verification protocol.</invariant>
+</protocol>
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+<invariants>
+- NEVER express satisfaction ("Great!", "Perfect!") before running verification.
+- NEVER trust a subagent's "DONE" report without inspecting the VCS diff and running local tests.
+- ALWAYS perform a Red-Green cycle for regression tests to prove the test's validity.
+- Linter clean state is NOT a proxy for build success or logic correctness.
+</invariants>
 
-## The Gate Function
+## Verification Patterns
 
-```
-BEFORE claiming any status or expressing satisfaction:
+<patterns>
+| Quality | Goal | Required Evidence |
+| :--- | :--- | :--- |
+| **Tests** | All green | Command output showing `0 failures` across the entire suite. |
+| **Linter** | Clean state | Command output showing `0 errors` and `0 warnings`. |
+| **Build** | Successful binary | Execution log showing `exit 0` and artifact generation. |
+| **Bug Fix** | Resolved symptom | Reproduction script passing + Red-Green verification. |
+| **Requirements** | Spec compliance | Line-by-line checklist verification against `spec.md`. |
+</patterns>
 
-1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
-3. READ: Full output, check exit code, count failures
-4. VERIFY: Does output confirm the claim?
-   - If NO: State actual status with evidence
-   - If YES: State claim WITH evidence
-5. ONLY THEN: Make the claim
+## Red Flags — STOP
+- "It should work now." → **STOP**. Run the verification command.
+- "I'm confident it's fixed." → **STOP**. Confidence is not evidence.
+- "The agent said it was done." → **STOP**. Subagents are non-deterministic; verify independently.
+- "I'll do a partial check to save time." → **STOP**. Partial verification proves nothing about system integration.
 
-Skip any step = lying, not verifying
-```
+## Rationalization Table
 
-## Common Failures
-
-| Claim | Requires | Not Sufficient |
-|-------|----------|----------------|
-| Tests pass | Test command output: 0 failures | Previous run, "should pass" |
-| Linter clean | Linter output: 0 errors | Partial check, extrapolation |
-| Build succeeds | Build command: exit 0 | Linter passing, logs look good |
-| Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
-| Regression test works | Red-green cycle verified | Test passes once |
-| Agent completed | VCS diff shows changes | Agent reports "success" |
-| Requirements met | Line-by-line checklist | Tests passing |
-
-## Red Flags - STOP
-
-- Using "should", "probably", "seems to"
-- Expressing satisfaction before verification ("Great!", "Perfect!", "Done!", etc.)
-- About to commit/push/PR without verification
-- Trusting agent success reports
-- Relying on partial verification
-- Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
-
-## Rationalization Prevention
-
+<rationalization_table>
 | Excuse | Reality |
-|--------|---------|
-| "Should work now" | RUN the verification |
-| "I'm confident" | Confidence ≠ evidence |
-| "Just this once" | No exceptions |
-| "Linter passed" | Linter ≠ compiler |
-| "Agent said success" | Verify independently |
-| "I'm tired" | Exhaustion ≠ excuse |
-| "Partial check is enough" | Partial proves nothing |
-| "Different words so rule doesn't apply" | Spirit over letter |
+| :--- | :--- |
+| "I manually verified it." | Manual verification is non-reproducible and prone to observation bias. |
+| "It's just a small fix." | Small fixes cause the majority of production regressions. |
+| "I'm tired/in a hurry." | Exhaustion increases the probability of overlooking silent failures. |
+| "Spirit over ritual." | The ritual of evidence is what protects the system's integrity. |
+</rationalization_table>
 
-## Key Patterns
-
-**Tests:**
-```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
-❌ "Should pass now" / "Looks correct"
-```
-
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
-
-**Build:**
-```
-✅ [Run build] [See: exit 0] "Build passes"
-❌ "Linter passed" (linter doesn't check compilation)
-```
-
-**Requirements:**
-```
-✅ Re-read plan → Create checklist → Verify each → Report gaps or completion
-❌ "Tests pass, phase complete"
-```
-
-**Agent delegation:**
-```
-✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
-❌ Trust agent report
-```
-
-## Why This Matters
-
-From 24 failure memories:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
-
-## When To Apply
-
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
-
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
-
-## The Bottom Line
-
-**No shortcuts for verification.**
-
-Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.
+## Reference Files
+- `systematic-debugging/SKILL.md` — Root cause investigation.
+- `test-driven-development/SKILL.md` — Red-Green cycle rules.
+- `sk-write-review-isolation/SKILL.md` — Two-stage review protocol.
+- `sk-worktree-safety/SKILL.md` — Integration verification.

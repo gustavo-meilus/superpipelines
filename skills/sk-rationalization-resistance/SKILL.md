@@ -5,113 +5,66 @@ disable-model-invocation: true
 user-invocable: false
 ---
 
-# Rationalization Resistance — Conventions for Discipline-Enforcing Content
+# Rationalization Resistance — Discipline-Enforcement Conventions
 
-Pipeline agents shortcut discipline rules under three pressures: time ("we need to ship"), sunk cost ("3 hours spent already"), and obvious-answer bias ("clearly the fix is X"). This skill defines three mechanisms that hold the line against rationalization.
+> Establishes mechanisms (HARD-GATE, EXTREMELY-IMPORTANT, Red Flags) to prevent agents from taking shortcuts under time pressure, sunk cost, or cognitive bias. Trigger when authoring discipline-enforcing skills or agent bodies that require strict adherence to protocols.
 
-Use these in any skill or agent body whose correctness depends on NOT taking shortcuts.
+<overview>
+Rationalization Resistance ensures that critical safety and quality rules hold the line even when an agent is tempted to shortcut them. It utilizes specific semantic tags and tables to force the model to confront its own internal monologue and adhere to non-negotiable architectural gates.
+</overview>
 
----
+<glossary>
+  <term name="HARD-GATE">A semantic tag wrapping non-negotiable checkpoints that requires a STOP condition before proceeding.</term>
+  <term name="Red Flag">An exact thought or behavior that signals an agent is attempting to rationalize a shortcut.</term>
+  <term name="Rationalization Table">A tabular comparison of common model excuses against project reality.</term>
+</glossary>
 
-## Mechanism 1 — `<HARD-GATE>` tag
+## Resistance Mechanisms
 
-Wrap any non-negotiable checkpoint. The agent must complete the gate condition before proceeding.
+<protocol>
+### 1. THE `<HARD-GATE>` TAG
+- **Usage**: Wrap non-negotiable checkpoints at decision points.
+- **Convention**: Use one sentence stating the STOP condition and the required action (e.g., "STOP. Do NOT attempt iteration 4.").
+- **Goal**: Force a terminal break in execution if safety or quality thresholds are breached.
 
-```markdown
-<HARD-GATE>
-After 3 failed iterations without measurable progress: STOP. Do NOT attempt iteration 4.
-</HARD-GATE>
-```
+### 2. THE `<EXTREMELY-IMPORTANT>` TAG
+- **Usage**: Wrap rules that are frequently rationalized away or ignored.
+- **Convention**: State the rule positively, then append the "non-optional" clause.
+- **Invariant**: Use sparingly to maintain high semantic weight.
 
-Conventions:
+### 3. RED FLAGS & RATIONALIZATION TABLES
+- **Red Flags**: Bulleted list of specific internal monologues that trigger a STOP.
+- **Rationalization Table**: Mapping of `| Excuse | Reality |` to debunk common model justifications with concrete corrective actions.
+</protocol>
 
-- One sentence per gate. No multi-paragraph gates.
-- The gate states the STOP condition AND the action ("STOP. Do NOT...").
-- Place gates at decision points the agent will reach naturally — not buried in a reference file.
-- Test by adversarial pressure: can the agent find an excuse to skip the gate? If yes, tighten the wording.
+## Applicability Matrix
 
----
+<applicability_table>
+| Skill Type | HARD-GATE | EXTREMELY-IMPORTANT | Red Flags / Tables |
+| :--- | :---: | :---: | :---: |
+| **Reference-only** (`sk-*`) | Optional | Optional | Not required |
+| **Discipline-enforcing** | Required | Required | Required |
+| **Workflow** | Required | Required | Required |
+| **Agent Bodies** | Required | Required | Optional |
+</applicability_table>
 
-## Mechanism 2 — `<EXTREMELY-IMPORTANT>` tag
+## Anti-Patterns
 
-Wrap rules that are frequently rationalized away. Signals maximum priority.
+<anti_patterns>
+- **Soft-pedaling**: Using phrases like "you might want to consider" instead of "STOP" or "DO NOT."
+- **User-perspective Red Flags**: Writing flags from the user's view instead of the agent's internal monologue.
+- **Abstract Realities**: Using vague reasons like "correctness matters" instead of concrete technical consequences.
+- **Tag Bloat**: Wrapping excessive amounts of text, which dilutes the semantic signal.
+</anti_patterns>
 
-```markdown
-<EXTREMELY-IMPORTANT>
-Stage 1 spec compliance review MUST pass before Stage 2 code quality review begins.
-This order is not optional.
-</EXTREMELY-IMPORTANT>
-```
+<invariants>
+- Every discipline-enforcing skill MUST include both a Red Flags list and a Rationalization Table at the bottom.
+- Corrective actions in Red Flags MUST be concrete and immediate.
+- Place mechanisms at the exact decision points the agent will reach naturally.
+</invariants>
 
-Conventions:
+## Reference Files
 
-- Use sparingly — every `<EXTREMELY-IMPORTANT>` tag dilutes the others. Reserve for rules the agent will be tempted to break.
-- State the rule positively (what to do), then add the non-optional clause.
-- Pair with a Red Flags list when possible (see Mechanism 3).
-
----
-
-## Mechanism 3 — Red Flags list + Rationalization Table
-
-Every discipline-enforcing skill MUST include both at the bottom.
-
-### Red Flags — STOP
-
-List of exact thoughts or behaviors that signal the agent is rationalizing. Format: bullet list → single corrective action.
-
-```markdown
-## Red Flags — STOP
-
-- "One more fix should do it" (after 2+ failures) → STOP. Escalate per Pattern 3.
-- "The fix is almost working" → STOP. Question the architecture.
-- Each new fix reveals a failure in a new location → STOP. Architectural problem, not a bug.
-```
-
-Conventions:
-
-- Use exact rationalization phrasing — copy from real test transcripts where the agent failed.
-- One bullet per phrase; do not group.
-- Corrective action is concrete and immediate.
-
-### Rationalization Table
-
-Capture specific rationalizations seen in testing. Format: `| Excuse | Reality |`.
-
-```markdown
-| Excuse | Reality |
-|--------|---------|
-| "The reviewer is the same model — separate instances are pointless" | Same model, fresh context = different reasoning. Isolation is about context, not architecture. |
-| "Stage 1 is just a quick sanity check" | Stage 1 catches the most expensive class of bugs. It IS the primary gate. |
-```
-
-Conventions:
-
-- One row per excuse. Multiple rows per excuse class is fine.
-- "Reality" sentence states why the excuse is wrong AND what to do instead.
-- Update with new rationalizations as they surface in production.
-
----
-
-## Where to use these mechanisms
-
-| Skill type | HARD-GATE | EXTREMELY-IMPORTANT | Red Flags + Rationalization Table |
-|------------|:---------:|:-------------------:|:---------------------------------:|
-| Reference-only (`sk-*`) | yes, where appropriate | yes, where appropriate | not required — these are reference, not discipline |
-| Discipline-enforcing (`sk-write-review-isolation`, `sk-worktree-safety`, `sk-pipeline-patterns` Pattern 3) | required at decision points | required for non-negotiable rules | required at the bottom |
-| Workflow (`creating-a-pipeline`, `running-a-pipeline`) | required at human gates | required for write/review isolation | required at the bottom |
-| Agent bodies | required at decision points | required for non-negotiable rules | optional if companion `*-references` carries them |
-
----
-
-## Anti-patterns
-
-- Wrapping every other paragraph in `<EXTREMELY-IMPORTANT>` — dilutes the signal until the agent treats them as decoration.
-- Soft-pedaling gate conditions ("you might want to consider stopping…") — the agent will rationalize through softness. Use STOP / DO NOT.
-- Red Flags written from the user's perspective ("the user might think…") — write them from the agent's internal monologue ("'one more fix should do it' →").
-- Rationalization Table with abstract reasons ("this is bad because correctness matters") — use specific, concrete realities.
-
-## Cross-references
-
-- `sk-pipeline-patterns` `references/ai-pipelines-trimmed.md` — full conventions reference.
-- `sk-pipeline-patterns` Pattern 3 escalation — example HARD-GATE usage.
-- `sk-write-review-isolation` — example EXTREMELY-IMPORTANT + Red Flags + Rationalization Table.
+- `sk-pipeline-patterns/SKILL.md` — Example Pattern 3 escalation gate.
+- `sk-write-review-isolation/SKILL.md` — Example EXTREMELY-IMPORTANT usage.
+- `references/ai-pipelines-trimmed.md` — Full conventions reference.

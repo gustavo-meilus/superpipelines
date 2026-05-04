@@ -3,22 +3,36 @@ description: Add a new step to an existing pipeline — select pipeline, choose 
 argument-hint: [description of the new step]
 ---
 
-# /superpipelines:new-step
+# New Step — Command Reference
 
-Invoke the `adding-a-pipeline-step` skill.
+> Adds a new step to an existing pipeline. Handles insertion point selection, component design, and mandatory topology mutation validation.
 
-Brief: $ARGUMENTS
+<args>
+- **$ARGUMENTS**: Description of the new step to be added.
+</args>
 
-The skill will:
+<protocol>
+### 1. INITIALIZATION
+- Read registries from all scopes and present the pipeline list.
+- Parse `topology.json` and display the current step graph.
+- **Insertion Point**: Choose between `before`, `after`, `parallel-to`, or `append-end`.
 
-1. Read all registries (all scopes); present pipeline list. `AskUserQuestion` — which pipeline?
-2. Parse `topology.json` for the chosen pipeline; display the current step graph.
-3. Ask insertion point: `before {step} | after {step} | parallel-to {step} | append-end`.
-4. Run the 4D Method on the brief; determine component type: skill-only, skill + new agent, or reuse existing agent.
-5. Dispatch `pipeline-architect` in STEP-ADD mode to design the component(s). All new files are staged to `temp/{P}/edit-{ts}/`.
-6. **Topology mutation validation** — verify the staged `topology.json`: new step wired to predecessors and successors, no dangling edges.
-7. **Mandatory delta audit** — `pipeline-auditor` DELTA mode on new component + neighbors + entry skill. SEV-0/1 must clear before promotion.
-8. **Human gate** — brief `APPROVE | REVISE` summary including updated topology.
-9. **Atomic promotion** — move staged files to final paths; update `registry.json`.
+### 2. DESIGN & STAGING
+- Run the 4D Method on the brief to determine component type (skill, agent, or reuse).
+- Dispatch `pipeline-architect` in STEP-ADD mode.
+- **Staging**: Stage all new files to `temp/{P}/edit-{ts}/`.
 
-Do NOT skip the delta audit or the human gate. Do NOT write directly to final paths — always use staging.
+### 3. VERIFICATION
+- **Topology Validation**: Verify the staged `topology.json` for wiring consistency and absence of dangling edges.
+- **Delta Audit**: Execute `pipeline-auditor` in DELTA mode on the new component and its neighbors.
+- SEV-0 and SEV-1 findings must be cleared before promotion.
+
+### 4. DELIVERY
+- **Human Gate**: Present a summary of changes and the updated topology for approval.
+- **Atomic Promotion**: Move staged files to final paths and update the registry.
+</protocol>
+
+<invariants>
+- NEVER skip the delta audit or the human gate.
+- NEVER write directly to final paths; all mutations must be staged and validated first.
+</invariants>

@@ -3,77 +3,66 @@ name: using-superpipelines
 description: Use when starting any conversation in a project that has the superpipelines plugin installed — establishes how to design, run, and manage AI pipelines, when to invoke pipeline-specific skills, and which subagents handle which roles
 ---
 
+# Using Superpipelines — Core Orchestration Reference
+
+> Establishes the foundational rules for designing, executing, and managing multi-agent AI pipelines. Trigger when starting any conversation in a project where Superpipelines is installed.
+
 <SUBAGENT-STOP>
-If dispatched as a subagent to execute a specific task, skip this skill. Subagents do not orchestrate; they perform a single role and exit with a status (DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED).
+If dispatched as a subagent to execute a specific task, skip this skill. Subagents do not orchestrate; they perform a single role and exit with a terminal status (DONE, NEEDS_CONTEXT, BLOCKED).
 </SUBAGENT-STOP>
 
-<EXTREMELY-IMPORTANT>
-If a pipeline skill applies to the user's request, invoke it. Do not rationalize past it.
+<overview>
+Superpipelines is a framework for designing and running multi-agent workflows across three deployment scopes (Local, Project, User). It enforces rigorous architectural standards, including non-negotiable write/review isolation, model selection constraints, and audit-driven mutations to ensure stability in production AI environments.
+</overview>
 
-Pipelines fail silently when skills are skipped — the agent believes it followed the workflow, but the body never loaded. Trust the routing rules below.
+<EXTREMELY-IMPORTANT>
+If a pipeline skill applies to the user's request, invoke it. Do not rationalize past it. Pipelines fail silently when specialized skills are skipped—the orchestrator must trust the defined routing protocols.
 </EXTREMELY-IMPORTANT>
 
-## What superpipelines is
+## Skill Routing Protocols
 
-A plugin for designing and running multi-agent AI pipelines. Supports multiple named pipelines per workspace, three deployment scopes (local / project / user), and step-level create/update/delete operations with integrated audit.
+<routing_table>
+| User Request / Situation | Skill to Invoke | Rationale |
+| :--- | :--- | :--- |
+| `/new-pipeline` or "Design a workflow" | `creating-a-pipeline` | End-to-end scaffolding. |
+| `/run-pipeline` or "Execute [P]" | `running-a-pipeline` | Registry-driven launcher. |
+| `/new-step` or "Add capability" | `adding-a-pipeline-step` | Topology mutation. |
+| `/update-step` or "Modify agent" | `updating-a-pipeline-step` | Contract-aware update. |
+| `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
+| `/audit-pipeline` | `pipeline-auditor` | Security/topology review. |
+| Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
+| Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
+| Authoring Agents or Skills | `sk-claude-code-conventions` | Format enforcement. |
+</routing_table>
 
-## Instruction priority
+## Core Pipeline Invariants
 
-1. User's explicit instructions (CLAUDE.md / direct messages) — highest.
-2. Superpipelines skills — override default behavior where they conflict.
-3. Default system prompt — lowest.
-
-If the user says "skip the spec phase," follow the user. The user is in control.
-
-## How to access skills
-
-Use the `Skill` tool to invoke any skill by name. Follow the skill's content. Never `Read` a SKILL.md directly — body still loads but discovery and caching break.
-
-## Routing rules — when to invoke which skill
-
-| User says / situation | Skill to invoke |
-|-----------------------|-----------------|
-| "Design a pipeline" / "Build a workflow for…" / `/new-pipeline` | `creating-a-pipeline` |
-| "Run the pipeline" / "Which pipelines are available?" / `/run-pipeline` | `running-a-pipeline` |
-| "Add a step to [pipeline]" / `/new-step` | `adding-a-pipeline-step` |
-| "Update [step] in [pipeline]" / `/update-step` | `updating-a-pipeline-step` |
-| "Delete / remove [step] from [pipeline]" / `/delete-step` | `deleting-a-pipeline-step` |
-| "Audit [pipeline]" / "Review my pipeline definitions" / `/audit-pipeline` | dispatch `pipeline-auditor` subagent |
-| Ambiguous request before any pipeline work | run the 4D Method internally — load `sk-4d-method` |
-| About to start multi-step feature work | load `sk-spec-driven-development` |
-| About to author or modify an agent / skill | load `sk-claude-code-conventions` |
-| Choosing an execution pattern | load `sk-pipeline-patterns` |
-
-The detailed routing checklist is in `references/skill-routing.md`.
-
-## The Rule
-
-Invoke relevant or requested skills BEFORE any response or action. Even a 1% chance a pipeline skill applies = invoke and check. If wrong, drop it.
-
-## Pipeline invariants (memorize)
-
-- `SUB_AGENT_SPAWNING: FALSE` — Subagents don't spawn children. Orchestration lives at the parent session / top-level skill.
-- `WRITE_REVIEW_ISOLATION: TRUE` — The agent that writes never reviews. Stage 1 (spec compliance) gates Stage 2 (code quality).
-- `MODEL_SELECTION: SONNET_ONLY` — Every agent defaults to `model: sonnet`. Non-sonnet requires explicit user opt-in.
-- `PERMISSION_MODE: PER_AGENT` — `permissionMode` may be set per agent: `acceptEdits` for executors, `plan` for reviewers. `bypassPermissions` requires documented justification.
-- `MEMORY: LOCAL_ONLY` — `memory: local` is allowed for learned heuristics. `memory: project` is forbidden.
-- `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist per workspace, each in an isolated bundle.
-- Pipeline state lives in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
-- Temp dirs are deleted on `DONE`; preserved on `ESCALATED / FAILED / BLOCKED`.
-- Agents emit exactly one of `DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED` before exiting.
-
-## Common mistakes
-
-- Reading a SKILL.md with `Read` instead of invoking via `Skill` tool — body still loads, but discovery and caching break.
-- Dispatching Stage 2 review without Stage 1 passing — over-build is a Stage 1 failure, not Stage 2.
-- Letting an iterative loop run forever — hard cap at 3 iterations without measurable progress.
-- Storing pipeline state under `tmp/` instead of `<scope-root>/superpipelines/temp/{P}/{runId}/` — convention violated.
-- Deleting a step without gap analysis — creates a silently broken pipeline.
+<invariants>
+- **`SUB_AGENT_SPAWNING: FALSE`**: Subagents must not spawn children; orchestration is restricted to the top-level parent.
+- **`WRITE_REVIEW_ISOLATION: TRUE`**: The agent that writes code never reviews it. Stage 1 (Compliance) gates Stage 2 (Quality).
+- **`MODEL_SELECTION: SONNET_ONLY`**: All agents default to `model: sonnet` unless the user explicitly opts into another model.
+- **`STATE_PERSISTENCE`**: All state must reside in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
+- **`ATOMIC_MUTATION`**: Topology changes must be staged in `edit-{ts}/` before promotion.
+</invariants>
 
 ## Red Flags — STOP
+- "I already know what to do, skip the spec." → **STOP**. The spec is the contract for parallel worker synchronization.
+- "One more iteration should fix it." → **STOP**. Hard cap at 3 iterations without measurable progress; escalate per Pattern 3.
+- "The reviewer and executor can be the same." → **STOP**. Write/review isolation is a non-negotiable security boundary.
+- "Skip the worktree for a small change." → **STOP**. If the pattern requires isolation, the safety protocol is mandatory.
 
-- "I already know what the pipeline should do, skip the spec" → Run `creating-a-pipeline` anyway. The spec is the contract that lets parallel workers stay in sync.
-- "One more iteration should fix it" (after 2+ failures with new failures appearing in new locations) → STOP. Escalate per Pattern 3.
-- "The reviewer agent and the executor can be the same" → NO. `WRITE_REVIEW_ISOLATION: TRUE` is non-negotiable.
-- "I'll skip the worktree for a small change" → If Pattern 2/2b/3/5 selected, worktree is required. Run `sk-worktree-safety`.
-- "The audit is optional for a quick change" → Audit is mandatory on every pipeline mutation. It is the guard against silent gaps and flaws.
+## Rationalization Table
+
+<rationalization_table>
+| Excuse | Reality |
+| :--- | :--- |
+| "I'll read the skill file directly." | Using `Read` instead of `Skill` tool breaks discovery, caching, and body-loading logic. |
+| "The user said it's urgent, skip audit." | A 30-second audit prevents silent topology gaps that lead to catastrophic runtime failure. |
+| "The state file is too complex." | Standardized state is the only path to reliable resumption and multi-step recovery. |
+</rationalization_table>
+
+## Reference Files
+- `sk-pipeline-paths/SKILL.md` — Scope and path resolution.
+- `sk-pipeline-patterns/SKILL.md` — Topology selection.
+- `sk-write-review-isolation/SKILL.md` — Two-stage review protocol.
+- `sk-rationalization-resistance/SKILL.md` — Resistance mechanism standards.

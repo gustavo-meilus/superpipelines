@@ -3,24 +3,36 @@ description: Design and scaffold a new named multi-agent pipeline with git prefl
 argument-hint: [brief description of the pipeline]
 ---
 
-# /superpipelines:new-pipeline
+# New Pipeline — Command Reference
 
-Invoke the `creating-a-pipeline` skill to design and scaffold a new named pipeline.
+> Designs and scaffolds a new named multi-agent pipeline. Includes git preflight, scope selection, execution pattern selection, and mandatory pre-gate audits.
 
-Brief: $ARGUMENTS
+<args>
+- **$ARGUMENTS**: Brief description of the intended pipeline.
+</args>
 
-If the brief is empty, ask the user 1–2 targeted questions to elicit the goal, then proceed.
+<protocol>
+### 1. PREFLIGHT
+- **Git Check**: Verify workspace for `.git`. If absent, prompt user to initialize or proceed with restricted isolation.
+- **Scope Selection**: Select between `local`, `project`, or `user` scopes.
+- **Uniqueness**: Resolve a lowercase-hyphen name and verify it against the `registry.json` of the chosen scope.
 
-The skill will:
+### 2. DESIGN
+- **4D Analysis**: Run the 4D Method on the brief to select an execution pattern (1–5).
+- **Architect Dispatch**: Invoke `pipeline-architect` in PIPELINE mode to produce spec, plan, tasks, topology, agents, and internal skills.
 
-1. **Git preflight** — check workspace for `.git`. If absent: ask `Proceed without git (worktree-isolated patterns disabled) | Run git init | Cancel`. Block if cancelled.
-2. **Scope selection** — ask: `local | project | user`. Resolve all output paths via `sk-pipeline-paths`.
-3. **Name + uniqueness check** — ask for a pipeline name (lowercase-hyphen, ≤48 chars); verify no collision in `registry.json` of the chosen scope.
-4. **4D + pattern selection** — run the 4D Method on the brief; select execution pattern (1–5).
-5. **Architect dispatch** — `pipeline-architect` (PIPELINE mode) produces `spec.md`, `plan.md`, `tasks.md`, `topology.json`, step agents under `agents/superpipelines/{P}/`, and internal step skills under `skills/superpipelines/{P}/`.
-6. **Pre-gate audit** — `pipeline-auditor` in DELTA mode checks the generated bundle. SEV-0 and SEV-1 findings must be resolved before the human gate.
-7. **Human gate** — present spec + tasks to user; wait for `APPROVE | REVISE`. On REVISE: return to step 4.
-8. **Entry-skill generation** — write `skills/superpipelines/{P}/run-{P}/SKILL.md` with `disable-model-invocation: true` and `user-invocable: true`.
-9. **Registry write** — append the pipeline record to `<scope-root>/superpipelines/registry.json`.
+### 3. VERIFICATION
+- **Pre-gate Audit**: Execute `pipeline-auditor` in DELTA mode on the generated bundle.
+- SEV-0 and SEV-1 findings must be resolved before reaching the human gate.
 
-Do NOT skip git preflight, scope selection, pre-gate audit, or the human gate.
+### 4. DELIVERY
+- **Human Gate**: Present the specification and task list for approval or revision.
+- **Scaffold Generation**: Write the entry skill with appropriate model-invocation settings.
+- **Registry Update**: Append the new pipeline record to the canonical registry file.
+</protocol>
+
+<invariants>
+- NEVER skip git preflight, scope selection, or the pre-gate audit.
+- NEVER proceed to scaffold generation without explicit approval at the human gate.
+- Resolve all paths via `sk-pipeline-paths` to ensure scope awareness.
+</invariants>

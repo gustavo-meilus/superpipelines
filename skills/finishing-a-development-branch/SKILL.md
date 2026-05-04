@@ -3,197 +3,81 @@ name: finishing-a-development-branch
 description: Use when implementation is complete, tests pass, and integration decisions are pending — presents structured options for merge, PR, or cleanup of the development branch
 ---
 
-# Finishing a Development Branch
+# Finishing a Development Branch — Integration Protocol
 
-## Overview
+> Facilitates the structured conclusion of development work by verifying readiness and presenting integration options. Trigger when implementation is complete, tests pass, and integration decisions (merge, PR, or cleanup) are pending.
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+<overview>
+Finishing a Development Branch ensures that work is integrated or preserved according to the user's explicit choice. It enforces a mandatory test verification gate before any options are presented, preventing the promotion of broken or unverified code to the base branch.
+</overview>
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+<glossary>
+  <term name="Base Branch">The target for integration, typically `main` or `master`.</term>
+  <term name="Worktree">An isolated directory for development; must be cleaned after integration.</term>
+  <term name="PR Gate">Option 2, which involves pushing the branch and creating a Pull Request via `gh pr create`.</term>
+</glossary>
 
-**Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
+## The Completion Protocol
 
-## The Process
+<protocol>
+### 1. VERIFY TESTS (THE GATE)
+- Run the project's primary test suite (e.g., `npm test`, `pytest`).
+- <HARD-GATE>If tests fail, STOP. You cannot proceed to integration options until all tests are green.</HARD-GATE>
 
-### Step 1: Verify Tests
+### 2. DETERMINE BASE BRANCH
+- Identify the split point (e.g., `git merge-base HEAD main`).
+- Confirm the base branch with the user if ambiguity exists.
 
-**Before presenting options, verify tests pass:**
+### 3. PRESENT STRUCTURED OPTIONS
+- Present exactly these four options without modification:
+  1. **Merge back to [base] locally**
+  2. **Push and create a Pull Request**
+  3. **Keep the branch as-is (Handle later)**
+  4. **Discard this work**
 
-```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
-```
+### 4. EXECUTE CHOICE
+- **Option 1**: Checkout base, pull latest, merge, re-verify tests, and delete feature branch.
+- **Option 2**: Push to origin and create PR using the `gh` CLI.
+- **Option 4**: Request explicit typed confirmation ("discard") before destructive deletion.
 
-**If tests fail:**
-```
-Tests failing (<N> failures). Must fix before completing:
+### 5. CLEANUP
+- For Options 1, 2, and 4: Remove the associated git worktree to maintain repository hygiene.
+</protocol>
 
-[Show failures]
+<invariants>
+- NEVER proceed with integration if the verification gate fails.
+- NEVER cleanup the worktree for Option 3 (Keep as-is).
+- ALWAYS re-verify tests on the base branch after a local merge (Option 1).
+- ALWAYS obtain "discard" confirmation before executing Option 4.
+</invariants>
 
-Cannot proceed with merge/PR until tests pass.
-```
+## Completion Patterns
 
-Stop. Don't proceed to Step 2.
+<patterns>
+| Option | Merge | Push | Cleanup Branch | Cleanup Worktree |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Merge Locally** | ✓ | - | ✓ | ✓ |
+| **2. Create PR** | - | ✓ | - | ✓ |
+| **3. Keep As-Is** | - | - | - | - |
+| **4. Discard** | - | - | ✓ (force) | ✓ |
+</patterns>
 
-**If tests pass:** Continue to Step 2.
+## Red Flags — STOP
+- "I'll merge now and fix the tests later." → **STOP**. Integration of failing code is a SEV-0 failure.
+- "What should I do next?" → **STOP**. Present the four structured options defined in the protocol.
+- "Deleting worktree automatically." → **STOP**. Option 3 requires worktree preservation.
 
-### Step 2: Determine Base Branch
+## Rationalization Table
 
-```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
-```
+<rationalization_table>
+| Excuse | Reality |
+| :--- | :--- |
+| "PR handles testing anyway." | Local verification prevents broken builds and reduces CI overhead. |
+| "It's just a one-line change." | One-line changes are the leading cause of "it worked in my head" regressions. |
+| "Discarding is faster than cleanup." | Unconfirmed discards cause irreversible data loss. |
+</rationalization_table>
 
-Or ask: "This branch split from main - is that correct?"
-
-### Step 3: Present Options
-
-Present exactly these 4 options:
-
-```
-Implementation complete. What would you like to do?
-
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
-
-Which option?
-```
-
-**Don't add explanation** - keep options concise.
-
-### Step 4: Execute Choice
-
-#### Option 1: Merge Locally
-
-```bash
-# Switch to base branch
-git checkout <base-branch>
-
-# Pull latest
-git pull
-
-# Merge feature branch
-git merge <feature-branch>
-
-# Verify tests on merged result
-<test command>
-
-# If tests pass
-git branch -d <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 3: Keep As-Is
-
-Report: "Keeping branch <name>. Worktree preserved at <path>."
-
-**Don't cleanup worktree.**
-
-#### Option 4: Discard
-
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
-```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-### Step 5: Cleanup Worktree
-
-**For Options 1, 2, 4:**
-
-Check if in worktree:
-```bash
-git worktree list | grep $(git branch --show-current)
-```
-
-If yes:
-```bash
-git worktree remove <worktree-path>
-```
-
-**For Option 3:** Keep worktree.
-
-## Quick Reference
-
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
-| 4. Discard | - | - | - | ✓ (force) |
-
-## Common Mistakes
-
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 4 structured options
-
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
-
-## Red Flags
-
-**Never:**
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
-- Force-push without explicit request
-
-**Always:**
-- Verify tests before offering options
-- Present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
-
-## Integration
-
-**Called by:**
-- **running-a-pipeline** (after all tasks complete)
-
-**Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill
+## Reference Files
+- `sk-worktree-safety/SKILL.md` — Worktree management.
+- `verification-before-completion/SKILL.md` — Final evidence gate.
+- `running-a-pipeline/SKILL.md` — Integration point for pipeline completion.

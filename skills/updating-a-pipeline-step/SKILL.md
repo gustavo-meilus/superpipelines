@@ -3,109 +3,73 @@ name: updating-a-pipeline-step
 description: Use when the user wants to modify, change, or update an existing step within a named pipeline, or invokes /superpipelines:update-step. Reads current step, applies changes, re-validates edges with neighbors, audits the delta, and gates on human approval before writing to disk.
 ---
 
-# Updating a Pipeline Step
+# Updating a Pipeline Step — Modification Workflow
 
-Modifies an existing step in a named pipeline. Ensures the change does not break edge contracts with neighboring steps.
+> Orchestrates the modification of an existing step within a named pipeline. Trigger when the user requests to change logic, tools, or I/O contracts for a step or invokes `/superpipelines:update-step`.
 
-## When this fires
+<overview>
+The Updating a Pipeline Step workflow ensures that modifications to individual components do not break the larger orchestration contract. It focuses on impact analysis—identifying how I/O schema changes propagate to predecessors and successors—and enforces a rigorous audit-and-stage protocol before promoting changes to production paths.
+</overview>
 
-- `/superpipelines:update-step` invoked.
-- "Update [step] in [pipeline]" / "Change how [step] works" / "Modify [agent/skill] to do X instead of Y".
+<glossary>
+  <term name="Edge Re-validation">The process of verifying that neighbor steps still satisfy (or consume) modified input/output contracts.</term>
+  <term name="Internal Behavior Change">A modification affecting only a step's logic or tools, with no impact on the topology edges.</term>
+  <term name="Contract Propagation">The automatic update of neighboring steps to accommodate a changed I/O schema.</term>
+</glossary>
 
-When NOT to use:
+## Workflow Phases
 
-- Adding a new step → `adding-a-pipeline-step`.
-- Removing a step → `deleting-a-pipeline-step`.
+<protocol>
+### PHASE 0: PIPELINE & STEP SELECTION
+- Resolve registries and identify the target pipeline and step via `AskUserQuestion`.
+- Display step metadata: agent/skill paths, current frontmatter, and declared I/O schemas.
 
-## Workflow
+### PHASE 1: IMPACT ANALYSIS (4D)
+- Apply the 4D Method to deconstruct the brief.
+- Classify the change category: Input Change, Output Change, Internal Change, or Full Contract Change.
+- **Goal**: Identify exactly which predecessors or successors are affected by the mutation.
 
-### Phase 0 — Pipeline and step selection
+### PHASE 2: EDGE RE-VALIDATION
+- If I/O schemas change, verify that all neighbor steps remain compatible.
+- Present the impact analysis to the user (e.g., "Updating A's output affects B and C").
+- <invariant>Obtain explicit user confirmation before propagating contract changes to neighboring steps.</invariant>
 
-Read registries (all scopes) via `sk-pipeline-paths`. Ask which pipeline.
+### PHASE 3: ARCHITECTED STAGING
+- Dispatch `pipeline-architect` in `STEP-UPDATE` mode to generate modified artifacts.
+- <invariant>All changes MUST be written to `{ROOT}/superpipelines/temp/{P}/edit-{ts}/` for staging. NEVER overwrite production files during design.</invariant>
 
-Read `topology.json` for the chosen pipeline. Display current steps. Ask which step to update.
+### PHASE 4: DELTA AUDIT
+- Dispatch `pipeline-auditor` in `DELTA` mode on the staged artifacts and neighbor components.
+- <HARD-GATE>SEV-0 or SEV-1 findings block promotion. Dispatch the Architect to remediate and re-audit until the delta is clear.</HARD-GATE>
 
-Show a summary of the chosen step:
-- Agent file path (if any) and current frontmatter (model, effort, tools, permissionMode).
-- Skill file path and description.
-- Declared `inputs` and `outputs` from `topology.json`.
+### PHASE 5: HUMAN APPROVAL & PROMOTION
+- Present a diff summary, updated topology edges, and audit results for human review (`AskUserQuestion`).
+- Upon `APPROVE`, atomically move staged files to their final absolute paths and update `registry.json`.
+</protocol>
 
-### Phase 1 — Brief intake (4D)
-
-Apply the 4D Method on the change brief. Gate if ≥3 critical slots missing.
-
-Explicitly identify the change category:
-
-| Category | Impact |
-|----------|--------|
-| Input schema change | Affects predecessors — they must still satisfy new inputs |
-| Output schema change | Affects successors — their inputs must still be satisfied |
-| Internal behavior only (new logic, new tools, effort change) | No edge impact |
-| Contract change (both I/O schema) | Affects both predecessors and successors |
-
-State the category before Phase 2.
-
-### Phase 2 — Edge re-validation planning
-
-**If input schema changes:** identify all steps whose outputs feed into this step. Verify their declared outputs still satisfy the new input requirements.
-
-**If output schema changes:** identify all steps that consume this step's outputs. Verify their declared inputs will still be satisfied.
-
-Present the impact analysis to the user before dispatching:
-
-> "Updating [step]'s output schema affects [step-X] and [step-Y]. I will propagate the contract change to those steps. Confirm? [YES / REVISE / CANCEL]"
-
-On `REVISE`: collect the user's alternative wiring. On `CANCEL`: emit `BLOCKED`.
-
-### Phase 3 — Architect dispatch
-
-Dispatch `pipeline-architect` in STEP-UPDATE mode with:
-- The change brief and Phase 2 impact analysis.
-- Current file paths (paths only — architect reads them).
-- Scope root and pipeline name.
-- List of neighbor steps requiring edge updates (from Phase 2).
-
-The architect stages all changes (including propagated edge updates) to `{ROOT}/superpipelines/temp/{P}/edit-{ts}/`.
-
-### Phase 4 — Delta audit
-
-Dispatch `pipeline-auditor` in DELTA mode on:
-- All staged changed files.
-- Immediate neighbors of the updated step.
-- The staged updated entry skill `run-{P}`.
-
-<HARD-GATE>
-SEV-0 or SEV-1 findings block promotion. Dispatch architect in UPDATE mode to fix, then re-audit. Do NOT promote until audit passes with no SEV-0/1.
-</HARD-GATE>
-
-### Phase 5 — Human gate
-
-Present:
-- Diff summary of all changed files (from Architect's Brief).
-- Updated topology edges (if any changed).
-- Audit result.
-
-Ask via `AskUserQuestion`: `APPROVE | REVISE`.
-
-On `REVISE`: collect feedback; return to Phase 1.
-
-### Phase 6 — Atomic promotion
-
-Promote staging to final paths. Update `registry.json`. On failure: preserve staging dir and surface its absolute path.
-
-```json
-{ "status": "DONE", "outputs": ["<all promoted paths>"] }
-```
+<invariants>
+- NEVER assume an I/O change is "minor"; always run the Phase 2 impact analysis.
+- ALWAYS use a staging directory (`edit-{ts}/`) for all modifications to allow for safe rollback.
+- Propagate contract changes to neighbors ONLY after explicit user authorization.
+</invariants>
 
 ## Red Flags — STOP
-
-- "The output schema change is minor — no need to check successors" → Contract changes propagate. Always run Phase 2 impact analysis before dispatching.
-- "I'll skip the human gate; it's a small change" → Small changes that break edge contracts cause full pipeline failures. Gate cost < recovery cost.
-- "The audit found only SEV-2 issues; good enough" → SEV-0/1 blocks promotion. SEV-2/3 are tracked and reported but do not block.
+- "The output schema change is minor — no need to check successors." → **STOP**. Contract changes propagate; skipping re-validation causes runtime cascading failures.
+- "I'll skip the human gate; it's just a small logic tweak." → **STOP**. Small logic changes can have non-obvious impacts on state management or neighbor agents.
+- "The audit found only SEV-2 issues; good enough." → **STOP**. SEV-0/1 findings are hard blockers for promotion.
 
 ## Rationalization Table
 
+<rationalization_table>
 | Excuse | Reality |
-|--------|---------|
-| "The neighbors clearly accept the new output format" | Topology JSON declares contracts explicitly. Verify from the file, not from intuition. |
-| "The user is in a hurry; skip Phase 2" | A 30-second impact check prevents a full pipeline re-design. |
+| :--- | :--- |
+| "The neighbors clearly accept the new format." | Contracts are explicit in `topology.json`. Verify against the schema, not from intuition. |
+| "Skip Phase 2 to save time." | A 30-second impact check prevents a multi-hour pipeline redesign. |
+| "I'll update the neighbors in a separate task." | Neighbor updates must be atomic with the step update to prevent an inconsistent topology state. |
+</rationalization_table>
+
+## Reference Files
+- `sk-pipeline-paths/SKILL.md` — Path resolution.
+- `sk-write-review-isolation/SKILL.md` — Review loop rules.
+- `adding-a-pipeline-step/SKILL.md` — Insertion workflow.
+- `deleting-a-pipeline-step/SKILL.md` — Removal workflow.

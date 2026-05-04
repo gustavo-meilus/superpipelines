@@ -3,121 +3,73 @@ name: running-a-pipeline
 description: Use when the user asks to run a pipeline, execute a workflow, list available pipelines, or invokes /superpipelines:run-pipeline. Reads all scope registries, lets the user pick a pipeline, then invokes its entry skill.
 ---
 
-# Running a Pipeline
+# Running a Pipeline — Execution Workflow
 
-Registry-driven launcher for named superpipelines. Reads all scope registries, presents available pipelines, and invokes the chosen pipeline's entry skill.
+> Registry-driven launcher for named Superpipelines. Trigger when the user asks to execute a workflow, list available pipelines, or invokes `/superpipelines:run-pipeline`.
 
-## When this fires
+<overview>
+The Running a Pipeline workflow acts as the central orchestrator for pipeline execution. It manages the full lifecycle from discovery across multiple scopes (Local, Project, User) to state-aware resumption and terminal completion. It ensures that execution is always grounded in the current `pipeline-state.json` and that escalation states are preserved for human review.
+</overview>
 
-- `/superpipelines:run-pipeline` invoked.
-- "Run the pipeline" / "Execute [pipeline name]" / "Which pipelines are available?"
-- User asks to resume a previously started pipeline run.
+<glossary>
+  <term name="Pipeline Registry">A central `registry.json` tracking all pipelines within a scope.</term>
+  <term name="Resume Protocol">The logic used to recover a crashed or interrupted run using its persisted state.</term>
+  <term name="Escalated State">A non-terminal status indicating that a pipeline reached a boundary requiring human intervention.</term>
+</glossary>
 
-When NOT to use:
+## Workflow Phases
 
-- No pipeline exists yet → `creating-a-pipeline`.
-- User wants to add / update / delete a step → step-management skills.
-- `pipeline-state.json` shows `status: escalated` or `status: failed` → surface to human; do NOT auto-resume.
+<protocol>
+### PHASE 0: DISCOVERY & SELECTION
+- Resolve all scope roots via `sk-pipeline-paths`.
+- Read and merge `registry.json` files from `local`, `project`, and `user` scopes.
+- Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
 
-## Workflow
+### PHASE 1: RESUME CHECK
+- Check for existing run directories in `{ROOT}/superpipelines/temp/{P}/`.
+- **Logic**: If runs exist, prompt the user to start new or resume.
+- <HARD-GATE>NEVER auto-resume an `escalated` or `failed` run. Surface the state path and require explicit user review first.</HARD-GATE>
 
-### Phase 0 — Discover available pipelines
+### PHASE 2: STATE INITIALIZATION
+- Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
+- Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
+- **Invariants**: Must include `pipeline_id`, `started_at`, and the selected execution `pattern`.
 
-Resolve scope roots via `sk-pipeline-paths`. Read `registry.json` from each:
+### PHASE 3: ENTRY SKILL DISPATCH
+- Invoke the pipeline's entry skill (`run-{P}`).
+- **Context Handoff**: Pass absolute paths to the scope root, state file, and topology.
+- **Responsibility**: The entry skill owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup.
 
-```bash
-{WORKSPACE}/.claude/superpipelines/registry.json   # project and local scope
-$HOME/.claude/superpipelines/registry.json          # user scope
-```
+### PHASE 4: COMPLETION & CLEANUP
+- Read final state from `pipeline-state.json`.
+- **Status: `completed`**: Delete the temporary run directory and summarize outputs.
+- **Status: `escalated/failed`**: **PRESERVE** the temporary directory and state path for debugging and recovery.
+</protocol>
 
-Merge lists, deduplicating by `(scope, name)`. If a name appears in multiple scopes, show all entries with scope labels.
-
-If no pipelines found in any scope: tell the user "No pipelines found. Use /superpipelines:new-pipeline to create one." Emit `BLOCKED`.
-
-### Phase 1 — Pipeline selection
-
-Present the list via `AskUserQuestion`:
-
-```
-Available pipelines:
-  1. release-notes-builder  (project) — pattern 5
-  2. test-fixer             (local)   — pattern 3
-  3. deploy-validator       (user)    — pattern 2
-
-Which pipeline would you like to run? (enter number or name)
-```
-
-Record the selected pipeline's `{ROOT}`, `{P}`, and `pattern`.
-
-### Phase 2 — Resume check
-
-If `--resume` was passed OR if temp dirs exist under `{ROOT}/superpipelines/temp/{P}/`:
-
-1. List available `runId`s from the temp directory.
-2. Ask: `Start a new run | Resume run {runId}`.
-3. For resume: read `pipeline-state.json`. Apply recovery rules from `sk-pipeline-state`:
-   - `status: running` and `started_at < 1h ago` → may be live; warn user before resuming.
-   - `status: running` and `started_at > 1h ago` → likely crashed; resume from `current_phase + 1`.
-   - `status: completed` → tell user "already done"; show outputs.
-   - `status: escalated` or `failed` → surface to human. Do NOT auto-resume.
-
-<HARD-GATE>
-Never auto-resume an escalated or failed run. The escalation state exists for a reason. Surface the preserved state path and ask the user to review it first.
-</HARD-GATE>
-
-### Phase 3 — State initialization (new run only)
-
-Generate `runId`: format `{P}-{YYYYMMDD-HHMMSS}`.
-
-Initialize `{ROOT}/superpipelines/temp/{P}/{runId}/pipeline-state.json`:
-
-```json
-{
-  "pipeline_id": "{runId}",
-  "pipeline_name": "{P}",
-  "scope_root": "{ROOT}",
-  "started_at": "<ISO 8601>",
-  "pattern": "<N>",
-  "status": "running",
-  "current_phase": 0,
-  "phases": []
-}
-```
-
-Write atomically: write to `pipeline-state.json.tmp`, then rename to `pipeline-state.json`.
-
-### Phase 4 — Entry skill invocation
-
-Invoke the pipeline's entry skill `run-{P}`.
-
-Pass as context:
-- `scope_root`: absolute path to `{ROOT}`.
-- `run_id`: the `runId` from Phase 3.
-- `pipeline_name`: `{P}`.
-- `state_path`: absolute path to `pipeline-state.json`.
-- `topology_path`: absolute path to `topology.json`.
-
-The entry skill owns the full per-step dispatch, two-stage review (Stage 1 spec compliance gates Stage 2 quality), worktree management, escalation handling, and final status write.
-
-### Phase 5 — Completion handling
-
-After entry skill exits, read `pipeline-state.json`.
-
-| Final status | Action |
-|--------------|--------|
-| `completed` | Delete `{ROOT}/superpipelines/temp/{P}/{runId}/`. Print success summary and outputs. |
-| `escalated` | Preserve temp dir. Print: `State preserved at {state_path}`. Surface escalation reason. |
-| `failed` | Preserve temp dir. Print path and error. |
-| `blocked` | Preserve temp dir. Print path and what was missing. |
-
-## Common mistakes
-
-- Reading temp dir state before entry skill exits → incomplete state.
-- Deleting temp dir before checking status → destroys recovery data on escalated runs.
-- Passing file content (not paths) to the entry skill → bloats skill context; path convention violated.
+<invariants>
+- ALWAYS read from the registry before execution to ensure pipeline validity.
+- ALWAYS preserve the temp directory on any status other than `completed`.
+- NEVER pass full file content to the entry skill; use absolute paths.
+- All state updates must utilize the atomic write pattern.
+</invariants>
 
 ## Red Flags — STOP
+- "The previous run was escalated, but I'll restart it anyway." → **STOP**. Read the state first to avoid repeating the failure.
+- "There is no registry, I'll search for artifacts manually." → **STOP**. Direct the user to create a managed pipeline.
+- "I'll delete the temp directory to keep the workspace clean." → **STOP**. Deletion on non-completion destroys all recovery findings.
 
-- "The previous run was escalated, but let me restart it" → Read the state file first. Understand WHY it escalated. Do not restart blindly.
-- "There's no registry, I'll look for tasks.md instead" → A missing registry means no managed pipelines. Direct the user to create one.
-- "I'll delete the temp after escalation to clean up" → Temp preservation is the only recovery mechanism. Never delete on non-completed status.
+## Rationalization Table
+
+<rationalization_table>
+| Excuse | Reality |
+| :--- | :--- |
+| "I'll resume the escalated run." | Escalation signals a boundary the model cannot cross. Resuming without review wastes tokens. |
+| "Registry-only lookup is slow." | Searching without a registry is non-deterministic and risks path leakage. |
+| "The entry skill is just a wrapper." | The entry skill is the source of truth for step ordering and review gating. |
+</rationalization_table>
+
+## Reference Files
+- `sk-pipeline-paths/SKILL.md` — Scope root resolution.
+- `sk-pipeline-state/SKILL.md` — State schema and recovery rules.
+- `sk-write-review-isolation/SKILL.md` — Two-stage review protocol.
+- `creating-a-pipeline/SKILL.md` — Pipeline scaffolding.

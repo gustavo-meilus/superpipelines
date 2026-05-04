@@ -5,35 +5,39 @@ disable-model-invocation: true
 user-invocable: false
 ---
 
-# Pipeline State — Schema and Recovery
+# Pipeline State — Persistence & Recovery
 
-Every running pipeline persists state to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`, where `{P}` is the pipeline name and `{runId}` is the UUID for the current run. The scope root is resolved by `sk-pipeline-paths`.
+> Defines the schema, storage layout, and recovery protocols for pipeline execution state. Trigger when reading or writing `pipeline-state.json`, resuming an interrupted run, or diagnosing a crashed orchestrator.
 
----
+<overview>
+Superpipelines utilize a structured JSON state to manage the lifecycle of multi-agent workflows. This state is isolated from model behavior, ensuring that runs are inspectable, resumable, and resilient to environment restarts. All state transitions must follow an atomic write pattern to prevent corruption.
+</overview>
 
-## Where state lives
+<glossary>
+  <term name="Pipeline State">A structured JSON file (`pipeline-state.json`) representing the source of truth for a specific run.</term>
+  <term name="Atomic Write">The process of writing to a temporary file and renaming it to ensure file integrity.</term>
+  <term name="Run ID">A UUID v4 uniquely identifying a single execution instance of a pipeline.</term>
+</glossary>
 
-- **Path:** `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`
-- **Scope root:** Resolved by `sk-pipeline-paths` — depends on deployment scope (`project` → `<workspace>/.claude/`, `local` → `<workspace>/.claude/`, `user` → `~/.claude/`).
-- **Why not under `${CLAUDE_PLUGIN_ROOT}`:** plugin directories are wiped on update.
-- **Why not the memory tool:** `STATE_MANAGEMENT: STRUCTURED_JSON` is mandated. State must be inspectable, atomic, and not coupled to model behavior.
+## State Location
 
-Each pipeline run gets its own `{runId}/` directory. Multiple named pipelines are isolated by `{P}/`.
+<invariant>
+State must be persisted to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Never store state within `${CLAUDE_PLUGIN_ROOT}`, as it is not persistent across updates.
+</invariant>
 
----
+## Schema Definition
 
-## Schema
-
+<schema>
 ```json
 {
   "pipeline_id": "<uuid>",
   "pipeline_name": "<P>",
-  "scope_root": "<resolved scope root>",
+  "scope_root": "<absolute path>",
   "run_id": "<uuid>",
   "started_at": "<iso8601>",
   "pattern": "1 | 2 | 2b | 3 | 4 | 5",
   "status": "running | completed | escalated | failed",
-  "current_phase": 0,
+  "current_phase": <index>,
   "phases": [
     {
       "index": 0,
@@ -47,130 +51,44 @@ Each pipeline run gets its own `{runId}/` directory. Multiple named pipelines ar
   "metadata": {}
 }
 ```
+</schema>
 
-### Field rules
+## Atomic Write Protocol
 
-- `pipeline_id` — UUID v4. Used to disambiguate concurrent pipelines and as cache key for state recovery.
-- `pipeline_name` — Human-readable pipeline name matching the `{P}` directory.
-- `scope_root` — Resolved scope root (absolute path). Stored to enable recovery without re-resolving scope.
-- `run_id` — UUID v4 for this specific run. Used as the `{runId}` directory name.
-- `started_at` — ISO 8601 timestamp at pipeline start.
-- `pattern` — one of `1, 2, 2b, 3, 4, 5` (4D wrapper is per-invocation, not a top-level pattern).
-- `status` — one of `running, completed, escalated, failed`.
-- `current_phase` — index into `phases` array.
-- `phases[].outputs` — list of file paths produced by the phase. Pass paths, not content.
-- `phases[].error` — null when status `done`; populated when `failed`.
-- `metadata` — free-form orchestrator notes (e.g., worktree paths, task IDs).
+<protocol>
+To prevent JSON corruption during concurrent operations or crashes, always use the following atomic write pattern:
+1. Write the new state content to `pipeline-state.json.tmp`.
+2. Move (rename) the temporary file to `pipeline-state.json`.
 
----
-
-## Atomic write pattern
-
-Concurrent reads of a half-written JSON file produce parse errors that look like crashes. Always:
-
-1. Write to `<temp-dir>/pipeline-state.json.tmp`.
-2. `mv <temp-dir>/pipeline-state.json.tmp <temp-dir>/pipeline-state.json` (atomic on POSIX).
-
-Bash example:
-
+**Bash Implementation:**
 ```bash
 TEMP_DIR="${SCOPE_ROOT}/superpipelines/temp/${PIPELINE_NAME}/${RUN_ID}"
 mkdir -p "$TEMP_DIR"
-TMP="${TEMP_DIR}/pipeline-state.json.tmp"
-echo "$NEW_STATE_JSON" > "$TMP"
-mv "$TMP" "${TEMP_DIR}/pipeline-state.json"
+echo "$NEW_STATE_JSON" > "${TEMP_DIR}/pipeline-state.json.tmp"
+mv "${TEMP_DIR}/pipeline-state.json.tmp" "${TEMP_DIR}/pipeline-state.json"
 ```
+</protocol>
 
----
+## Recovery & Resumption Rules
 
-## Recovery rules
+<recovery_rules>
+| State Found | Required Action |
+| :--- | :--- |
+| **`status: running`** (<1h old) | Active run detected; refuse to start a new instance. |
+| **`status: running`** (>1h old) | Treat as crashed. Prompt user to resume, restart, or abort. |
+| **`status: completed`** | Terminal state reached. Skip or archive. |
+| **`status: escalated/failed`** | Stop execution. Surface to human for manual intervention. |
+| **Parse Error** | Corruption detected. Escalate to human; do NOT auto-resume. |
+</recovery_rules>
 
-On orchestrator startup, check for existing state in `<scope-root>/superpipelines/temp/{P}/`:
+<invariants>
+- **No Model Coupling**: Never use the model's native memory tool for pipeline state management; use structured JSON.
+- **Atomic Renaming**: Direct writes to `pipeline-state.json` are forbidden.
+- **Explicit Resumption**: NEVER auto-resume from an `escalated` or `failed` state without explicit user confirmation.
+</invariants>
 
-| Found state | Action |
-|-------------|--------|
-| `status: "running"` AND `started_at < 1h ago` | Live pipeline. Refuse to start a new one. |
-| `status: "running"` AND `started_at > 1h ago` | Treat as crashed. Log warning. Prompt user: resume / restart / abort. |
-| `status: "completed"` | Skip pipeline; log "already done." |
-| `status: "escalated"` | Surface to human. Do NOT auto-resume. |
-| `status: "failed"` | Surface to human. Do NOT auto-resume. |
-| Parse error (corrupt) | Do NOT auto-resume. Escalate to human. |
-| No temp dir / file missing | Fresh start. Initialize new state. |
+## Reference Files
 
-### Resume
-
-Start from `current_phase + 1`. Skip completed phases. Preserve `pipeline_id`, `started_at`, and prior `phases[]` entries.
-
-### Restart
-
-Delete the entire run directory: `rm -rf <scope-root>/superpipelines/temp/{P}/{runId}/`. Re-initialize.
-
----
-
-## Worked example
-
-Initial state (Pattern 5 SDD pipeline):
-
-```json
-{
-  "pipeline_id": "550e8400-e29b-41d4-a716-446655440000",
-  "pipeline_name": "csv-ingestion",
-  "scope_root": "/home/user/project/.claude",
-  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "started_at": "2026-05-02T14:22:00Z",
-  "pattern": "5",
-  "status": "running",
-  "current_phase": 2,
-  "phases": [
-    { "index": 0, "name": "specify", "status": "done", "agent": "pipeline-architect", "outputs": ["spec.md"], "error": null },
-    { "index": 1, "name": "plan", "status": "done", "agent": "pipeline-architect", "outputs": ["plan.md"], "error": null },
-    { "index": 2, "name": "tasks", "status": "running", "agent": "pipeline-architect", "outputs": [], "error": null }
-  ],
-  "metadata": {
-    "worktree_root": ".worktrees/feat-csv-ingestion",
-    "task_count_target": 7
-  }
-}
-```
-
-After tasks generation:
-
-```json
-{
-  "pipeline_id": "550e8400-e29b-41d4-a716-446655440000",
-  "pipeline_name": "csv-ingestion",
-  "scope_root": "/home/user/project/.claude",
-  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "started_at": "2026-05-02T14:22:00Z",
-  "pattern": "5",
-  "status": "running",
-  "current_phase": 4,
-  "phases": [
-    { "index": 0, "name": "specify", "status": "done", "agent": "pipeline-architect", "outputs": ["spec.md"], "error": null },
-    { "index": 1, "name": "plan", "status": "done", "agent": "pipeline-architect", "outputs": ["plan.md"], "error": null },
-    { "index": 2, "name": "tasks", "status": "done", "agent": "pipeline-architect", "outputs": ["tasks.md"], "error": null },
-    { "index": 3, "name": "human-gate", "status": "done", "agent": "user", "outputs": [], "error": null },
-    { "index": 4, "name": "implement", "status": "running", "agent": "pipeline-task-executor", "outputs": [], "error": null }
-  ],
-  "metadata": {
-    "worktree_root": ".worktrees/feat-csv-ingestion",
-    "task_count_target": 7,
-    "task_progress": { "T-1": "done", "T-2": "running", "T-3": "pending" }
-  }
-}
-```
-
----
-
-## Common mistakes
-
-- Storing state under `${CLAUDE_PLUGIN_ROOT}` → wiped on update.
-- Writing JSON directly without the `.tmp` rename → partial writes corrupt state.
-- Auto-resuming an `escalated` state without human approval → repeats the failure.
-- Deleting the run directory without checking status → silent loss of in-progress work.
-
-## Cross-references
-
-- `sk-pipeline-patterns` — pattern numbers used in `pattern` field.
-- `sk-pipeline-paths` — resolves scope root and temp directory paths.
-- `running-a-pipeline` — primary writer of state.
+- `sk-pipeline-paths/SKILL.md` — Scope root resolution.
+- `sk-pipeline-patterns/SKILL.md` — Execution pattern definitions.
+- `running-a-pipeline/SKILL.md` — Primary orchestrator workflow.

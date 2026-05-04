@@ -3,114 +3,76 @@ name: adding-a-pipeline-step
 description: Use when the user wants to add a new step, capability, or agent to an existing named pipeline, or invokes /superpipelines:new-step. Selects insertion point, designs the new component, mutates topology.json, audits the delta, and gates on human approval before writing to disk.
 ---
 
-# Adding a Pipeline Step
+# Adding a Pipeline Step — Mutation Workflow
 
-Adds a new step to an existing named pipeline. Ensures the insertion is seamless: predecessor outputs wire to the new step's inputs, and the new step's outputs wire to successors.
+> Orchestrates the insertion of a new step, capability, or agent into an existing named pipeline. Trigger when the user requests to expand a workflow or invokes `/superpipelines:new-step`.
 
-## When this fires
+<overview>
+The Adding a Pipeline Step workflow ensures that any mutation to an existing topology is seamless, audited, and atomic. It manages the full lifecycle from insertion point selection and architected design to rigorous topology validation and staging-to-production promotion, preventing broken edges or invalid dependency graphs.
+</overview>
 
-- `/superpipelines:new-step` invoked.
-- "Add a step to [pipeline]" / "Insert [capability] into [pipeline]" / "I need [X] to happen between [A] and [B]".
+<glossary>
+  <term name="Insertion Point">The specific location in the topology (Before, After, Parallel, or Append) where the new step is added.</term>
+  <term name="Topology Mutation">The process of updating `topology.json` and the entry skill to reflect new dependency edges.</term>
+  <term name="Atomic Promotion">Moving all verified artifacts from a temporary staging directory to final production paths in a single operation.</term>
+</glossary>
 
-When NOT to use:
+## Workflow Phases
 
-- No pipeline exists yet → `creating-a-pipeline`.
-- Updating an existing step → `updating-a-pipeline-step`.
-- Deleting a step → `deleting-a-pipeline-step`.
+<protocol>
+### PHASE 0: PIPELINE SELECTION & INSPECTION
+- Resolve scope registries and select the target pipeline via `AskUserQuestion`.
+- Read and display the current `topology.json` as a numbered list of steps and dependency edges.
 
-## Workflow
+### PHASE 1: INSERTION DESIGN
+- Identify the insertion point (Before/After/Parallel/Append) and affected neighbors.
+- Apply the 4D Method to define the new step's intent, inputs, and outputs.
+- Determine the component type: Skill-only, Skill + Agent, or Reuse Existing.
 
-### Phase 0 — Pipeline selection
+### PHASE 2: ARCHITECTED STAGING
+- Dispatch `pipeline-architect` in `STEP-ADD` mode to generate new artifacts.
+- <invariant>All new artifacts MUST be written to `{ROOT}/superpipelines/temp/{P}/edit-{ts}/` for staging. NEVER write directly to production paths during design.</invariant>
 
-Read registries from all scopes via `sk-pipeline-paths`. Present the list. Ask via `AskUserQuestion` which pipeline to update. Resolve `{ROOT}` and `{P}`.
+### PHASE 3: TOPOLOGY VALIDATION
+- Verify the staged `topology.json` for:
+  - Unique Step ID.
+  - Valid `depends_on` references.
+  - Schema compatibility between predecessor outputs and new step inputs.
+- **Failures**: Return to the Architect with specific error logs.
 
-### Phase 1 — Topology inspection
+### PHASE 4: DELTA AUDIT
+- Dispatch `pipeline-auditor` in `DELTA` mode on all staged files (components, topology, and entry skill).
+- <HARD-GATE>If the audit returns SEV-0 or SEV-1 findings, remediate and re-audit. Do NOT proceed to promotion until the delta is clear.</HARD-GATE>
 
-Read `{ROOT}/superpipelines/pipelines/{P}/topology.json`. Display the current step graph as a numbered list showing `id → name → depends_on → outputs`.
+### PHASE 5: PROMOTION & REGISTRATION
+- Present the updated topology and audit results for human approval (`AskUserQuestion`).
+- Upon `APPROVE`, move staged files to their final absolute paths in agents, skills, and pipeline directories.
+- Update the `registry.json` lists to include new components.
+</protocol>
 
-### Phase 2 — Insertion point
-
-Ask via `AskUserQuestion`:
-
-> Where should the new step be inserted?
-> a) Before [step]
-> b) After [step]
-> c) In parallel with [step] (same parallel group)
-> d) Append at the end
-
-Record the insertion point and the IDs of affected predecessor and successor steps.
-
-### Phase 3 — Brief intake (4D)
-
-Apply the 4D Method on the brief. Gate if ≥3 critical slots missing.
-
-Determine component type:
-- **Skill-only**: lightweight routing, transformation, or orchestration logic — no dedicated agent needed.
-- **Skill + new agent**: the step requires a dedicated subagent.
-- **Reuse existing agent**: an agent already in this pipeline (or another registered pipeline) handles this role.
-
-State the choice and rationale before Phase 4.
-
-### Phase 4 — Architect dispatch
-
-Dispatch `pipeline-architect` in STEP-ADD mode with:
-- The brief, insertion point, and component type decision.
-- Predecessor output schema(s) and successor input schema(s) (from `topology.json`).
-- Scope root and pipeline name.
-
-The architect stages all new files to `{ROOT}/superpipelines/temp/{P}/edit-{ts}/` — does NOT write to final paths.
-
-### Phase 5 — Topology mutation validation
-
-Verify the staged `topology.json` patch:
-- New step `id` is unique in the graph.
-- New step `depends_on` references valid existing step ids.
-- Predecessor step outputs are compatible with new step's declared inputs.
-- Successor steps updated to include the new step in their `depends_on` where appropriate.
-
-If validation fails: return to architect with specific gaps. Do NOT proceed to audit.
-
-### Phase 6 — Delta audit
-
-Dispatch `pipeline-auditor` in DELTA mode on:
-- All new component files in the staging area.
-- The staged updated `topology.json`.
-- The staged updated entry skill `run-{P}`.
-- Immediate neighbor agents and skills (from topology edges).
-
-<HARD-GATE>
-If audit returns SEV-0 or SEV-1: dispatch architect in UPDATE mode to fix. Re-audit. Do NOT promote staged files until audit passes with no SEV-0/1.
-</HARD-GATE>
-
-### Phase 7 — Human gate
-
-Present to the user:
-- What the new step does (from Architect's Brief).
-- Updated Mermaid topology snippet showing the insertion.
-- Audit result.
-
-Ask via `AskUserQuestion`: `APPROVE | REVISE`.
-
-On `REVISE`: collect feedback; return to Phase 3.
-
-### Phase 8 — Atomic promotion
-
-Move all files from staging to final paths:
-- New agent file → `{ROOT}/agents/superpipelines/{P}/`
-- New skill dir → `{ROOT}/skills/superpipelines/{P}/`
-- Updated `topology.json` → `{ROOT}/superpipelines/pipelines/{P}/`
-- Updated entry skill → `{ROOT}/skills/superpipelines/{P}/run-{P}/`
-
-Update `{ROOT}/superpipelines/registry.json` agent/skill lists.
-
-On any promotion failure: leave the staging dir intact; surface the absolute path of the staging dir.
-
-```json
-{ "status": "DONE", "outputs": ["<all promoted paths>"] }
-```
+<invariants>
+- NEVER skip the delta audit; topology mutations are the primary source of runtime orchestration failures.
+- ALWAYS use a staging directory (`edit-{ts}/`) for artifact generation to prevent partial, unverified updates.
+- Promote changes ONLY after explicit human approval of the updated `tasks.md` and topology snippet.
+</invariants>
 
 ## Red Flags — STOP
+- "The audit found minor issues, let's promote anyway." → **STOP**. SEV-0/1 findings are hard blockers for promotion.
+- "I'll write directly to production paths to save time." → **STOP**. Direct writes bypass the mutation safety protocol.
+- "The insertion point looks obvious, skip validation." → **STOP**. Topology validation catches silent edge mismatches.
 
-- "The audit found minor issues, let's promote anyway" → SEV-0/1 blocks promotion. Fix, re-audit, then promote.
-- "I'll write directly to final paths to save time" → Atomic promotion prevents partial updates. Staging is non-negotiable.
-- "The insertion point looks obvious, skip Phase 5 validation" → Topology validation is what catches silent edge mismatches.
+## Rationalization Table
+
+<rationalization_table>
+| Excuse | Reality |
+| :--- | :--- |
+| "Staging is extra overhead." | Staging allows for a rollback if the audit or human review fails. Direct writes are permanent and destructive. |
+| "Topology validation is redundant." | Manual inspection often misses transitive dependency breaks caused by insertion. |
+| "Minor audit findings won't break it." | Even SEV-1 findings can cause context leakage or state corruption during execution. |
+</rationalization_table>
+
+## Reference Files
+- `sk-pipeline-paths/SKILL.md` — Path resolution.
+- `sk-4d-method/SKILL.md` — Brief refinement.
+- `creating-a-pipeline/SKILL.md` — Core scaffolding rules.
+- `deleting-a-pipeline-step/SKILL.md` — Removal workflow.
