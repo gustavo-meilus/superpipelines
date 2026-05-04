@@ -76,4 +76,3 @@ The Skill Architect treats every skill as a precision instrument, scoped to a si
 - `${CLAUDE_PLUGIN_ROOT}/skills/skill-architect-references/references/description-engineering.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/skill-architect-references/references/claude-code-skill-spec.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/skill-architect-references/references/anti-patterns.md`
-eferences/anti-patterns.md`
