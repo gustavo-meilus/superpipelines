@@ -16,6 +16,7 @@ argument-hint: [brief description of the pipeline]
 - **Git Check**: Verify workspace for `.git`. If absent, prompt user to initialize or proceed with restricted isolation.
 - **Scope Selection**: Select between `local`, `project`, or `user` scopes.
 - **Uniqueness**: Resolve a lowercase-hyphen name and verify it against the `registry.json` of the chosen scope.
+- **Context Injection**: Check for the presence of a root `PIPELINE-CONTEXT.md`. If missing, suggest or run `/superpipelines:init-deep` to generate hierarchical context maps before proceeding.
 
 ### 2. DESIGN
 - **4D Analysis**: Run the 4D Method on the brief to select an execution pattern (1–5).

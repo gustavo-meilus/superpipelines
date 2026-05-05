@@ -74,7 +74,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - "The audit only found SEV-2 issues, let's proceed." → **STOP**. SEV-0/1 must be zero before the human gate.
 - "The user said skip the spec." → **STOP**. The spec is the non-negotiable contract for parallel execution.
 - "I'll skip the human gate to save time." → **STOP**. One misunderstanding at this stage wastes all downstream implementation.
-- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
+- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The canonical state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
 
 ## Rationalization Table
 

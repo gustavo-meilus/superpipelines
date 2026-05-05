@@ -12,6 +12,7 @@ skills:
   - sk-4d-method
   - sk-spec-driven-development
   - sk-claude-code-conventions
+  - sk-hashline-protocol
 ---
 
 # Pipeline Task Executor — Implementation Worker
@@ -63,6 +64,7 @@ The executor MUST NOT modify files outside the provided allowlist or add unreque
 - NEVER review your own output; functional and qualitative audits are performed by separate reviewer agents.
 - NEVER write to pipeline state; state management is the orchestrator's sole responsibility.
 - Operate exclusively within the assigned git worktree if `isolation: worktree` is active.
+- ALWAYS use the Hashline protocol for code mutations to prevent stale-line edits.
 </invariants>
 
 ## Terminal Status

@@ -128,7 +128,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 <architecture_invariants>
 - `SUB_AGENT_SPAWNING: FALSE` — Subagents never spawn children; orchestration resides in top-level skills or the parent session.
 - `WRITE_REVIEW_ISOLATION: TRUE` — The agent generating code is structurally barred from reviewing it.
-- `MODEL_SELECTION: SONNET_ONLY` — All pipeline agents default to `claude-sonnet-4-6`.
+- `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` — Pipeline execution agents default to `claude-sonnet-4-6`. Planning and utility agents may utilize category-based dynamic routing (e.g., `deep-plan`, `quick-audit`).
 - `PERMISSION_MODE: PER_AGENT` — Agents declare explicit permission boundaries (e.g., `acceptEdits`, `plan`) in frontmatter.
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist in isolation per workspace.
@@ -161,7 +161,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.0.3
+- **Project Version**: v1.0.4
 
 
 # File: RELEASE-NOTES.md
@@ -173,6 +173,24 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 <overview>
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
 </overview>
+
+## v1.0.4 — OMOA Integration & Hierarchical Context (2026-05-05)
+
+This release integrates three major architectural enhancements inspired by the Oh My OpenAgent ecosystem, dramatically improving edit stability, context efficiency, and cost-to-performance ratios for specific agents.
+
+<release_entry version="1.0.4" status="STABLE">
+
+### Added
+- **Hashline Protocol**: Added `sk-hashline-protocol` skill and updated the `pipeline-task-executor` to enforce hash-anchored code modifications, preventing source code corruption from stale line edits.
+- **Hierarchical Context Command**: Added the `/superpipelines:init-deep` command and `sk-hierarchical-context` skill to map repository architecture into distributed `PIPELINE-CONTEXT.md` files, ensuring agents access lean, localized context without bloating global prompts.
+- **Scribius Formatting Enforcement**: Enforced strict Scribius v1 standards (H1-first, XML-anchored structured envelopes, third-person voice) on all generated `PIPELINE-CONTEXT.md` files.
+- **Dynamic Intent Routing**: Added `sk-dynamic-routing` to permit intent-based LLM selection. `pipeline-architect` now defaults to `claude-opus-4-7` (`deep-plan` category) and `pipeline-quality-reviewer` routes to `claude-haiku-4-5-20251001` (`quick-audit` category), while standard implementation workers remain bound to `claude-sonnet-4-6`.
+
+### Changed
+- **Architecture Invariant Updated**: `MODEL_SELECTION: SONNET_ONLY` updated to `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` to support category-based routing.
+- **New Pipeline Preflight**: The `/superpipelines:new-pipeline` command now explicitly checks for a root context map and suggests `/superpipelines:init-deep` during the preflight phase.
+
+</release_entry>
 
 ## v1.0.3 — Adherence Cleanup (2026-05-04)
 
@@ -253,6 +271,14 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 ```text
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
+
+## 1.0.4 — OMOA Integration & Hierarchical Context (2026-05-05)
+
+### Architecture & Agent Optimizations
+
+- **Hashline Editing Protocol** — Implemented `sk-hashline-protocol` to enforce content-hash validation prior to any atomic file mutation by `pipeline-task-executor`, eliminating stale-line corruption.
+- **Hierarchical Context Maps** — Introduced `/superpipelines:init-deep` and `sk-hierarchical-context` to generate token-efficient, distributed `PIPELINE-CONTEXT.md` files conforming strictly to Scribius v1 XML-anchored standards.
+- **Dynamic Model Routing** — Relaxed the strict `SONNET_ONLY` invariant to `DYNAMIC_DEFAULT_SONNET`, permitting specific agents (like `pipeline-architect` and `pipeline-quality-reviewer`) to dynamically route to Opus or Haiku based on their intent category (`deep-plan` vs `quick-audit`), optimizing reasoning and cost.
 
 ## 1.0.3 — Adherence Cleanup (2026-05-04)
 
@@ -538,6 +564,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
+- Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 
 ### PHASE 3: PATTERN SELECTION
@@ -546,8 +573,10 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect**: Generate `spec.md`, `plan.md`, `tasks.md`, `topology.json`, and all step-specific agents/skills.
+- **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor**: Review all generated files in DELTA mode.
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
+
 
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.
@@ -580,7 +609,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - "The audit only found SEV-2 issues, let's proceed." → **STOP**. SEV-0/1 must be zero before the human gate.
 - "The user said skip the spec." → **STOP**. The spec is the non-negotiable contract for parallel execution.
 - "I'll skip the human gate to save time." → **STOP**. One misunderstanding at this stage wastes all downstream implementation.
-- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
+- "I'll write state to `tmp/pipeline-state.json`." → **STOP**. The canonical state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The legacy `tmp/` path is retired.
 
 ## Rationalization Table
 
@@ -2409,6 +2438,175 @@ skills: [sk-4d-method, sk-spec-driven-development]
 - `sk-pipeline-paths/SKILL.md` — Scope-aware path resolution.
 - `sk-4d-method/SKILL.md` — Per-invocation wrapper.
 - `sk-spec-driven-development/SKILL.md` — SDD protocol.
+
+
+# File: skills\sk-dynamic-routing\SKILL.md
+----------------------------------------
+---
+name: sk-dynamic-routing
+description: Use when determining the appropriate LLM for a specific pipeline stage. Defines category constraints for dynamic model routing, allowing specific utility and planning agents to diverge from the Sonnet default.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Dynamic Model Routing — Intent-Based Capability Mapping
+
+> Provides the ruleset for dynamically assigning Large Language Models based on the task intent category. Trigger when architecting new pipelines or configuring subagents to ensure cost-efficiency and optimal reasoning paths.
+
+<overview>
+While Superpipelines maintains `claude-sonnet-4-6` as the baseline default for all implementation workers, certain specialized roles (e.g., fast audits, deep architectural planning, vision analysis) benefit from dynamic routing. This skill defines the permitted categories and fallback chains for those overrides.
+</overview>
+
+<glossary>
+  <term name="Category">An intent-based tag that dictates the model requirement (e.g., `quick-audit`, `deep-plan`).</term>
+  <term name="Fallback Chain">The sequence of alternative models if the primary is unavailable or rate-limited.</term>
+</glossary>
+
+## Category Mappings
+
+<categories_table>
+| Category | Primary Model | Fallback Chain | Use Case |
+| :--- | :--- | :--- | :--- |
+| **`default`** | `claude-sonnet-4-6` | *None* | Implementation, general tasks, and task-execution. |
+| **`deep-plan`** | `claude-opus-4-7` | `gpt-5.4` -> `sonnet-4-6` | High-stakes architectural planning (e.g., `pipeline-architect`). |
+| **`quick-audit`** | `claude-haiku-4-5-20251001` | *None* | Fast, broad pattern matching and codebase grepping. |
+| **`visual`** | `gemini-3.1-pro` | `gpt-5.4` | Tasks requiring image processing, UI screenshots, or diagram analysis. |
+</categories_table>
+
+## Routing Protocol
+
+<protocol>
+### 1. EVALUATE INTENT
+- Determine the nature of the specific task or agent role.
+- If it is standard code implementation or a functional review, the category MUST be `default`.
+
+### 2. ASSIGN CATEGORY
+- If the role is exclusively planning, architecture, or deep conceptual alignment, assign `deep-plan`.
+- If the role is pure read-only utility (fast file searching, lint aggregation), assign `quick-audit`.
+- If the role requires interpreting screenshots, assign `visual`.
+
+### 3. CONFIGURATION OVERRIDE
+- When generating an agent or scaffold, set the `model:` field in the frontmatter according to the primary model of the selected category.
+- Add a comment or meta-tag noting the category intent for future auditing.
+</protocol>
+
+<invariants>
+- NEVER override `pipeline-task-executor` or `pipeline-spec-reviewer`; they MUST remain on `claude-sonnet-4-6` (`default`).
+- NEVER route to a model not explicitly defined in the category mapping table.
+- Maintain `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` adherence.
+</invariants>
+
+
+# File: skills\sk-hashline-protocol\SKILL.md
+----------------------------------------
+---
+name: sk-hashline-protocol
+description: Use whenever performing file mutations to prevent stale-line edits. Mandates appending content hashes to read lines and verifying those hashes before committing an edit operation to a worktree.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Hashline Protocol — Anchored Edit Verification
+
+> Enforces a hash-anchored modification protocol to prevent source code corruption. Invoked during the `DEVELOP` and `IMPLEMENT` phases to ensure code edits target verifiable content hashes rather than fragile, static line numbers.
+
+<overview>
+The Hashline Protocol ensures atomic mutation safety. By tagging every line read with a 16-character content identifier hash, the system guarantees that edits only occur if the underlying file state matches the expected state, eliminating stale-line and whitespace-drift errors.
+</overview>
+
+<glossary>
+  <term name="Content Identifier Hash">A 16-character string appended to a line representing its exact content state.</term>
+  <term name="Hashline Edit">A mutation operation referencing the hash rather than line number.</term>
+</glossary>
+
+## Protocol Execution
+
+<protocol>
+### 1. READ WITH HASHES
+- When reading target files, request the content to be annotated with line hashes.
+- Format expectation: `<line_number>#<HASH>| <content>`
+
+### 2. PREPARE THE EDIT
+- Identify the exact block of code to be modified.
+- Include the explicit `<HASH>` identifiers in your edit payload alongside the target content.
+
+### 3. VERIFICATION (PRE-WRITE)
+- The harness calculates the current hash of the target lines before writing.
+- If the current hash does NOT match the requested hash, the write operation is **REJECTED**.
+- In case of rejection, the agent must re-read the file to acquire fresh hashes and re-attempt the edit.
+
+### 4. COMMIT
+- If the hashes match, the mutation is committed to the isolated worktree for subsequent Stage 1 functional review.
+</protocol>
+
+<invariants>
+- NEVER target a file edit using static line numbers; always anchor to the Content Identifier Hash.
+- ALWAYS re-read the file upon a hash mismatch; never guess or synthesize the current state.
+- Ensure the edit is fully localized to the targeted hashes to prevent over-build or collateral mutations.
+</invariants>
+
+## Reference Files
+
+- `${CLAUDE_PLUGIN_ROOT}/skills/sk-worktree-safety/SKILL.md` — Isolated worktree principles.
+
+
+# File: skills\sk-hierarchical-context\SKILL.md
+----------------------------------------
+---
+name: sk-hierarchical-context
+description: Use when initiating or updating localized PIPELINE-CONTEXT.md files across a repository. Crawls the project to generate token-efficient context maps summarizing directory contents and architectural boundaries.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Hierarchical Context Maps — Distributed Architecture Context
+
+> Generates and maintains localized `PIPELINE-CONTEXT.md` files throughout the project tree. Trigger during the `/superpipelines:init-deep` command or during the PREFLIGHT phase of new pipeline creation to ensure agents have lean, relevant context without bloated global prompts.
+
+<overview>
+The Hierarchical Context system distributes architectural knowledge across the repository instead of centralizing it in a single massive file. By placing a `PIPELINE-CONTEXT.md` in relevant subdirectories, agents operating within that directory automatically acquire the necessary context for their specific scope, conserving tokens and improving reasoning focus.
+</overview>
+
+<glossary>
+  <term name="Context Map">A localized markdown file (`PIPELINE-CONTEXT.md`) describing the purpose and boundaries of its resident directory.</term>
+  <term name="Deep Initialization">The recursive process of generating context maps for all significant project directories.</term>
+</glossary>
+
+## Protocol Execution
+
+<protocol>
+### 1. DIRECTORY TRAVERSAL
+- Identify all significant architectural boundaries (e.g., `src/`, `components/`, `api/`, `utils/`).
+- Skip ignored directories (e.g., `node_modules/`, `.git/`, `dist/`).
+
+### 2. CONTEXT GENERATION
+For each significant directory, create a `PIPELINE-CONTEXT.md` adhering to strict LLM-readability standards (Scribius format):
+- **H1-First & Summary:** Begin with an H1 header (`# Directory Name`) followed immediately by a blockquote summary (`> `).
+- **Cache-Stable Ordering:** Place static context (purpose, constraints) before any volatile elements.
+- **XML-Anchored Content:** Wrap structured information in semantic XML envelopes:
+  - `<directory_purpose>`: A concise summary of what the directory does.
+  - `<architectural_constraints>`: Specific rules (e.g., "no database access in components").
+  - `<key_exports>`: Bulleted list of primary modules and their responsibilities.
+  - `<pipeline_relationship>`: How this directory interacts with the broader system.
+- **Voice & Tone:** Enforce third-person impersonal voice, positive scoping, and unambiguous noun anchors (never use "this" or "it" without a noun). Omit all preambles.
+
+### 3. ROOT CONTEXT INJECTION
+- Generate a root-level `PIPELINE-CONTEXT.md` that serves as the entry point, detailing the overall system architecture and linking to subdirectory context maps.
+
+### 4. MAINTENANCE
+- When files are significantly refactored during pipeline execution, flag the relevant `PIPELINE-CONTEXT.md` for a required update.
+</protocol>
+
+<invariants>
+- NEVER generate a single monolithic context file; always distribute context hierarchically.
+- ALWAYS respect `.gitignore` when traversing the repository.
+- Ensure context maps are concise and free of redundant code snippets (use summaries).
+- ALWAYS format `PIPELINE-CONTEXT.md` files according to Scribius standards (XML envelopes, H1-first, impersonal voice).
+</invariants>
+
+## Reference Files
+
+- `${CLAUDE_PLUGIN_ROOT}/skills/sk-pipeline-paths/SKILL.md` — Path resolution guidelines.
 
 
 # File: skills\sk-pipeline-paths\SKILL.md
@@ -4645,7 +4843,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | "The user said it's urgent, skip audit." | A 30-second audit prevents silent topology gaps that lead to catastrophic runtime failure. |
 | "The state file is too complex." | Standardized state is the only path to reliable resumption and multi-step recovery. |
 | "The brief is complete, skip preflight." | Git preflight and scope selection are non-negotiable. A rich brief does not substitute for environment validation or deployment scope confirmation. |
-| "I'll write state to `tmp/`." | The v1.0.2 state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The `tmp/` path is a retired v1.0.0 pattern. |
+| "I'll write state to `tmp/`." | The canonical state path is `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. The `tmp/` path is a retired pattern. |
 </rationalization_table>
 
 ## Reference Files

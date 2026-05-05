@@ -9,7 +9,7 @@
     {
       "name": "superpipelines",
       "description": "Design, generate, and run multi-agent AI pipelines — scope-aware, multi-pipeline, spec-driven, write/review-isolated, with step-level create/update/delete and integrated audit",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "source": "./",
       "author": {
         "name": "Gustavo Meilus",
