@@ -29,6 +29,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
+- Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 
 ### PHASE 3: PATTERN SELECTION
@@ -37,8 +38,10 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect**: Generate `spec.md`, `plan.md`, `tasks.md`, `topology.json`, and all step-specific agents/skills.
+- **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor**: Review all generated files in DELTA mode.
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
+
 
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.

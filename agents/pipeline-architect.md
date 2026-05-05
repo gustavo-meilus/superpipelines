@@ -47,14 +47,14 @@ The Pipeline Architect treats every component as a discrete software system with
 <protocol>
 ### 1. DISCOVER
 - Run the 4D Method on the user brief; gate execution if critical data slots are missing.
-- **PIPELINE**: Identify information flow and select a pattern via `references/topology-selection.md`.
+- **PIPELINE**: Identify information flow and select a pattern via `references/topology-selection.md`. Explicitly capture the user's desired output format (or deduce one based on the pipeline goal).
 - **STEP-ADD**: Analyze `topology.json` to understand predecessor outputs and successor requirements.
 - **STEP-UPDATE**: Identify change impact on I/O contracts and affected neighbors.
 - **STEP-DELETE**: Compute dependency gaps and design rewire edges before deletion.
 
 ### 2. DESIGN
-- **PIPELINE**: Design all step agents per `references/agent-frontmatter-schema.md` and draft `topology.json` edges.
-- **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges.
+- **PIPELINE**: Design all step agents per `references/agent-frontmatter-schema.md` and draft `topology.json` edges. You MUST append an `output-formatter` step as the final node, configured to write to `<workspace-root>/output/`.
+- **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
 - **Constraint**: Maintain agent bodies ≤150 lines and preload only `sk-*` method skills.
 
