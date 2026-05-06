@@ -1,0 +1,20 @@
+{
+  "name": "superpipelines-marketplace",
+  "description": "Marketplace for the superpipelines plugin: design and run multi-agent AI pipelines",
+  "owner": {
+    "name": "Gustavo Meilus",
+    "url": "https://github.com/gustavo-meilus"
+  },
+  "plugins": [
+    {
+      "name": "superpipelines",
+      "description": "Design, generate, and run multi-agent AI pipelines (spec-driven, write/review-isolated, worktree-safe) following AI_PIPELINES_LLM.md conventions",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Gustavo Meilus",
+        "url": "https://github.com/gustavo-meilus"
+      }
+    }
+  ]
+}
