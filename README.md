@@ -100,6 +100,10 @@ superpipelines/
 ```
 </file_structure>
 
+## Related Projects
+
+- **[superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode)** — Companion project containing the opencode implementation of the Superpipelines plugin, including alternative skill definitions, agent configurations, and pipeline artifacts for the opencode environment.
+
 ## Contributing
 
 Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Use `/superpipelines:audit-pipeline` to validate additions against the compliance matrix before submission.
