@@ -6,6 +6,24 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.x architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, and the 20-criterion compliance matrix.
 </overview>
 
+## v1.0.5 — Plugin Version Stamping & Model Change Command (2026-05-12)
+
+This release enforces a critical governance invariant — `plugin_version` stamping across all pipeline artifacts — and introduces the interactive `/superpipelines:change-models` command for runtime model reassignment.
+
+<release_entry version="1.0.5" status="STABLE">
+
+### Added
+- **Plugin Version Stamping**: Added `PLUGIN_VERSION_STAMPING` as a core pipeline invariant. Every pipeline artifact (`topology.json`, `registry.json` entries, `pipeline-state.json`, agent frontmatter) must now include a `plugin_version` field set to the current superpipelines package version. This field is updated on every mutation (create, add-step, update-step, delete-step) and enables future retro-compatibility checks.
+- **`/superpipelines:change-models` Command**: New interactive command for changing LLM models assigned to pipeline step agents. Discovers models from OpenCode Zen, Go, and custom providers, then applies changes to agent frontmatter.
+- **Compliance Criterion #21**: Added `plugin_version` presence and consistency check to the compliance matrix. Missing → SEV-2. Topology/agent mismatch → SEV-3.
+
+### Changed
+- **Topology Schema**: `plugin_version` is now a required top-level field in `topology.json` schema. Missing → SEV-2.
+- **Pipeline Skills Updated**: `adding-a-pipeline-step`, `creating-a-pipeline`, `deleting-a-pipeline-step`, `updating-a-pipeline-step` — all updated to include `plugin_version` stamping instructions.
+- **Reference Docs Updated**: `agent-frontmatter-schema.md`, `compliance-matrix.md`, `topology-rules.md` — all updated to document the new `plugin_version` field and rules.
+
+</release_entry>
+
 ## v1.0.4 — OMOA Integration & Hierarchical Context (2026-05-05)
 
 This release integrates three major architectural enhancements inspired by the Oh My OpenAgent ecosystem, dramatically improving edit stability, context efficiency, and cost-to-performance ratios for specific agents.

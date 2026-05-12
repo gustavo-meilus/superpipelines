@@ -17,6 +17,22 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 1.0.5 — Plugin Version Stamping & Model Change Command (2026-05-12)
+
+### Architecture & Governance
+
+- **PLUGIN_VERSION_STAMPING** — Enforced the `plugin_version` field across all pipeline artifacts (`topology.json`, `registry.json`, `pipeline-state.json`, agent frontmatter). Every mutation (create, add-step, update-step, delete-step) now stamps `plugin_version` with the current superpipelines version, enabling future retro-compatibility checks.
+- **Compliance Criterion #21** — Added `plugin_version` presence and consistency check to the compliance matrix. Missing `plugin_version` → SEV-2; topology/agent mismatch → SEV-3.
+- **Topology Schema Update** — `plugin_version` added as a required top-level field in `topology.json`. Missing → SEV-2.
+
+### New Commands
+
+- **`/superpipelines:change-models`** — New command allowing interactive model reassignment for pipeline step agents. Discovers models from OpenCode Zen, Go, and custom providers, then applies changes to agent frontmatter.
+
+### Skill Routing
+
+- **`/change-models` Routing** — Added `change-models` skill to the routing table in `using-superpipelines`, ensuring the orchestrator dispatches model change requests to the correct skill.
+
 ## 1.0.4 — OMOA Integration & Hierarchical Context (2026-05-05)
 
 ### Architecture & Agent Optimizations
