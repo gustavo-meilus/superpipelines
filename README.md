@@ -2,15 +2,15 @@
 
 > Multi-agent AI pipelines with guaranteed spec compliance, write/review isolation, and full crash recovery. Superpipelines enables complex task decomposition into coordinated subagents with automated verification and state persistence.
 
-<overview>
+<!-- <overview> -->
 Superpipelines provides a framework for decomposing complex tasks into coordinated subagents. It enforces engineering best practices through separate author and reviewer roles, explicit handoffs, and mandatory human gates for high-stakes transitions. The system ensures that every output matches its specification before merging, reducing model hallucinations and providing a robust path for crash recovery.
-</overview>
+<!-- </overview> -->
 
-<glossary>
+<!-- <glossary> -->
   <term name="pipeline">A coordinated sequence of agent-driven tasks that transform a high-level goal into a verified implementation.</term>
   <term name="write/review isolation">The structural separation of implementation and verification, where the reviewer agent lacks modification permissions.</term>
   <term name="hard gate">A mandatory pause in execution requiring explicit human approval to proceed.</term>
-</glossary>
+<!-- </glossary> -->
 
 ## Capabilities
 
@@ -25,7 +25,7 @@ Users achieve the following outcomes when utilizing Superpipelines:
 
 Superpipelines executes tasks through a structured lifecycle:
 
-<workflow_matrix>
+<!-- <workflow_matrix> -->
 | Phase | Process Flow | Description |  
 | :--- | :--- | :--- |
 | **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
@@ -38,37 +38,38 @@ Superpipelines executes tasks through a structured lifecycle:
 | **8.&nbsp;COMMIT** | Passing&nbsp;Tasks&nbsp;→&nbsp;Integration | Passing tasks merge to the integration branch. |
 | **9.&nbsp;DONE** | Cleanup&nbsp;→&nbsp;Summary | Temporary state is cleaned and a completion summary is surfaced. |
 
-</workflow_matrix>
+<!-- </workflow_matrix> -->
 
-<invariant>
+<!-- <invariant> -->
 Reviewer agents operate with `disallowedTools: Write, Edit, Bash`, ensuring they cannot modify the code they are tasked with validating.
-</invariant>
+<!-- </invariant> -->
 
 ## Execution Patterns
 
 The framework selects the optimal pattern based on task complexity:
 
-<pattern_matrix>
+<!-- <pattern_matrix> -->
 | Pattern | Shape | Use Case |
 | :--- | :--- | :--- |
-| **1 — Sequential** | A → B → C | Ordered phases with hard data dependencies. |
-| **2 — Parallel Fan-Out** | A → [B, C, D] → Merger | Independent branches that merge upon completion. |
-| **3 — Iterative Loop** | Implement → Test → Fix | Test-driven repair with a hard escalation cap of 3 iterations. |
-| **4 — Human-Gated** | Agent → Gate → Agent | High-stakes stages requiring manual approval. |
-| **5 — Spec-Driven Dev** | Spec → Tasks → 2-Stage Review | Full SDD with worktrees per task. |
-| **6 — 4D Wrapper** | 4D Intake → Pattern | Wraps any pattern with structured deconstruction. |
-</pattern_matrix>
+| **1.&nbsp;Sequential** | A&nbsp;→&nbsp;B&nbsp;→&nbsp;C | Ordered phases with hard data dependencies. |
+| **2.&nbsp;Parallel&nbsp;Fan-Out** | A&nbsp;→&nbsp;[B,&nbsp;C,&nbsp;D]&nbsp;→&nbsp;Merger | Independent branches that merge upon completion. |
+| **3.&nbsp;Iterative&nbsp;Loop** | Implement&nbsp;→&nbsp;Test&nbsp;→&nbsp;Fix | Test-driven repair with a hard escalation cap of 3 iterations. |
+| **4.&nbsp;Human-Gated** | Agent&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Agent | High-stakes stages requiring manual approval. |
+| **5.&nbsp;Spec-Driven&nbsp;Dev** | Spec&nbsp;→&nbsp;Tasks&nbsp;→&nbsp;2-Stage&nbsp;Review | Full SDD with worktrees per task. |
+| **6.&nbsp;4D&nbsp;Wrapper** | 4D&nbsp;Intake&nbsp;→&nbsp;Pattern | Wraps any pattern with structured deconstruction. |
+
+<!-- </pattern_matrix> -->
 
 ## Installation
 
 Install the Superpipelines plugin via Claude Code:
 
-<installation>
+<!-- <installation> -->
 ```bash
 // Installation command
 claude plugin install github:gustavo-meilus/superpipelines
 ```
-</installation>
+<!-- </installation> -->
 
 ## Slash Commands
 
@@ -90,7 +91,7 @@ claude plugin install github:gustavo-meilus/superpipelines
 
 ## Repository Layout
 
-<file_structure>
+<!-- <file_structure> -->
 ```
 superpipelines/
 ├── .claude-plugin/           # Plugin manifest and marketplace data
@@ -101,7 +102,7 @@ superpipelines/
 ├── hooks/                    # SessionStart hooks for bootstrap injection
 └── settings.json             # Global plugin configuration
 ```
-</file_structure>
+<!-- </file_structure> -->
 
 ## Related Projects
 
