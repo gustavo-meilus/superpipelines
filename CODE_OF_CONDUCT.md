@@ -2,13 +2,13 @@
 
 > Standards for participation in the Superpipelines community. This document outlines the behaviors required of members, contributors, and leaders to ensure a harassment-free and inclusive environment.
 
-<overview>
+<!-- <overview> -->
 Superpipelines adopts the Contributor Covenant to establish a baseline for healthy community interaction. Leaders are responsible for enforcing these standards through corrective actions, warnings, and bans where necessary.
-</overview>
+<!-- </overview> -->
 
 ## Community Standards
 
-<standards>
+<!-- <standards> -->
 Behavior that contributes to a positive environment includes:
 
 * Demonstrating empathy and kindness toward others.
@@ -24,7 +24,7 @@ Unacceptable behavior includes:
 * Public or private harassment.
 * Publishing private information (e.g., physical or email addresses) without permission.
 * Other conduct inappropriate in a professional setting.
-</standards>
+<!-- </standards> -->
 
 ## Enforcement Responsibilities
 
@@ -34,7 +34,7 @@ Leaders have the right to remove or reject comments, commits, code, and other co
 
 ## Enforcement Guidelines
 
-<enforcement_guidelines>
+<!-- <enforcement_guidelines> -->
 ### 1. Correction
 **Impact**: Use of inappropriate or unprofessional language.
 **Consequence**: A private warning providing clarity on the violation and an explanation of the inappropriateness.
@@ -50,7 +50,7 @@ Leaders have the right to remove or reject comments, commits, code, and other co
 ### 4. Permanent Ban
 **Impact**: A pattern of violation or sustained harassment.
 **Consequence**: A permanent ban from all community interaction.
-</enforcement_guidelines>
+<!-- </enforcement_guidelines> -->
 
 ## Attribution
 
