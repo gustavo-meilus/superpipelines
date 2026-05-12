@@ -26,15 +26,16 @@ Users achieve the following outcomes when utilizing Superpipelines:
 Superpipelines executes tasks through a structured lifecycle:
 
 <workflow>
-1. **DECONSTRUCT**: The system identifies gaps, ambiguities, and constraints through targeted intake.
-2. **DIAGNOSE**: Environmental and architectural constraints are surfaced before code generation.
-3. **DEVELOP**: The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`.
-4. **HARD GATE**: Execution pauses for human review and approval of the specification.
-5. **IMPLEMENT**: Worker agents execute tasks in isolated git worktrees.
-6. **STAGE 1**: `pipeline-spec-reviewer` validates output against the specification.
-7. **STAGE 2**: `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes).
-8. **COMMIT**: Passing tasks merge to the integration branch.
-9. **DONE**: Temporary state is cleaned and a completion summary is surfaced.
+| :--- | :--- | :--- |
+| **1 — DECONSTRUCT** | Intake → Gap Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
+| **2 — DIAGNOSE** | Environment → Constraints | Environmental and architectural constraints are surfaced before code generation. |
+| **3 — DEVELOP** | Architect → Spec/Plan/Tasks | The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`. |
+| **4 — HARD GATE** | Execution → Gate → Approval | Execution pauses for human review and approval of the specification. |
+| **5 — IMPLEMENT** | Tasks → Worker Agents | Worker agents execute tasks in isolated git worktrees. |
+| **6 — STAGE 1** | Output → Spec Validator | `pipeline-spec-reviewer` validates output against the specification. |
+| **7 — STAGE 2** | Stage 1 Pass → Quality Audit | `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes). |
+| **8 — COMMIT** | Passing Tasks → Integration | Passing tasks merge to the integration branch. |
+| **9 — DONE** | Cleanup → Summary | Temporary state is cleaned and a completion summary is surfaced. |
 </workflow>
 
 <invariant>
