@@ -22,6 +22,7 @@ These are distinct from the 20-criterion compliance matrix and are run in additi
 {
   "pipeline": "<name>",
   "version": "1.0",
+  "plugin_version": "<semver>",
   "pattern": "<1|2|2b|3|4|5>",
   "steps": [
     {
@@ -39,7 +40,7 @@ These are distinct from the 20-criterion compliance matrix and are run in additi
 }
 ```
 
-**FAIL criteria:** JSON parse error; missing required top-level key (`pipeline`, `version`, `pattern`, `steps`, `entry_skill`); invalid `pattern` value; any step missing `id`, `depends_on`, `inputs`, or `outputs`.
+**FAIL criteria:** JSON parse error; missing required top-level key (`pipeline`, `version`, `plugin_version`, `pattern`, `steps`, `entry_skill`); invalid `pattern` value; any step missing `id`, `depends_on`, `inputs`, or `outputs`.
 
 ---
 
@@ -103,6 +104,7 @@ For every step S:
 | Rule violated | Severity |
 |---------------|----------|
 | Invalid or unparseable `topology.json` schema | SEV-0 |
+| Missing `plugin_version` in `topology.json` | SEV-2 |
 | Agent file missing for a step | SEV-0 |
 | Orphan step (unreachable) | SEV-0 |
 | Cycle in non-iterative pattern | SEV-0 |

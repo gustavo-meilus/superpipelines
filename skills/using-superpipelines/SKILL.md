@@ -30,6 +30,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | `/update-step` or "Modify agent" | `updating-a-pipeline-step` | Contract-aware update. |
 | `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
 | `/audit-pipeline` | `pipeline-auditor` | Security/topology review. |
+| `/change-models` or "Change models" | `change-models` | Interactive model reassignment. |
 | Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
 | Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
 | Authoring Agents or Skills | `sk-claude-code-conventions` | Format enforcement. |
@@ -43,6 +44,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 - **`MODEL_SELECTION: SONNET_ONLY`**: All agents default to `model: sonnet` unless the user explicitly opts into another model.
 - **`STATE_PERSISTENCE`**: All state must reside in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - **`ATOMIC_MUTATION`**: Topology changes must be staged in `edit-{ts}/` before promotion.
+- **`PLUGIN_VERSION_STAMPING`**: Every pipeline artifact (`topology.json`, `registry.json` entries, `pipeline-state.json`, agent frontmatter) must include a `plugin_version` field set to the current superpipelines package version. This field is updated on every mutation (create, add-step, update-step, delete-step) and enables future retro-compatibility checks.
 </invariants>
 
 ## Red Flags — STOP

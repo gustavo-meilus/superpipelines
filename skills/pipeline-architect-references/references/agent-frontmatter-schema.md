@@ -14,6 +14,7 @@ model: sonnet                                 # SONNET_ONLY default; non-sonnet 
 effort: low | medium | high | xhigh | max
 maxTurns: 25                                  # bounds execution
 version: "1.0"                                # bump on breaking change
+plugin_version: "1.0.4"                       # superpipelines version that created/last-modified this agent
 permissionMode: default | acceptEdits | plan | bypassPermissions   # optional; omit = default
 memory: none | local                          # optional; omit = none. NEVER "project"
 skills:                                       # ONLY sk-* preloaded method skills
@@ -38,6 +39,7 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | `effort` | yes | Architect/auditor: `high`. Workers: `medium`. Triage: `low`. |
 | `maxTurns` | yes | Read-only: 15–25. Generation: 30–40. Validation: 10–15. |
 | `version` | yes | Bump major on breaking change to output schema or required inputs. |
+| `plugin_version` | yes | The superpipelines package version (semver) that created or last modified this agent. Stamp at creation and on any mutation (add/update/delete step). Enables future retro-compatibility checks. |
 | `permissionMode` | optional | `acceptEdits` for implementation agents; `plan` for analysis-only; omit or `default` for standard. `bypassPermissions` requires inline justification in agent body. |
 | `memory` | optional | `local` for agents persisting learned heuristics. Omit (= `none`) for stateless agents. NEVER `project`. |
 | `skills` | recommended | ONLY shared `sk-*` skills. Never large workflow skills. Never companion-reference skills. |

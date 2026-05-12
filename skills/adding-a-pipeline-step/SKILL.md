@@ -48,12 +48,14 @@ The Adding a Pipeline Step workflow ensures that any mutation to an existing top
 - Present the updated topology and audit results for human approval (`AskUserQuestion`).
 - Upon `APPROVE`, move staged files to their final absolute paths in agents, skills, and pipeline directories.
 - Update the `registry.json` lists to include new components.
+- **Version Stamp**: Update `plugin_version` in `topology.json`, the registry entry, and the new agent's frontmatter to the current superpipelines version.
 </protocol>
 
 <invariants>
 - NEVER skip the delta audit; topology mutations are the primary source of runtime orchestration failures.
 - ALWAYS use a staging directory (`edit-{ts}/`) for artifact generation to prevent partial, unverified updates.
 - Promote changes ONLY after explicit human approval of the updated `tasks.md` and topology snippet.
+- ALWAYS update `plugin_version` in `topology.json`, the registry entry, and new agent frontmatter to the current superpipelines version when promoting changes.
 </invariants>
 
 ## Red Flags — STOP

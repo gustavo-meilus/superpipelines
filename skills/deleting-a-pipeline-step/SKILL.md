@@ -44,12 +44,14 @@ The Deleting a Pipeline Step workflow guarantees that the removal of a component
 ### PHASE 5: ATOMIC PROMOTION
 - Execute file removals (agents/skills) and write updated `topology.json` and `tasks.md`.
 - Update the `registry.json` to reflect the removal.
+- **Version Stamp**: Update `plugin_version` in `topology.json` and the registry entry to the current superpipelines version.
 </protocol>
 
 <invariants>
 - NEVER assume a step is "unused" without verifying all `depends_on` entries in the topology graph.
 - ALWAYS perform atomic promotion from a staging area to ensure rollback capability.
 - NEVER delete a step that creates an unresolvable blocking-gap in the orchestration.
+- ALWAYS update `plugin_version` in `topology.json` and the registry entry to the current superpipelines version when promoting changes.
 </invariants>
 
 ## Red Flags — STOP

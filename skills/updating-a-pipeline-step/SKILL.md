@@ -45,12 +45,14 @@ The Updating a Pipeline Step workflow ensures that modifications to individual c
 ### PHASE 5: HUMAN APPROVAL & PROMOTION
 - Present a diff summary, updated topology edges, and audit results for human review (`AskUserQuestion`).
 - Upon `APPROVE`, atomically move staged files to their final absolute paths and update `registry.json`.
+- **Version Stamp**: Update `plugin_version` in `topology.json`, the registry entry, and the modified agent's frontmatter to the current superpipelines version.
 </protocol>
 
 <invariants>
 - NEVER assume an I/O change is "minor"; always run the Phase 2 impact analysis.
 - ALWAYS use a staging directory (`edit-{ts}/`) for all modifications to allow for safe rollback.
 - Propagate contract changes to neighbors ONLY after explicit user authorization.
+- ALWAYS update `plugin_version` in `topology.json`, the registry entry, and modified agent frontmatter to the current superpipelines version when promoting changes.
 </invariants>
 
 ## Red Flags — STOP

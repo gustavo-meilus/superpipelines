@@ -53,10 +53,10 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   1. `<scope-root>/superpipelines/pipelines/{P}/spec.md`
   2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
   3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
-  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json`
+  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` stamped)
   5. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
-  6. All step agents and skills under `<scope-root>/agents/superpipelines/{P}/` and `<scope-root>/skills/superpipelines/{P}/`
-  7. Updated `<scope-root>/superpipelines/registry.json`
+  6. All step agents and skills under `<scope-root>/agents/superpipelines/{P}/` and `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter)
+  7. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
 </HARD-GATE>
 - Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it."
 </protocol>
@@ -66,6 +66,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - NEVER generate the entry skill before human approval of the `tasks.md` and `topology.json`.
 - All internal step skills MUST be marked `user-invocable: false`.
 - Any modification to the design MUST trigger a re-audit for SEV-0/1 issues.
+- ALWAYS stamp `plugin_version` in `topology.json`, the registry entry, and agent frontmatter to the current superpipelines version.
 </invariants>
 
 ## Red Flags — STOP
