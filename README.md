@@ -25,18 +25,20 @@ Users achieve the following outcomes when utilizing Superpipelines:
 
 Superpipelines executes tasks through a structured lifecycle:
 
-<workflow>
+<workflow_matrix>
+| Phase | Process Flow | Description |  
 | :--- | :--- | :--- |
-| **1 — DECONSTRUCT** | Intake → Gap Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
-| **2 — DIAGNOSE** | Environment → Constraints | Environmental and architectural constraints are surfaced before code generation. |
-| **3 — DEVELOP** | Architect → Spec/Plan/Tasks | The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`. |
-| **4 — HARD GATE** | Execution → Gate → Approval | Execution pauses for human review and approval of the specification. |
-| **5 — IMPLEMENT** | Tasks → Worker Agents | Worker agents execute tasks in isolated git worktrees. |
-| **6 — STAGE 1** | Output → Spec Validator | `pipeline-spec-reviewer` validates output against the specification. |
-| **7 — STAGE 2** | Stage 1 Pass → Quality Audit | `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes). |
-| **8 — COMMIT** | Passing Tasks → Integration | Passing tasks merge to the integration branch. |
-| **9 — DONE** | Cleanup → Summary | Temporary state is cleaned and a completion summary is surfaced. |
-</workflow>
+| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
+| **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Environmental and architectural constraints are surfaced before code generation. |
+| **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`. |
+| **4.&nbsp;HARD&nbsp;GATE** | Execution&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Approval | Execution pauses for human review and approval of the specification. |
+| **5.&nbsp;IMPLEMENT** | Tasks&nbsp;→&nbsp;Worker&nbsp;Agents | Worker agents execute tasks in isolated git worktrees. |
+| **6.&nbsp;STAGE&nbsp;1** | Output&nbsp;→&nbsp;Spec&nbsp;Validator | `pipeline-spec-reviewer` validates output against the specification. |
+| **7.&nbsp;STAGE&nbsp;2** | Stage&nbsp;1&nbsp;Pass&nbsp;→&nbsp;Quality&nbsp;Audit | `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes). |
+| **8.&nbsp;COMMIT** | Passing&nbsp;Tasks&nbsp;→&nbsp;Integration | Passing tasks merge to the integration branch. |
+| **9.&nbsp;DONE** | Cleanup&nbsp;→&nbsp;Summary | Temporary state is cleaned and a completion summary is surfaced. |
+
+</workflow_matrix>
 
 <invariant>
 Reviewer agents operate with `disallowedTools: Write, Edit, Bash`, ensuring they cannot modify the code they are tasked with validating.
