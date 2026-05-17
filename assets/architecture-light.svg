@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 390" width="960" height="390">
+  <style>text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}</style>
+  <defs>
+    <filter id="sf"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".1"/></filter>
+    <marker id="ma" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#8c959f"/></marker>
+    <marker id="mp" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#1a7f37"/></marker>
+    <marker id="mf" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#d1242f"/></marker>
+  </defs>
+  <rect width="960" height="390" fill="#ffffff" rx="12"/>
+  <rect x="18" y="77" width="72" height="36" rx="18" fill="#1a7f37" stroke="#1a7f37" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="54" y="100" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="700">Task</text>
+  <line x1="90" y1="95" x2="105" y2="95" stroke="#8c959f" stroke-width="1.5" marker-end="url(#ma)"/>
+  <rect x="105" y="73" width="148" height="44" rx="8" fill="#ddf4ff" stroke="#54aeff" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="179" y="91" font-size="11" fill="#0969da" text-anchor="middle" font-weight="700">DECONSTRUCT</text>
+  <text x="179" y="105" font-size="9" fill="#636c76" text-anchor="middle">Intake &amp; Gaps</text>
+  <line x1="253" y1="95" x2="268" y2="95" stroke="#8c959f" stroke-width="1.5" marker-end="url(#ma)"/>
+  <rect x="268" y="73" width="118" height="44" rx="8" fill="#ddf4ff" stroke="#54aeff" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="327" y="91" font-size="11" fill="#0969da" text-anchor="middle" font-weight="700">DIAGNOSE</text>
+  <text x="327" y="105" font-size="9" fill="#636c76" text-anchor="middle">Constraints</text>
+  <line x1="386" y1="95" x2="401" y2="95" stroke="#8c959f" stroke-width="1.5" marker-end="url(#ma)"/>
+  <rect x="401" y="73" width="118" height="44" rx="8" fill="#cae8ff" stroke="#0969da" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="460" y="91" font-size="11" fill="#0550ae" text-anchor="middle" font-weight="700">DEVELOP</text>
+  <text x="460" y="105" font-size="9" fill="#636c76" text-anchor="middle">Architect Agent</text>
+  <line x1="519" y1="95" x2="526" y2="95" stroke="#8c959f" stroke-width="1.5" marker-end="url(#ma)"/>
+  <polygon points="590,59 654,95 590,131 526,95" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="590" y="92" font-size="10" fill="#7d4e00" text-anchor="middle" font-weight="700">HARD GATE</text>
+  <text x="590" y="105" font-size="9" fill="#636c76" text-anchor="middle">Human Approval</text>
+  <path d="M 590 131 L 590 195 L 234 195 L 234 253" fill="none" stroke="#8c959f" stroke-width="1.5" marker-end="url(#ma)"/>
+  <rect x="160" y="253" width="148" height="44" rx="8" fill="#fbefff" stroke="#8250df" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="234" y="271" font-size="11" fill="#6639ba" text-anchor="middle" font-weight="700">IMPLEMENT</text>
+  <text x="234" y="285" font-size="9" fill="#636c76" text-anchor="middle">Worker Agents</text>
+  <line x1="308" y1="275" x2="328" y2="275" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#mp)"/>
+  <rect x="328" y="253" width="148" height="44" rx="8" fill="#dafbe1" stroke="#2da44e" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="402" y="271" font-size="11" fill="#1a7f37" text-anchor="middle" font-weight="700">Spec Reviewer</text>
+  <text x="402" y="285" font-size="9" fill="#636c76" text-anchor="middle">Stage 1</text>
+  <line x1="476" y1="275" x2="496" y2="275" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#mp)"/>
+  <text x="486" y="266" font-size="9" fill="#1a7f37" text-anchor="middle">Pass</text>
+  <rect x="496" y="253" width="156" height="44" rx="8" fill="#dafbe1" stroke="#2da44e" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="574" y="271" font-size="11" fill="#1a7f37" text-anchor="middle" font-weight="700">Quality Reviewer</text>
+  <text x="574" y="285" font-size="9" fill="#636c76" text-anchor="middle">Stage 2</text>
+  <line x1="652" y1="275" x2="672" y2="275" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#mp)"/>
+  <text x="662" y="266" font-size="9" fill="#1a7f37" text-anchor="middle">Pass</text>
+  <rect x="672" y="253" width="118" height="44" rx="8" fill="#1a7f37" stroke="#1a7f37" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="731" y="271" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">COMMIT</text>
+  <text x="731" y="285" font-size="9" fill="#636c76" text-anchor="middle">Integration Branch</text>
+  <line x1="790" y1="275" x2="810" y2="275" stroke="#1a7f37" stroke-width="1.5" marker-end="url(#mp)"/>
+  <rect x="810" y="257" width="72" height="36" rx="18" fill="#1a7f37" stroke="#1a7f37" stroke-width="1.5" filter="url(#sf)"/>
+  <text x="846" y="280" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="700">DONE</text>
+  <path d="M 402 297 L 402 322 L 234 322 L 234 297" fill="none" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#mf)"/>
+  <text x="318" y="337" font-size="9" fill="#d1242f" text-anchor="middle">Fail</text>
+  <path d="M 574 297 L 574 340 L 210 340 L 210 297" fill="none" stroke="#d1242f" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#mf)"/>
+  <text x="392" y="355" font-size="9" fill="#d1242f" text-anchor="middle">Fail</text>
+</svg>
