@@ -1,48 +1,84 @@
-# Superpipelines — Multi-Agent Orchestration Framework
+# Superpipelines — Multi-Agent Orchestration for Claude Code
 
-> Multi-agent AI pipelines with guaranteed spec compliance, write/review isolation, and full crash recovery. Superpipelines enables complex task decomposition into coordinated subagents with automated verification and state persistence.
+Superpipelines transforms Claude Code from a chaotic generator into a disciplined engineering team. It enforces isolated code reviews, prevents infinite loops, and ensures you never lose state to a mid-generation crash via persistent JSON.
 
-<!-- <overview> -->
-Superpipelines provides a framework for decomposing complex tasks into coordinated subagents. It enforces engineering best practices through separate author and reviewer roles, explicit handoffs, and mandatory human gates for high-stakes transitions. The system ensures that every output matches its specification before merging, reducing model hallucinations and providing a robust path for crash recovery.
-<!-- </overview> -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/gustavo-meilus/superpipelines?style=social)](https://github.com/gustavo-meilus/superpipelines/stargazers)
 
-<!-- <glossary> -->
-  <term name="pipeline">A coordinated sequence of agent-driven tasks that transform a high-level goal into a verified implementation.</term>
-  <term name="write/review isolation">The structural separation of implementation and verification, where the reviewer agent lacks modification permissions.</term>
-  <term name="hard gate">A mandatory pause in execution requiring explicit human approval to proceed.</term>
-<!-- </glossary> -->
+[![Star History Chart](https://api.star-history.com/svg?repos=gustavo-meilus/superpipelines&type=Date)](https://star-history.com/#gustavo-meilus/superpipelines&Date)
+
+---
+
+## Quick Start
+
+**Step 1 — Install**
+
+```bash
+claude plugin install github:gustavo-meilus/superpipelines
+```
+
+**Step 2 — Create your first pipeline**
+
+```
+/superpipelines:new-pipeline
+```
+
+**Step 3 — Run it**
+
+```
+/superpipelines:run-pipeline
+```
+
+Superpipelines handles spec generation, agent coordination, and crash recovery automatically.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A([Your Task]) --> B[DECONSTRUCT\n4D Intake]
+    B --> C[DEVELOP\nArchitect]
+    C --> D{HARD GATE\nHuman Approval}
+    D --> E[IMPLEMENT\nWorker Agents]
+    E --> F[Spec Reviewer\nStage 1]
+    F -->|Pass| G[Quality Audit\nStage 2]
+    F -->|Fail| E
+    G -->|Pass| H([MERGE\nIntegration Branch])
+    G -->|Fail| E
+```
+
+The reviewer agent operates with `disallowedTools: Write, Edit, Bash` — it cannot rationalize its way into modifying code. It can only pass or fail it.
+
+---
 
 ## Capabilities
 
-Users achieve the following outcomes when utilizing Superpipelines:
-
-- **Deconstruction**: Tasks are decomposed into a precise specification, implementation plan, and itemized task list before execution.
-- **Structural Review**: Dedicated reviewer agents validate every task against the specification before commitment.
-- **State Persistence**: Pipeline state persists to scope-aware temporary directories, allowing for crash recovery and session resumption.
+- **Deconstruction**: Tasks decompose into a precise specification, implementation plan, and itemized task list before any code is written.
+- **Write/Review Isolation**: Reviewer agents are structurally barred from modifying the code they validate. Isolation is enforced at the permission layer, not by convention.
+- **State Persistence**: Pipeline state persists to scope-aware temporary directories. Crash mid-generation? Resume from the last completed phase.
 - **Escalation Guards**: Hard-coded iteration caps and human gates prevent model rationalization and infinite loops.
+
+---
 
 ## Execution Workflow
 
-Superpipelines executes tasks through a structured lifecycle:
-
 <!-- <workflow_matrix> -->
-| Phase | Process Flow | Description |  
+| Phase | Process Flow | Description |
 | :--- | :--- | :--- |
-| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
-| **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Environmental and architectural constraints are surfaced before code generation. |
-| **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`. |
+| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | Identifies gaps, ambiguities, and constraints through targeted intake. |
+| **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Surfaces environmental and architectural constraints before code generation. |
+| **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | `pipeline-architect` generates `spec.md`, `plan.md`, and `tasks.md`. |
 | **4.&nbsp;HARD&nbsp;GATE** | Execution&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Approval | Execution pauses for human review and approval of the specification. |
 | **5.&nbsp;IMPLEMENT** | Tasks&nbsp;→&nbsp;Worker&nbsp;Agents | Worker agents execute tasks in isolated git worktrees. |
 | **6.&nbsp;STAGE&nbsp;1** | Output&nbsp;→&nbsp;Spec&nbsp;Validator | `pipeline-spec-reviewer` validates output against the specification. |
 | **7.&nbsp;STAGE&nbsp;2** | Stage&nbsp;1&nbsp;Pass&nbsp;→&nbsp;Quality&nbsp;Audit | `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes). |
 | **8.&nbsp;COMMIT** | Passing&nbsp;Tasks&nbsp;→&nbsp;Integration | Passing tasks merge to the integration branch. |
 | **9.&nbsp;DONE** | Cleanup&nbsp;→&nbsp;Summary | Temporary state is cleaned and a completion summary is surfaced. |
-
 <!-- </workflow_matrix> -->
 
-<!-- <invariant> -->
-Reviewer agents operate with `disallowedTools: Write, Edit, Bash`, ensuring they cannot modify the code they are tasked with validating.
-<!-- </invariant> -->
+---
 
 ## Execution Patterns
 
@@ -57,19 +93,9 @@ The framework selects the optimal pattern based on task complexity:
 | **4.&nbsp;Human-Gated** | Agent&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Agent | High-stakes stages requiring manual approval. |
 | **5.&nbsp;Spec-Driven&nbsp;Dev** | Spec&nbsp;→&nbsp;Tasks&nbsp;→&nbsp;2-Stage&nbsp;Review | Full SDD with worktrees per task. |
 | **6.&nbsp;4D&nbsp;Wrapper** | 4D&nbsp;Intake&nbsp;→&nbsp;Pattern | Wraps any pattern with structured deconstruction. |
-
 <!-- </pattern_matrix> -->
 
-## Installation
-
-Install the Superpipelines plugin via Claude Code:
-
-<!-- <installation> -->
-```bash
-// Installation command
-claude plugin install github:gustavo-meilus/superpipelines
-```
-<!-- </installation> -->
+---
 
 ## Slash Commands
 
@@ -82,12 +108,16 @@ claude plugin install github:gustavo-meilus/superpipelines
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
 | `/superpipelines:audit-pipeline` | Audits agents and skills against the v2 compliance matrix. |
 
+---
+
 ## Design Principles
 
 - **Structural Isolation**: Permission boundaries are enforced at the agent definition level. Reviewers cannot rationalize their way into "fixing" code; they can only fail it.
 - **Scope-Aware State**: Pipeline state persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets in-progress phases while preserving completed work.
 - **Permission Granularity**: Every agent declares a `permissionMode` (e.g., `acceptEdits`, `plan`). Bypassing permissions requires explicit, documented justification.
 - **Progressive Disclosure**: High-density reference documentation resides in companion `*-references/` directories and is loaded on demand to minimize context bloat.
+
+---
 
 ## Repository Layout
 
@@ -97,12 +127,14 @@ superpipelines/
 ├── .claude-plugin/           # Plugin manifest and marketplace data
 ├── agents/                   # Core agent definitions (Architect, Auditor, Executor, Reviewers)
 ├── skills/                   # Shared skills (State, Paths, Patterns, Worktree Safety)
-│   ├── *-references/         # Deep reference libraries (On-demand loading)
+│   ├── *-references/         # Deep reference libraries (on-demand loading)
 ├── commands/                 # Slash command wrappers
 ├── hooks/                    # SessionStart hooks for bootstrap injection
 └── settings.json             # Global plugin configuration
 ```
 <!-- </file_structure> -->
+
+---
 
 ## Related Projects
 
