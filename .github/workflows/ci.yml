@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate Plugin Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON manifests
+        run: |
+          for f in .claude-plugin/*.json; do
+            echo "Validating $f"
+            python3 -m json.tool "$f" > /dev/null
+          done
+      - name: Check required files
+        run: |
+          test -f .claude-plugin/plugin.json || (echo "Missing plugin.json" && exit 1)
+          test -f README.md || (echo "Missing README.md" && exit 1)
+          test -f LICENSE || (echo "Missing LICENSE" && exit 1)
+          echo "All required files present."

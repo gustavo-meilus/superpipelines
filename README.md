@@ -1,48 +1,85 @@
-# Superpipelines — Multi-Agent Orchestration Framework
+# Superpipelines: Multi-Agent Orchestration for Claude Code
 
-> Multi-agent AI pipelines with guaranteed spec compliance, write/review isolation, and full crash recovery. Superpipelines enables complex task decomposition into coordinated subagents with automated verification and state persistence.
+Superpipelines turns Claude Code from a chaotic generator into a disciplined engineering team. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output.
 
-<!-- <overview> -->
-Superpipelines provides a framework for decomposing complex tasks into coordinated subagents. It enforces engineering best practices through separate author and reviewer roles, explicit handoffs, and mandatory human gates for high-stakes transitions. The system ensures that every output matches its specification before merging, reducing model hallucinations and providing a robust path for crash recovery.
-<!-- </overview> -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/gustavo-meilus/superpipelines?style=social)](https://github.com/gustavo-meilus/superpipelines/stargazers)
 
-<!-- <glossary> -->
-  <term name="pipeline">A coordinated sequence of agent-driven tasks that transform a high-level goal into a verified implementation.</term>
-  <term name="write/review isolation">The structural separation of implementation and verification, where the reviewer agent lacks modification permissions.</term>
-  <term name="hard gate">A mandatory pause in execution requiring explicit human approval to proceed.</term>
-<!-- </glossary> -->
+[![Star History Chart](https://api.star-history.com/svg?repos=gustavo-meilus/superpipelines&type=Date)](https://star-history.com/#gustavo-meilus/superpipelines&Date)
+
+---
+
+## Quick Start
+
+Step 1: Install
+
+```bash
+claude plugin install github:gustavo-meilus/superpipelines
+```
+
+Step 2: Create your first pipeline
+
+```
+/superpipelines:new-pipeline
+```
+
+Step 3: Run it
+
+```
+/superpipelines:run-pipeline
+```
+
+The system handles spec generation, agent coordination, state persistence, and crash recovery without requiring additional configuration.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A([Your Task]) --> B[DECONSTRUCT\n4D Intake]
+    B --> C[DEVELOP\nArchitect]
+    C --> D{HARD GATE\nHuman Approval}
+    D --> E[IMPLEMENT\nWorker Agents]
+    E --> F[Spec Reviewer\nStage 1]
+    F -->|Pass| G[Quality Audit\nStage 2]
+    F -->|Fail| E
+    G -->|Pass| H([MERGE\nIntegration Branch])
+    G -->|Fail| E
+```
+
+By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent cannot rationalize its way into modifying code. The only outputs it can produce are a passing verdict or an explicit failure that halts the pipeline.
+
+---
 
 ## Capabilities
 
-Users achieve the following outcomes when utilizing Superpipelines:
+Tasks decompose before execution into a precise specification and an itemized task list. This decomposition phase surfaces ambiguities and architectural gaps that would otherwise cause costly failures deep in the implementation cycle, especially when an agent encounters a constraint that never appeared in the initial intake. Reviewer agents cannot modify the code they validate.
 
-- **Deconstruction**: Tasks are decomposed into a precise specification, implementation plan, and itemized task list before execution.
-- **Structural Review**: Dedicated reviewer agents validate every task against the specification before commitment.
-- **State Persistence**: Pipeline state persists to scope-aware temporary directories, allowing for crash recovery and session resumption.
-- **Escalation Guards**: Hard-coded iteration caps and human gates prevent model rationalization and infinite loops.
+Isolation sits at the permission layer, not at the convention level. This distinction matters because a model under conventional role guidance can rationalize a targeted edit when the fix appears trivial, but a model under hard permission constraints cannot generate write operations at all. And most teams hit this failure mode only after a reviewer patches the audited file. Pipeline state persists to scope-aware temporary directories throughout execution, and a mid-session crash does not discard completed work because execution resumes automatically from the last stable checkpoint without triggering a full restart. Hard-coded iteration caps prevent runaway repair cycles. Human gates enforce additional stops at high-stakes transitions, requiring explicit approval before the pipeline advances to irreversible phases and blocking model rationalization from overriding defined stopping conditions.
+
+---
 
 ## Execution Workflow
 
-Superpipelines executes tasks through a structured lifecycle:
+Execution follows a nine-phase lifecycle, with mandatory validation between implementation and integration:
 
 <!-- <workflow_matrix> -->
-| Phase | Process Flow | Description |  
+| Phase | Process Flow | Description |
 | :--- | :--- | :--- |
-| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | The system identifies gaps, ambiguities, and constraints through targeted intake. |
-| **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Environmental and architectural constraints are surfaced before code generation. |
-| **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | The `pipeline-architect` generates the `spec.md`, `plan.md`, and `tasks.md`. |
+| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | Identifies gaps and ambiguities through targeted intake, surfacing constraints before execution. |
+| **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Surfaces environmental and architectural constraints before code generation. |
+| **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | `pipeline-architect` generates `spec.md`, `plan.md`, and `tasks.md`. |
 | **4.&nbsp;HARD&nbsp;GATE** | Execution&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Approval | Execution pauses for human review and approval of the specification. |
 | **5.&nbsp;IMPLEMENT** | Tasks&nbsp;→&nbsp;Worker&nbsp;Agents | Worker agents execute tasks in isolated git worktrees. |
 | **6.&nbsp;STAGE&nbsp;1** | Output&nbsp;→&nbsp;Spec&nbsp;Validator | `pipeline-spec-reviewer` validates output against the specification. |
 | **7.&nbsp;STAGE&nbsp;2** | Stage&nbsp;1&nbsp;Pass&nbsp;→&nbsp;Quality&nbsp;Audit | `pipeline-quality-reviewer` performs a code quality audit (only after Stage 1 passes). |
 | **8.&nbsp;COMMIT** | Passing&nbsp;Tasks&nbsp;→&nbsp;Integration | Passing tasks merge to the integration branch. |
 | **9.&nbsp;DONE** | Cleanup&nbsp;→&nbsp;Summary | Temporary state is cleaned and a completion summary is surfaced. |
-
 <!-- </workflow_matrix> -->
 
-<!-- <invariant> -->
-Reviewer agents operate with `disallowedTools: Write, Edit, Bash`, ensuring they cannot modify the code they are tasked with validating.
-<!-- </invariant> -->
+---
 
 ## Execution Patterns
 
@@ -57,19 +94,9 @@ The framework selects the optimal pattern based on task complexity:
 | **4.&nbsp;Human-Gated** | Agent&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Agent | High-stakes stages requiring manual approval. |
 | **5.&nbsp;Spec-Driven&nbsp;Dev** | Spec&nbsp;→&nbsp;Tasks&nbsp;→&nbsp;2-Stage&nbsp;Review | Full SDD with worktrees per task. |
 | **6.&nbsp;4D&nbsp;Wrapper** | 4D&nbsp;Intake&nbsp;→&nbsp;Pattern | Wraps any pattern with structured deconstruction. |
-
 <!-- </pattern_matrix> -->
 
-## Installation
-
-Install the Superpipelines plugin via Claude Code:
-
-<!-- <installation> -->
-```bash
-// Installation command
-claude plugin install github:gustavo-meilus/superpipelines
-```
-<!-- </installation> -->
+---
 
 ## Slash Commands
 
@@ -82,12 +109,15 @@ claude plugin install github:gustavo-meilus/superpipelines
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
 | `/superpipelines:audit-pipeline` | Audits agents and skills against the v2 compliance matrix. |
 
+---
+
 ## Design Principles
 
-- **Structural Isolation**: Permission boundaries are enforced at the agent definition level. Reviewers cannot rationalize their way into "fixing" code; they can only fail it.
-- **Scope-Aware State**: Pipeline state persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets in-progress phases while preserving completed work.
-- **Permission Granularity**: Every agent declares a `permissionMode` (e.g., `acceptEdits`, `plan`). Bypassing permissions requires explicit, documented justification.
-- **Progressive Disclosure**: High-density reference documentation resides in companion `*-references/` directories and is loaded on demand to minimize context bloat.
+Permission boundaries are enforced at the agent definition level, not by prompt instruction. But the constraint preventing reviewers from modifying code sits in the permission schema, not in a system prompt that a sufficiently confident model can talk itself around. Every agent declares a `permissionMode`, and bypassing it requires explicit documented justification.
+
+Pipeline state persists to a deterministic path at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets any in-progress phases to their initial state while preserving all completed work, which means a crashed session picks back up without re-running the intake or architecture phases that already passed validation. High-density reference documentation lives in companion `*-references/` directories and loads on demand. This strategy prevents token-heavy reference payloads from bloating the active session window during phases that do not need deep technical detail. Practitioners commonly underestimate how quickly context saturation degrades output quality on long pipelines. Keeping reference data out of the primary context until it is needed is one of the highest-return optimizations available without modifying the underlying model configuration.
+
+---
 
 ## Repository Layout
 
@@ -97,21 +127,23 @@ superpipelines/
 ├── .claude-plugin/           # Plugin manifest and marketplace data
 ├── agents/                   # Core agent definitions (Architect, Auditor, Executor, Reviewers)
 ├── skills/                   # Shared skills (State, Paths, Patterns, Worktree Safety)
-│   ├── *-references/         # Deep reference libraries (On-demand loading)
+│   ├── *-references/         # Deep reference libraries (on-demand loading)
 ├── commands/                 # Slash command wrappers
 ├── hooks/                    # SessionStart hooks for bootstrap injection
 └── settings.json             # Global plugin configuration
 ```
 <!-- </file_structure> -->
 
+---
+
 ## Related Projects
 
-- **[superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode)** — Companion project containing the opencode implementation of the Superpipelines plugin, including alternative skill definitions, agent configurations, and pipeline artifacts for the opencode environment.
+The companion project [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) contains the opencode implementation of the Superpipelines plugin, with alternative skill definitions, agent configurations, pipeline artifacts, and command wrappers adapted for the opencode environment.
 
 ## Contributing
 
-Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Use `/superpipelines:audit-pipeline` to validate additions against the compliance matrix before submission.
+Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Running `/superpipelines:audit-pipeline` before submission validates additions against the compliance matrix and surfaces violations before they reach review, which prevents the most common rejection causes from consuming maintainer time.
 
 ## License
 
-MIT — See [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
