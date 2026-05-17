@@ -36,18 +36,7 @@ The system handles spec generation, agent coordination, state persistence, and c
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A([Your Task]) --> B[DECONSTRUCT\n4D Intake]
-    B --> C[DEVELOP\nArchitect]
-    C --> D{HARD GATE\nHuman Approval}
-    D --> E[IMPLEMENT\nWorker Agents]
-    E --> F[Spec Reviewer\nStage 1]
-    F -->|Pass| G[Quality Audit\nStage 2]
-    F -->|Fail| E
-    G -->|Pass| H([MERGE\nIntegration Branch])
-    G -->|Fail| E
-```
+<img src="https://mermaid.ink/img/Zmxvd2NoYXJ0IExSCiAgICBBKFtZb3VyIFRhc2tdKSAtLT4gQltERUNPTlNUUlVDVFxuNEQgSW50YWtlXQogICAgQiAtLT4gQ1tERVZFTE9QXG5BcmNoaXRlY3RdCiAgICBDIC0tPiBEe0hBUkQgR0FURVxuSHVtYW4gQXBwcm92YWx9CiAgICBEIC0tPiBFW0lNUExFTUVOVFxuV29ya2VyIEFnZW50c10KICAgIEUgLS0+IEZbU3BlYyBSZXZpZXdlclxuU3RhZ2UgMV0KICAgIEYgLS0+fFBhc3N8IEdbUXVhbGl0eSBBdWRpdFxuU3RhZ2UgMl0KICAgIEYgLS0+fEZhaWx8IEUKICAgIEcgLS0+fFBhc3N8IEgoW01FUkdFXG5JbnRlZ3JhdGlvbiBCcmFuY2hdKQogICAgRyAtLT58RmFpbHwgRQ==" alt="Superpipelines architecture: Your Task → DECONSTRUCT → DEVELOP → HARD GATE → IMPLEMENT → Spec Reviewer → Quality Audit → MERGE" />
 
 By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent cannot rationalize its way into modifying code. The only outputs it can produce are a passing verdict or an explicit failure that halts the pipeline.
 
