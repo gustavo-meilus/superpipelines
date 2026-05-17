@@ -1,9 +1,10 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "superpipelines-marketplace",
+  "version": "1.0.0",
   "description": "Marketplace for the superpipelines plugin: design and run multi-agent AI pipelines",
   "owner": {
-    "name": "Gustavo Meilus",
-    "url": "https://github.com/gustavo-meilus"
+    "name": "Gustavo Meilus"
   },
   "plugins": [
     {
@@ -11,6 +12,7 @@
       "description": "Design, generate, and run multi-agent AI pipelines — scope-aware, multi-pipeline, spec-driven, write/review-isolated, with step-level create/update/delete and integrated audit",
       "version": "1.0.5",
       "source": "./",
+      "category": "development",
       "author": {
         "name": "Gustavo Meilus",
         "url": "https://github.com/gustavo-meilus"
