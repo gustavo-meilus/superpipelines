@@ -1,6 +1,6 @@
-# Superpipelines — Multi-Agent Orchestration for Claude Code
+# Superpipelines: Multi-Agent Orchestration for Claude Code
 
-Superpipelines transforms Claude Code from a chaotic generator into a disciplined engineering team. It enforces isolated code reviews, prevents infinite loops, and ensures you never lose state to a mid-generation crash via persistent JSON.
+Superpipelines turns Claude Code from a chaotic generator into a disciplined engineering team. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
@@ -12,25 +12,25 @@ Superpipelines transforms Claude Code from a chaotic generator into a discipline
 
 ## Quick Start
 
-**Step 1 — Install**
+Step 1: Install
 
 ```bash
 claude plugin install github:gustavo-meilus/superpipelines
 ```
 
-**Step 2 — Create your first pipeline**
+Step 2: Create your first pipeline
 
 ```
 /superpipelines:new-pipeline
 ```
 
-**Step 3 — Run it**
+Step 3: Run it
 
 ```
 /superpipelines:run-pipeline
 ```
 
-Superpipelines handles spec generation, agent coordination, and crash recovery automatically.
+The system handles spec generation, agent coordination, state persistence, and crash recovery without requiring additional configuration.
 
 ---
 
@@ -49,25 +49,26 @@ flowchart LR
     G -->|Fail| E
 ```
 
-The reviewer agent operates with `disallowedTools: Write, Edit, Bash` — it cannot rationalize its way into modifying code. It can only pass or fail it.
+By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent cannot rationalize its way into modifying code. The only outputs it can produce are a passing verdict or an explicit failure that halts the pipeline.
 
 ---
 
 ## Capabilities
 
-- **Deconstruction**: Tasks decompose into a precise specification, implementation plan, and itemized task list before any code is written.
-- **Write/Review Isolation**: Reviewer agents are structurally barred from modifying the code they validate. Isolation is enforced at the permission layer, not by convention.
-- **State Persistence**: Pipeline state persists to scope-aware temporary directories. Crash mid-generation? Resume from the last completed phase.
-- **Escalation Guards**: Hard-coded iteration caps and human gates prevent model rationalization and infinite loops.
+Tasks decompose before execution into a precise specification and an itemized task list. This decomposition phase surfaces ambiguities and architectural gaps that would otherwise cause costly failures deep in the implementation cycle, especially when an agent encounters a constraint that never appeared in the initial intake. Reviewer agents cannot modify the code they validate.
+
+Isolation sits at the permission layer, not at the convention level. This distinction matters because a model under conventional role guidance can rationalize a targeted edit when the fix appears trivial, but a model under hard permission constraints cannot generate write operations at all. And most teams hit this failure mode only after a reviewer patches the audited file. Pipeline state persists to scope-aware temporary directories throughout execution, and a mid-session crash does not discard completed work because execution resumes automatically from the last stable checkpoint without triggering a full restart. Hard-coded iteration caps prevent runaway repair cycles. Human gates enforce additional stops at high-stakes transitions, requiring explicit approval before the pipeline advances to irreversible phases and blocking model rationalization from overriding defined stopping conditions.
 
 ---
 
 ## Execution Workflow
 
+Execution follows a nine-phase lifecycle, with mandatory validation between implementation and integration:
+
 <!-- <workflow_matrix> -->
 | Phase | Process Flow | Description |
 | :--- | :--- | :--- |
-| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | Identifies gaps, ambiguities, and constraints through targeted intake. |
+| **1.&nbsp;DECONSTRUCT** | Intake&nbsp;→&nbsp;Gap&nbsp;Analysis | Identifies gaps and ambiguities through targeted intake, surfacing constraints before execution. |
 | **2.&nbsp;DIAGNOSE** | Environment&nbsp;→&nbsp;Constraints | Surfaces environmental and architectural constraints before code generation. |
 | **3.&nbsp;DEVELOP** | Architect&nbsp;→&nbsp;Spec/Plan/Tasks | `pipeline-architect` generates `spec.md`, `plan.md`, and `tasks.md`. |
 | **4.&nbsp;HARD&nbsp;GATE** | Execution&nbsp;→&nbsp;Gate&nbsp;→&nbsp;Approval | Execution pauses for human review and approval of the specification. |
@@ -112,10 +113,9 @@ The framework selects the optimal pattern based on task complexity:
 
 ## Design Principles
 
-- **Structural Isolation**: Permission boundaries are enforced at the agent definition level. Reviewers cannot rationalize their way into "fixing" code; they can only fail it.
-- **Scope-Aware State**: Pipeline state persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets in-progress phases while preserving completed work.
-- **Permission Granularity**: Every agent declares a `permissionMode` (e.g., `acceptEdits`, `plan`). Bypassing permissions requires explicit, documented justification.
-- **Progressive Disclosure**: High-density reference documentation resides in companion `*-references/` directories and is loaded on demand to minimize context bloat.
+Permission boundaries are enforced at the agent definition level, not by prompt instruction. But the constraint preventing reviewers from modifying code sits in the permission schema, not in a system prompt that a sufficiently confident model can talk itself around. Every agent declares a `permissionMode`, and bypassing it requires explicit documented justification.
+
+Pipeline state persists to a deterministic path at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets any in-progress phases to their initial state while preserving all completed work, which means a crashed session picks back up without re-running the intake or architecture phases that already passed validation. High-density reference documentation lives in companion `*-references/` directories and loads on demand. This strategy prevents token-heavy reference payloads from bloating the active session window during phases that do not need deep technical detail. Practitioners commonly underestimate how quickly context saturation degrades output quality on long pipelines. Keeping reference data out of the primary context until it is needed is one of the highest-return optimizations available without modifying the underlying model configuration.
 
 ---
 
@@ -138,12 +138,12 @@ superpipelines/
 
 ## Related Projects
 
-- **[superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode)** — Companion project containing the opencode implementation of the Superpipelines plugin, including alternative skill definitions, agent configurations, and pipeline artifacts for the opencode environment.
+The companion project [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) contains the opencode implementation of the Superpipelines plugin, with alternative skill definitions, agent configurations, pipeline artifacts, and command wrappers adapted for the opencode environment.
 
 ## Contributing
 
-Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Use `/superpipelines:audit-pipeline` to validate additions against the compliance matrix before submission.
+Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Running `/superpipelines:audit-pipeline` before submission validates additions against the compliance matrix and surfaces violations before they reach review, which prevents the most common rejection causes from consuming maintainer time.
 
 ## License
 
-MIT — See [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
