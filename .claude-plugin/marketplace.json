@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "Marketplace for the superpipelines plugin: design and run multi-agent AI pipelines",
   "owner": {
-    "name": "Gustavo Meilus"
+    "name": "Gustavo Meilus",
+    "email": "gmeilus@outlook.com"
   },
   "plugins": [
     {
@@ -15,6 +16,7 @@
       "category": "development",
       "author": {
         "name": "Gustavo Meilus",
+        "email": "gmeilus@outlook.com",
         "url": "https://github.com/gustavo-meilus"
       }
     }
