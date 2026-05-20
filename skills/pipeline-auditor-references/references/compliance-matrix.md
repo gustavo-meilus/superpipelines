@@ -6,7 +6,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 ## Table of contents
 
 1. Layout & registry (criteria 1–5)
-2. Frontmatter (criteria 6–11)
+2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–20)
 
@@ -28,9 +28,10 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 |---|-----------|----------------|
 | 6 | `name` valid | Lowercase + hyphens only, ≤64 chars, matches filename (without `.md`) |
 | 7 | `description` triggering-only | Third person, ≤1024 chars, no workflow summary, no first/second person ("I", "you") |
-| 8 | `model` appropriate | `sonnet` by default; any non-sonnet model must have a justification comment in the agent body or Architect's Brief |
+| 8 | `model` appropriate | `sonnet` by default; any non-sonnet model must have a justification comment in the Architect's Brief or the companion `{agent-name}-protocol` skill |
 | 9 | Core agent fields set | `effort` (one of `low/medium/high/xhigh/max`), `maxTurns` (integer), `version` (semver string) all present |
-| 10 | `permissionMode` valid | If present: one of `default \| acceptEdits \| plan \| bypassPermissions`; `bypassPermissions` requires an inline justification comment in the agent body |
+| 10 | `permissionMode` valid | If present: one of `default \| acceptEdits \| plan \| bypassPermissions`; `bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill |
+| 10a | Agent body is empty | No text appears after the closing `---` of the agent frontmatter block; agent has a companion `{agent-name}-protocol` skill listed in `skills:` |
 | 11 | `memory` valid | If present: `none` or `local` only. `memory: project` is a hard SEV-0 violation |
 
 ## 3. Topology
@@ -48,7 +49,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 | # | Criterion | PASS condition |
 |---|-----------|----------------|
 | 17 | Temp path convention | State and outputs stored at `{ROOT}/superpipelines/temp/{P}/{runId}/` — no `tmp/` or hardcoded absolute paths |
-| 18 | No hardcoded absolute paths in agent bodies | Agent bodies reference paths via a scope-root variable (`${SCOPE_ROOT}` or equivalent), never literal `/home/...` or `~/.claude/...` |
+| 18 | No hardcoded absolute paths in agent or protocol skill bodies | Agent files are zero-body; companion `{agent-name}-protocol` skills reference paths via a scope-root variable (`${SCOPE_ROOT}` or equivalent), never literal `/home/...` or `~/.claude/...` |
 | 19 | Write/review isolation honored | Review-role agents (`*-spec-reviewer`, `*-quality-reviewer`) have `disallowedTools: Write, Edit, Bash` (or equivalent) in frontmatter |
 | 20 | Cleanup contract present in entry skill | Entry skill body explicitly: (a) writes `status: completed` to `pipeline-state.json` on success, (b) deletes `temp/{P}/{runId}/` on DONE, (c) preserves temp on ESCALATED/FAILED/BLOCKED |
 | 21 | `plugin_version` present and consistent | `topology.json` has a `plugin_version` field; all agent frontmatter have `plugin_version`; registry entry has `plugin_version`. Missing → SEV-2. Mismatch between topology and agents → SEV-3 |
@@ -58,7 +59,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–20 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–21 (including 10a) in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

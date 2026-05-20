@@ -15,6 +15,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - `PERMISSION_MODE: PER_AGENT` — Agents declare explicit permission boundaries (e.g., `acceptEdits`, `plan`) in frontmatter.
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist in isolation per workspace.
+- `LEAN_AGENTS: TRUE` — Agent files are frontmatter-only; zero body text is permitted. All operational protocol resides in a companion `{agent-name}-protocol` skill (loaded via the `skills:` list) with `disable-model-invocation: true` and `user-invocable: false`.
 </architecture_invariants>
 
 ## File-Layout Rules
@@ -24,6 +25,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - **Source Roots**: `agents/`, `skills/`, `commands/`, and `hooks/` reside at the repository root.
 - **Generated Artifacts**: Artifacts live under scope-dependent roots (`project`, `local`, or `user`) as resolved by `sk-pipeline-paths`.
 - **Reference Skills**: Companion reference skills (`*-references/`) omit `SKILL.md` to prevent preloading into system context.
+- **Protocol Skills**: Each agent has a companion `{agent-name}-protocol/SKILL.md` that holds its full operational protocol. Protocol skills use `disable-model-invocation: true` and `user-invocable: false`; they are loaded only via the agent's `skills:` list.
 </file_rules>
 
 ## Authoring Rules
@@ -31,7 +33,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 <authoring_rules>
 - **Skill Descriptions**: Use triggering conditions only; avoid workflow summaries.
 - **Voice**: Enforce third-person impersonal voice throughout all documentation and skills.
-- **Constraints**: Skill bodies ≤500 lines; agent bodies ≤150 lines; every skill description ≤1024 characters.
+- **Constraints**: Skill bodies ≤500 lines; agent bodies are empty (frontmatter only); every skill description ≤1024 characters.
 - **Reference Topology**: References >100 lines must include a Table of Contents.
 - **Status Reporting**: Agents must emit exactly one terminal status: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
 </authoring_rules>
@@ -44,4 +46,4 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.0.4
+- **Project Version**: v1.2.0

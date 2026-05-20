@@ -15,7 +15,7 @@ Findings classified into four severity tiers.
 
 - Subagent attempts to spawn children (`SUB_AGENT_SPAWNING: FALSE` violated).
 - `memory: project` in agent frontmatter.
-- `permissionMode: bypassPermissions` without inline justification in agent body.
+- `permissionMode: bypassPermissions` without inline justification in the companion `{agent-name}-protocol` skill.
 - `memory: local` on a reviewer agent (reviewers must not persist heuristics).
 - Tool churn mid-session (skills list mutated, tools added/removed).
 - Missing required-field in plugin manifest.
@@ -25,7 +25,7 @@ Findings classified into four severity tiers.
 
 ## SEV-1 examples
 
-- Agent body >150 lines.
+- Agent body is non-empty (any text after the closing `---` of the frontmatter block violates `LEAN_AGENTS: TRUE`).
 - Skill body >500 lines.
 - No output contract declared.
 - Vague identity / no single goal.
