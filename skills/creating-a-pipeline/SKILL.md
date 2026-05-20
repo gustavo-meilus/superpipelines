@@ -55,7 +55,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
   4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` stamped)
   5. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
-  6. All step agents and skills under `<scope-root>/agents/superpipelines/{P}/` and `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter)
+  6. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
   7. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
 </HARD-GATE>
 - Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it."

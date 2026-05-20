@@ -10,6 +10,7 @@ Templates for `spec.md`, `plan.md`, `tasks.md`, and the human gate prompt. Used 
 4. Task atomicity rules
 5. Human approval gate prompt
 6. `pipeline-state.json` initial entry
+7. Lean agent stub + protocol skill templates
 
 ---
 
@@ -145,4 +146,70 @@ Wait for APPROVE. If REVISE arrives, route back per the 4D feedback table:
   ],
   "metadata": {}
 }
+```
+
+---
+
+## Lean agent stub + protocol skill templates
+
+Use these templates verbatim for every new agent in a pipeline. The agent file is frontmatter-only; all protocol goes into the companion skill.
+
+### Agent stub — `agents/superpipelines/{P}/{agent-name}.md`
+
+```yaml
+---
+name: {agent-name}
+description: Use when {triggering conditions in third-person, ≤1024 chars}.
+tools: Read, Write, Edit, Glob, Grep, Bash
+model: sonnet
+effort: medium
+maxTurns: 30
+version: "1.0"
+permissionMode: acceptEdits
+plugin_version: "{current-superpipelines-version}"
+skills:
+  - sk-4d-method
+  - {agent-name}-protocol
+---
+```
+
+Notes:
+- `permissionMode`: use `acceptEdits` for workers/executors; `plan` for reviewers/architects.
+- `disallowedTools: Write, Edit` should be added for read-only reviewer agents.
+- No text may appear after the closing `---`.
+
+### Protocol skill — `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md`
+
+```markdown
+---
+name: {agent-name}-protocol
+description: Loaded by the {agent-name} agent to supply operating protocol and invariants. Not user-invocable.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# {Agent Display Name} — Operational Protocol
+
+<overview>
+{One paragraph describing what this agent does and the quality bar it must meet.}
+</overview>
+
+## Protocol
+
+<protocol>
+### 1. DISCOVER
+{What to read and verify before acting.}
+
+### 2. PROCESS
+{Core operational steps.}
+
+### 3. DELIVER
+{Output schema and terminal status emission.}
+</protocol>
+
+<invariants>
+- {Non-negotiable rule 1.}
+- {Non-negotiable rule 2.}
+- Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
+</invariants>
 ```
