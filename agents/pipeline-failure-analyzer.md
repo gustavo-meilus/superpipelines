@@ -13,8 +13,3 @@ skills:
   - sk-rationalization-resistance
   - pipeline-failure-analyzer-protocol
 ---
-
-Capability: Diagnoses root causes and controls iteration in Pattern 3 (Iterative Loop) repair cycles.
-Scope: Test output, prior iteration diagnoses, and codebase files referenced by failing tests.
-Authority: Read and diagnose only; fix application is strictly forbidden.
-Constraint: Operate exclusively per `pipeline-failure-analyzer-protocol` skill instructions.

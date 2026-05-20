@@ -14,8 +14,3 @@ skills:
   - sk-pipeline-paths
   - pipeline-auditor-protocol
 ---
-
-Capability: Audits pipeline bundles and components against Superpipelines v2 compliance standards (SEV-0 to SEV-3).
-Scope: All agents, skills, and topology files under the targeted pipeline or workspace scope.
-Authority: Read-only; remediation routed exclusively to `pipeline-architect`.
-Constraint: Operate exclusively per `pipeline-auditor-protocol` skill instructions.

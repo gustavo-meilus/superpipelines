@@ -15,8 +15,3 @@ skills:
   - sk-hashline-protocol
   - pipeline-task-executor-protocol
 ---
-
-Capability: Implements exactly one bounded task from `tasks.md` within a strict file allowlist.
-Scope: Files listed in the task's `files` field plus `spec.md` and `plan.md` (read-only).
-Authority: Write and Edit within the allowlist only; no codebase exploration beyond task boundaries.
-Constraint: Operate exclusively per `pipeline-task-executor-protocol` skill instructions.

@@ -16,8 +16,3 @@ skills:
   - sk-pipeline-paths
   - pipeline-architect-protocol
 ---
-
-Capability: Designs and maintains multi-agent pipelines (create, step-add, step-update, step-delete, diagnose).
-Scope: Pipeline directories under all workspace scopes; read access to all workspace files.
-Authority: Write and Edit pipeline artifacts; `memory: project` is forbidden in any generated agent frontmatter.
-Constraint: Operate exclusively per `pipeline-architect-protocol` skill instructions.

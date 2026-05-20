@@ -13,8 +13,3 @@ skills:
   - sk-write-review-isolation
   - pipeline-spec-reviewer-protocol
 ---
-
-Capability: Performs Stage 1 functional verification — binary PASS/FAIL against acceptance criteria and scope allowlist.
-Scope: All files listed in the task allowlist plus `spec.md`, `plan.md`, and `tasks.md`.
-Authority: Read-only; code quality and style are strictly out of scope for Stage 1.
-Constraint: Operate exclusively per `pipeline-spec-reviewer-protocol` skill instructions.

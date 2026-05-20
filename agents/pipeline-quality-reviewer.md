@@ -14,8 +14,3 @@ skills:
   - sk-dynamic-routing
   - pipeline-quality-reviewer-protocol
 ---
-
-Capability: Performs Stage 2 code quality review (idiom, naming, structure, cleanliness, error handling).
-Scope: All files modified by the preceding `pipeline-task-executor` task.
-Authority: Read-only; role is strictly observational — no file modifications permitted.
-Constraint: Operate exclusively per `pipeline-quality-reviewer-protocol` skill instructions.

@@ -17,9 +17,10 @@ version: "1.0"                                # bump on breaking change
 plugin_version: "1.0.4"                       # superpipelines version that created/last-modified this agent
 permissionMode: default | acceptEdits | plan | bypassPermissions   # optional; omit = default
 memory: none | local                          # optional; omit = none. NEVER "project"
-skills:                                       # ONLY sk-* preloaded method skills
+skills:                                       # sk-* method skills + ONE companion {name}-protocol skill
   - sk-4d-method
   - sk-pipeline-paths
+  - pipeline-{name}-protocol                  # companion protocol skill; holds all operational logic
 mcpServers:
   - server-name
 background: false
@@ -40,9 +41,9 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | `maxTurns` | yes | Read-only: 15–25. Generation: 30–40. Validation: 10–15. |
 | `version` | yes | Bump major on breaking change to output schema or required inputs. |
 | `plugin_version` | yes | The superpipelines package version (semver) that created or last modified this agent. Stamp at creation and on any mutation (add/update/delete step). Enables future retro-compatibility checks. |
-| `permissionMode` | optional | `acceptEdits` for implementation agents; `plan` for analysis-only; omit or `default` for standard. `bypassPermissions` requires inline justification in agent body. |
+| `permissionMode` | optional | `acceptEdits` for implementation agents; `plan` for analysis-only; omit or `default` for standard. `bypassPermissions` requires inline justification in the companion `{name}-protocol` skill. |
 | `memory` | optional | `local` for agents persisting learned heuristics. Omit (= `none`) for stateless agents. NEVER `project`. |
-| `skills` | recommended | ONLY shared `sk-*` skills. Never large workflow skills. Never companion-reference skills. |
+| `skills` | recommended | `sk-*` method skills plus the ONE companion `{agent-name}-protocol` skill. Never large workflow skills. Never `*-references` skills. |
 | `isolation` | conditional | `worktree` for parallel/iterative patterns. Omit for read-only analysis. |
 | `background` | optional | `true` only for fire-and-forget observers. Default `false`. |
 
@@ -61,7 +62,7 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | Architect (design only) | `plan` |
 | Auditor / reviewer | `plan` (reviewers also use `disallowedTools`) |
 | Orchestrator skill | omit (controlled by plugin `settings.json`) |
-| Agent requiring unrestricted access | `bypassPermissions` — ONLY with documented user justification in agent body |
+| Agent requiring unrestricted access | `bypassPermissions` — ONLY with documented user justification in the companion `{name}-protocol` skill |
 
 ## memory selection guide
 
@@ -81,15 +82,29 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | Cross-system integration with competing constraints | `xhigh` |
 | Truly ambiguous, last-resort problems | `max` |
 
-## Capability contract (agent body)
+## Protocol skill companion
 
-Every agent body must declare its contract near the top:
+Every agent file is zero-body (no text after the closing `---`). All operational logic lives in a companion skill:
 
 ```markdown
-# Inputs required: {task_file_path}, {project_context}, {scope_root}
-# Output schema: { "status": "DONE|BLOCKED|...", "outputs": [...] }
-# Breaking change log: v1.0 — initial release
+---
+name: pipeline-{name}-protocol
+description: Loaded by the pipeline-{name} agent to supply operating modes, protocol, and invariants. Not user-invocable.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Pipeline {Name} — Operational Protocol
+
+<overview>...</overview>
+<glossary>...</glossary>
+## Operating Modes / Workflow
+<protocol>...</protocol>
+<invariants>...</invariants>
+## Reference Files
 ```
+
+Place the companion skill at `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md`.
 
 ## Versioning rules
 

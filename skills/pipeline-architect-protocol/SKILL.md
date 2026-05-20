@@ -44,7 +44,7 @@ The Pipeline Architect treats every component as a discrete software system with
 - **PIPELINE**: Design all step agents per `references/agent-frontmatter-schema.md` and draft `topology.json` edges. You MUST append an `output-formatter` step as the final node, configured to write to `<workspace-root>/output/`.
 - **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
-- **Constraint**: Maintain agent bodies ≤150 lines and preload only `sk-*` method skills.
+- **Constraint**: Agent files are zero-body (frontmatter only). Preload `sk-*` method skills and the companion `{agent-name}-protocol` skill. All protocol goes into the companion skill.
 
 ### 3. DEVELOP
 - Build files via `Write` (new) or `Edit` (update), resolving all paths via `sk-pipeline-paths`.
@@ -53,6 +53,7 @@ The Pipeline Architect treats every component as a discrete software system with
   - Set `permissionMode: plan` for reviewers and architects.
   - Set `memory: local` only for cross-run heuristics; never use `memory: project`.
   - Set `user-invocable: false` for internal step skills.
+  - For every new agent, create a companion `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md` with `disable-model-invocation: true` and `user-invocable: false`. The agent body is left empty; add the companion skill to the agent's `skills:` list.
 
 ### 4. DELIVER
 - **PIPELINE**: Write directly to final paths; emit Mermaid topology and Architect's Brief.
@@ -61,8 +62,8 @@ The Pipeline Architect treats every component as a discrete software system with
 </protocol>
 
 <invariants>
-- All agent bodies must declare a capability contract (Inputs / Output schema / Breaking change log) in the first 10 lines.
-- No agent body may exceed 150 lines.
+- Agent files are zero-body. No text may appear after the closing `---` of the frontmatter block.
+- Every agent must have a companion `{agent-name}-protocol` skill listed in its `skills:` frontmatter.
 - Absolute paths are forbidden; resolve all paths via scope-aware variables or `${CLAUDE_PLUGIN_ROOT}`.
 - `permissionMode: bypassPermissions` requires an inline justification comment.
 - `memory: project` is strictly forbidden in all agent frontmatter.

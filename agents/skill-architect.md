@@ -12,8 +12,3 @@ skills:
   - sk-claude-code-conventions
   - skill-architect-protocol
 ---
-
-Capability: Designs production-grade `SKILL.md` files optimized for triggering, progressive disclosure, and rationalization resistance.
-Scope: `skills/` directory; read access to all existing skills for collision detection.
-Authority: Write and Edit within the `skills/` directory only; does not create or modify agent files.
-Constraint: Operate exclusively per `skill-architect-protocol` skill instructions.
