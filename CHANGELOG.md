@@ -17,6 +17,32 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 1.0.6 — Lean Agents & Zero-Body Architecture (2026-05-20)
+
+### Architecture & Governance
+
+- **`LEAN_AGENTS: TRUE` Invariant** — Added as a core architecture invariant in `CLAUDE.md`. Agent files are now frontmatter-only configuration envelopes; zero body text is permitted after the closing `---`.
+- **Protocol Skill Companion Pattern** — Every framework agent now has a companion `{agent-name}-protocol/SKILL.md` carrying its full operational protocol (`disable-model-invocation: true`, `user-invocable: false`). This replaces the previous fat-agent model where protocol lived directly in the agent body.
+- **3-Layer Progressive Disclosure** — Architecture now enforces: agent (config) → protocol skill (workflow) → reference files (deep content).
+
+### Added
+
+- **7 Protocol Skills** — Companion `{agent-name}-protocol/SKILL.md` created for every framework agent: `pipeline-architect-protocol`, `pipeline-auditor-protocol`, `pipeline-failure-analyzer-protocol`, `pipeline-quality-reviewer-protocol`, `pipeline-spec-reviewer-protocol`, `pipeline-task-executor-protocol`, `skill-architect-protocol`. Each carries operating modes, protocol steps, invariants, rationalization tables, and reference file links.
+- **Release Skill** — Added `.claude/skills/release.md` with an 8-step release workflow covering version discovery, user-gated version selection, commit categorization, multi-file version bumping, changelog authoring, staged approval gate, git tagging, and GitHub release publication.
+
+### Changed
+
+- **Zero-Body Agents** — All 7 framework agents (`pipeline-architect`, `pipeline-auditor`, `pipeline-failure-analyzer`, `pipeline-quality-reviewer`, `pipeline-spec-reviewer`, `pipeline-task-executor`, `skill-architect`) reduced to frontmatter-only stubs. Versions bumped accordingly (2.0→3.0 for architect/auditor, 1.0→2.0 for the rest).
+- **`agent-frontmatter-schema.md`** — Replaced "Capability contract (agent body)" section with "Protocol skill companion" section. Updated `skills` field rule and all `bypassPermissions` guidance to reference the protocol skill.
+- **`compliance-matrix.md`** — Added criterion 10a (agent body must be empty); updated criterion 10 (`bypassPermissions` justification in protocol skill); updated criterion 18 to cover protocol skill bodies.
+- **`pipeline-architect-protocol`** — DESIGN constraint and DEVELOP section updated to generate zero-body stubs with companion protocol skills for every new pipeline agent.
+- **`.gitignore`** — Removed `.claude/` ignore rule; the `.claude` directory is now fully tracked.
+- **README** — Dual-theme local SVG architecture diagrams replace external `mermaid.ink` image URLs; prose restructured with hook, badges, quick-start, and humanized style.
+
+### Fixed
+
+- **Marketplace Schema** — Added missing `owner.email` and `author.email` fields to `marketplace.json` to satisfy strict JSON schema validation requirements.
+
 ## 1.0.5 — Plugin Version Stamping & Model Change Command (2026-05-12)
 
 ### Architecture & Governance
