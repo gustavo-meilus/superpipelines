@@ -20,8 +20,7 @@
 10. [File Layout Changes](#10-file-layout-changes)
 11. [Platform Compatibility Matrix](#11-platform-compatibility-matrix)
 12. [Migration: superpipelines-opencode](#12-migration-superpipelines-opencode)
-13. [MCP — Phase 2 Scope](#13-mcp--phase-2-scope)
-14. [Invariants](#14-invariants)
+13. [Invariants](#13-invariants)
 
 ---
 
@@ -105,7 +104,6 @@ A parallel port effort (`superpipelines-opencode`) revealed that maintaining sep
 ### Non-Goals (Phase 1)
 
 - **NG1:** Compiled TypeScript plugin for any platform (OpenCode uses cross-loading instead)
-- **NG2:** MCP server (Phase 2)
 - **NG3:** Gemini CLI as a separate target (covered by Antigravity's `gemini-extension.json` compatibility)
 - **NG4:** True parallel execution on non-CC platforms (graceful degradation to sequential is sufficient)
 - **NG5:** Platform-specific agent frontmatter files (agent files are CC-specific; non-CC platforms use single-agent mode with protocol skills)
@@ -439,23 +437,7 @@ The compiled TypeScript plugin in `superpipelines-opencode` was required because
 
 ---
 
-## 13. MCP — Phase 2 Scope
-
-An optional `superpipelines-mcp` server is deferred to Phase 2. It would expose:
-
-| Primitive | Value |
-|---|---|
-| Resource: `registry` | List all pipelines in scope |
-| Resource: `topology/{P}` | Read pipeline graph |
-| Resource: `state/{P}/{runId}` | Read live execution state |
-| Tool: `get_pipeline_status` | Query run status |
-| Tool: `write_state` | Update pipeline state |
-
-MCP does **not** enable cross-platform subagent spawning (MCP cannot run AI models). Its value is pipeline introspection and state management for IDE dashboards and CI/CD integrations.
-
----
-
-## 14. Invariants
+## 13. Invariants
 
 - `MULTI_PLATFORM: TRUE` — Plugin supports Claude Code, Codex, Cursor/Windsurf/Cline, OpenCode, Antigravity
 - `TIER_MODEL: 2-TIER` — Tier 1 (multi-agent, CC only), Tier 2 (single-agent, all others)
