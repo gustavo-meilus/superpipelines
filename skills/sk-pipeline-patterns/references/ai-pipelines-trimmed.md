@@ -23,7 +23,7 @@
 - `PIPELINE_PHASE_ISOLATION: TRUE` — Tester, Analyzer, Healer (and Executor / Stage-1 Reviewer / Stage-2 Reviewer) are separate instances.
 - `WORKTREE_MERGE_REQUIRED: TRUE` — If `isolation: worktree` is used, the orchestrator MUST commit and merge successful changes before worktree destruction. See `sk-worktree-safety`.
 
-Agent definition cap: body ≤150 lines STRICT. Depth lives in companion `<agent>-references/references/*.md` (read on demand).
+Agent files are zero-body (frontmatter only). All protocol lives in a companion `{agent-name}-protocol/SKILL.md`. Deep reference material lives in `{agent-name}-references/references/*.md` (read on demand).
 
 ---
 
@@ -169,7 +169,7 @@ See `sk-rationalization-resistance` for tag conventions and authoring rules.
 ## 8. Strict conventions essentials
 
 - `MODEL_SELECTION: SONNET_ONLY` — every pipeline agent is `model: sonnet`. Scale via `effort: low | medium | high | xhigh | max`.
-- `PERMISSION_MODE: PER_AGENT` — each pipeline agent may declare `permissionMode: default | acceptEdits | plan | bypassPermissions`. Never use `bypassPermissions` without explicit user justification documented in the agent body.
+- `PERMISSION_MODE: PER_AGENT` — each pipeline agent may declare `permissionMode: default | acceptEdits | plan | bypassPermissions`. Never use `bypassPermissions` without explicit user justification documented in the companion `{agent-name}-protocol` skill.
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json` only. No `memory: project`. `memory: local` is allowed for agents that persist learned heuristics.
 - `AUTO_MEMORY: DISABLED` — `autoMemoryEnabled: false` in settings; `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` env var. Reclaims 658+ tokens.
 - `BOUND_STDOUT: TRUE` — pipe long outputs through `tail -80` etc. before passing back.

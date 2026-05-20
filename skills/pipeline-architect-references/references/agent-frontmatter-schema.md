@@ -14,7 +14,7 @@ model: sonnet                                 # SONNET_ONLY default; non-sonnet 
 effort: low | medium | high | xhigh | max
 maxTurns: 25                                  # bounds execution
 version: "1.0"                                # bump on breaking change
-plugin_version: "1.0.4"                       # superpipelines version that created/last-modified this agent
+plugin_version: "1.0.6"                       # superpipelines version that created/last-modified this agent
 permissionMode: default | acceptEdits | plan | bypassPermissions   # optional; omit = default
 memory: none | local                          # optional; omit = none. NEVER "project"
 skills:                                       # sk-* method skills + ONE companion {name}-protocol skill
@@ -36,7 +36,7 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | `description` | yes | Routing contract. Triggering conditions only. NEVER summarize workflow. Third person. |
 | `tools` | recommended | Minimal allowlist. Read-only agents: omit Write/Edit/Bash. |
 | `disallowedTools` | optional | Use to deny tools the agent must never call. Reviewers must deny Write/Edit/Bash. |
-| `model` | yes | `sonnet` by default. Non-sonnet: document user opt-in in Architect's Brief and agent body. |
+| `model` | yes | `sonnet` by default. Non-sonnet: document user opt-in in the Architect's Brief or companion `{agent-name}-protocol` skill. |
 | `effort` | yes | Architect/auditor: `high`. Workers: `medium`. Triage: `low`. |
 | `maxTurns` | yes | Read-only: 15–25. Generation: 30–40. Validation: 10–15. |
 | `version` | yes | Bump major on breaking change to output schema or required inputs. |

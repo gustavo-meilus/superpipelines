@@ -28,7 +28,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 |---|-----------|----------------|
 | 6 | `name` valid | Lowercase + hyphens only, ≤64 chars, matches filename (without `.md`) |
 | 7 | `description` triggering-only | Third person, ≤1024 chars, no workflow summary, no first/second person ("I", "you") |
-| 8 | `model` appropriate | `sonnet` by default; any non-sonnet model must have a justification comment in the agent body or Architect's Brief |
+| 8 | `model` appropriate | `sonnet` by default; any non-sonnet model must have a justification comment in the Architect's Brief or the companion `{agent-name}-protocol` skill |
 | 9 | Core agent fields set | `effort` (one of `low/medium/high/xhigh/max`), `maxTurns` (integer), `version` (semver string) all present |
 | 10 | `permissionMode` valid | If present: one of `default \| acceptEdits \| plan \| bypassPermissions`; `bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill |
 | 10a | Agent body is empty | No text appears after the closing `---` of the agent frontmatter block; agent has a companion `{agent-name}-protocol` skill listed in `skills:` |
@@ -59,7 +59,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–20 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–21 (including 10a) in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

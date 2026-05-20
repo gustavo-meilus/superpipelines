@@ -1,6 +1,6 @@
 ---
 name: sk-rationalization-resistance
-description: Use when authoring a discipline-enforcing skill or agent body that must hold up under time pressure, sunk cost, or "obvious answer" rationalization — defines HARD-GATE / EXTREMELY-IMPORTANT tag conventions, Red Flags lists, and Rationalization Tables. Reference-only; preload via agent skills frontmatter.
+description: Use when authoring a discipline-enforcing skill or protocol skill that must hold up under time pressure, sunk cost, or "obvious answer" rationalization — defines HARD-GATE / EXTREMELY-IMPORTANT tag conventions, Red Flags lists, and Rationalization Tables. Reference-only; preload via agent skills frontmatter.
 disable-model-invocation: true
 user-invocable: false
 ---

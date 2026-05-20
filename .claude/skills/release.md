@@ -230,21 +230,24 @@ git push origin v{NEW_VERSION}
 
 ### Create GitHub Release
 
-Use `mcp__github__push_files` is not applicable here. Instead, use the GitHub MCP tool `mcp__github__get_latest_release` to confirm the tag is visible on the remote, then instruct the user:
+The `mcp__github__create_release` tool is not available in this environment. Use `mcp__github__get_latest_release` to confirm the tag is visible on the remote, then instruct the user:
 
 > "The tag `v{NEW_VERSION}` has been pushed. To publish the GitHub release, go to:
 > https://github.com/gustavo-meilus/superpipelines/releases/new?tag=v{NEW_VERSION}
 >
-> Use the following as the release body:"
+> Paste the following as the release body (the v{NEW_VERSION} entry from RELEASE-NOTES.md):"
 
-Then paste the full RELEASE-NOTES.md entry for this version (the `<release_entry>` block and heading, formatted as Markdown).
+Then paste only the current release's `<release_entry>` block and heading — do NOT paste the full RELEASE-NOTES.md, which contains all prior releases.
 
-If the user has `gh` CLI available locally:
+If the user has `gh` CLI available locally, extract the current entry to a temp file first:
 ```bash
+# Extract only the current release entry from RELEASE-NOTES.md
+awk "/^## v{NEW_VERSION}/,/^## v[0-9]/" RELEASE-NOTES.md | head -n -1 > /tmp/release-notes-current.md
 gh release create v{NEW_VERSION} \
   --title "v{NEW_VERSION} — {Release Title}" \
-  --notes-file RELEASE-NOTES.md \
+  --notes-file /tmp/release-notes-current.md \
   --target main
+rm /tmp/release-notes-current.md
 ```
 
 ---

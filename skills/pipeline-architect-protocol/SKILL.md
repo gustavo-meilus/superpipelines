@@ -65,7 +65,7 @@ The Pipeline Architect treats every component as a discrete software system with
 - Agent files are zero-body. No text may appear after the closing `---` of the frontmatter block.
 - Every agent must have a companion `{agent-name}-protocol` skill listed in its `skills:` frontmatter.
 - Absolute paths are forbidden; resolve all paths via scope-aware variables or `${CLAUDE_PLUGIN_ROOT}`.
-- `permissionMode: bypassPermissions` requires an inline justification comment.
+- `permissionMode: bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill.
 - `memory: project` is strictly forbidden in all agent frontmatter.
 </invariants>
 

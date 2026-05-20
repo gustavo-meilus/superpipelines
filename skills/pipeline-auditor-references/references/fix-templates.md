@@ -5,7 +5,7 @@ Canonical fixes for common findings. Use as Edit templates when the user request
 ## Table of contents
 
 1. Description summarizes workflow
-2. Agent body >150 lines
+2. Agent body is non-empty
 3. `permissionMode` in frontmatter
 4. `memory: project` / `memory: local`
 5. Skill preload includes workflow skill
@@ -31,14 +31,14 @@ description: Processes Excel files by reading sheets, cleaning data, and generat
 description: Use when working with Excel files, spreadsheets, or .xlsx data extraction.
 ```
 
-## Fix 2 — Agent body >150 lines
+## Fix 2 — Agent body is non-empty
 
-**Action:** Split into body + companion `<agent>-references/references/*.md`.
+**Action:** Move all body content to a companion `{agent-name}-protocol/SKILL.md`; leave the agent file as frontmatter-only.
 
-1. Identify the deepest sections (frontmatter schemas, anti-pattern catalogs, decision trees).
-2. Move them to `skills/<agent>-references/references/<topic>.md`.
-3. In the body, replace the section with a 1–3 line summary + "Read `references/<topic>.md` for detail."
-4. Verify body ≤150 lines.
+1. Create `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md` with `disable-model-invocation: true` and `user-invocable: false`.
+2. Move every line after the closing `---` of the agent file into the new protocol skill.
+3. Add `{agent-name}-protocol` to the agent's `skills:` list in frontmatter.
+4. Delete all body text from the agent file. Nothing may appear after the closing `---`.
 
 ## Fix 3 — `permissionMode` in frontmatter
 
@@ -87,7 +87,7 @@ skills:
   - sk-4d-method
 ```
 
-Workflow skills (`brainstorming`, `running-a-pipeline`, `creating-a-pipeline`) are session-level lazy invocation, not pre-injection. Reference them in body text instead.
+Workflow skills (`brainstorming`, `running-a-pipeline`, `creating-a-pipeline`) are session-level lazy invocation, not pre-injection. Reference them in the companion `{agent-name}-protocol` skill instead.
 
 ## Fix 6 — Reviewer agent has Write/Edit
 
@@ -126,15 +126,27 @@ Read ~/.claude/agents/code-reviewer.md
 Resolve path via `sk-pipeline-paths` using the appropriate scope (local/project/user). Avoid hardcoded absolute paths.
 ```
 
-## Fix 9 — Missing capability contract
+## Fix 9 — Missing companion protocol skill
 
-**Action:** Add near top of agent body:
+**Action:** Every agent must have a companion `{agent-name}-protocol` skill. If absent:
 
+1. Create `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md`:
 ```markdown
-# Inputs required: {list of required context fields}
-# Output schema: { "status": "DONE|BLOCKED|...", "outputs": [...] }
-# Breaking change log: v1.0 — initial release
+---
+name: {agent-name}-protocol
+description: Loaded by the {agent-name} agent to supply operating modes, protocol, and invariants. Not user-invocable.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# {Agent Name} — Operational Protocol
+
+<overview>...</overview>
+<protocol>...</protocol>
+<invariants>...</invariants>
 ```
+2. Add `{agent-name}-protocol` to the agent's `skills:` frontmatter list.
+3. Ensure the agent file body is empty (criterion 10a).
 
 ## Fix 10 — Per-agent Bash hook with global allow
 

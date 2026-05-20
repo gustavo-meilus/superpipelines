@@ -34,9 +34,9 @@ Catalog of common failure modes when designing pipelines and agents. Each entry:
 
 ## 2. The Mega-Prompt
 
-**Symptoms:** Agent body >150 lines; one giant numbered list; no structural sections.
+**Symptoms:** Agent body is non-empty; operational protocol, modes, or invariants written directly in the agent file after the closing `---`.
 
-**Fix:** Body ≤150 lines. Move depth to companion `<agent>-references/references/*.md`. Use clearly-named sections.
+**Fix:** Agent files are zero-body (frontmatter only). Move all content to the companion `{agent-name}-protocol/SKILL.md`. Deep reference material goes to `{agent-name}-references/references/*.md`.
 
 ## 3. Context Dumping
 
