@@ -15,6 +15,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - `PERMISSION_MODE: PER_AGENT` — Agents declare explicit permission boundaries (e.g., `acceptEdits`, `plan`) in frontmatter.
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist in isolation per workspace.
+- `LEAN_AGENTS: TRUE` — Agent bodies contain only a 4-line capability contract (Capability / Scope / Authority / Constraint). All operational protocol resides in a companion `{agent-name}-protocol` skill loaded via the `skills:` frontmatter list.
 </architecture_invariants>
 
 ## File-Layout Rules
@@ -24,6 +25,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - **Source Roots**: `agents/`, `skills/`, `commands/`, and `hooks/` reside at the repository root.
 - **Generated Artifacts**: Artifacts live under scope-dependent roots (`project`, `local`, or `user`) as resolved by `sk-pipeline-paths`.
 - **Reference Skills**: Companion reference skills (`*-references/`) omit `SKILL.md` to prevent preloading into system context.
+- **Protocol Skills**: Each agent has a companion `{agent-name}-protocol/SKILL.md` that holds its full operational protocol. Protocol skills use `disable-model-invocation: true` and `user-invocable: false`; they are loaded only via the agent's `skills:` list.
 </file_rules>
 
 ## Authoring Rules
@@ -44,4 +46,4 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.0.4
+- **Project Version**: v1.1.0
