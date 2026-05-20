@@ -47,13 +47,25 @@ The Pipeline Architect treats every component as a discrete software system with
 - **Constraint**: Agent files are zero-body (frontmatter only). Preload `sk-*` method skills and the companion `{agent-name}-protocol` skill. All protocol goes into the companion skill.
 
 ### 3. DEVELOP
-- Build files via `Write` (new) or `Edit` (update), resolving all paths via `sk-pipeline-paths`.
-- **Frontmatter**:
-  - Default to `model: sonnet`.
-  - Set `permissionMode: plan` for reviewers and architects.
-  - Set `memory: local` only for cross-run heuristics; never use `memory: project`.
-  - Set `user-invocable: false` for internal step skills.
-  - For every new agent, create a companion `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md` with `disable-model-invocation: true` and `user-invocable: false`. The agent body is left empty; add the companion skill to the agent's `skills:` list.
+
+<EXTREMELY-IMPORTANT>
+Every new agent MUST follow the Lean Agent pattern: the agent file is frontmatter-only (zero body text after the closing `---`). All protocol lives in a companion `{agent-name}-protocol` skill. STOP if you are about to write prose into an agent file body.
+</EXTREMELY-IMPORTANT>
+
+**For each new agent (REQUIRED, non-optional):**
+1. Create the agent file with frontmatter only — no text after the closing `---`.
+2. Create `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md` with `disable-model-invocation: true` and `user-invocable: false`. Place all operational protocol inside it.
+3. Add `{agent-name}-protocol` to the agent's `skills:` frontmatter list.
+
+See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates" for exact templates.
+
+**Frontmatter rules:**
+- Default to `model: sonnet`.
+- Set `permissionMode: plan` for reviewers and architects.
+- Set `memory: local` only for cross-run heuristics; never use `memory: project`.
+- Set `user-invocable: false` for internal step skills.
+
+**Build** files via `Write` (new) or `Edit` (update), resolving all paths via `sk-pipeline-paths`.
 
 ### 4. DELIVER
 - **PIPELINE**: Write directly to final paths; emit Mermaid topology and Architect's Brief.
