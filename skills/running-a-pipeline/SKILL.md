@@ -33,7 +33,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 ### PHASE 2: STATE INITIALIZATION
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
-- **Invariants**: Must include `pipeline_id`, `started_at`, and the selected execution `pattern`.
+- **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `.claude-plugin/plugin.json` at init), and the selected execution `pattern`.
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 - Invoke the pipeline's entry skill (`run-{P}`).
