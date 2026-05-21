@@ -6,6 +6,96 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.6 architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, the 20-criterion compliance matrix, and the Lean Agents zero-body architecture.
 </overview>
 
+## v2.0.0 — Multi-Platform Release (2026-05-21)
+
+### Highlights
+
+Superpipelines now runs on **five execution tiers** spanning Claude Code, OpenCode, Codex, Cursor, Windsurf, Cline, and Antigravity CLI 2.0. One repo, one installer, one set of skills.
+
+### Multi-platform execution model
+
+| Tier | Platform | Subagent primitive |
+|------|----------|--------------------|
+| 1 | Claude Code | Skill-callable `Task()` |
+| 1b | OpenCode (sibling repo) | `mode: subagent` agents |
+| 1c | Antigravity CLI 2.0 | Dynamic Subagents (aspirational) |
+| 1d | Codex App/CLI | Native model-driven subagents (up to 6 concurrent) |
+| 2 | Cursor / Windsurf / Cline | Single-agent inline via `sk-platform-dispatch` |
+
+### Universal installer
+
+```bash
+# macOS / Linux / WSL
+curl -fsSL https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.ps1 | iex
+
+# Pick one platform
+node bin/install.js --only claude-code
+```
+
+Auto-detects every supported platform. Use `--list` to see detection results, `--dry-run` to preview commands, `--all` to install for every detected platform.
+
+### OpenCode-originated improvements (backported to CC)
+
+- **Per-step model preference** in the pipeline creation flow. Deep tier → `claude-opus-4-7`; fast tier → `claude-sonnet-4-6`.
+- **Run Launcher artifact** `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (launcher document; on CC this is a discovery file, not a slash command — `/superpipelines:{P}` direct invocation remains OpenCode-only in v2.0.0).
+- **Version-compatibility advisory** at run start.
+- **`plugin_version` stamping** in `pipeline-state.json`.
+
+### Write/Review isolation — degradation made explicit
+
+The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
+
+- **Tier 1 (CC)** — structural, enforced via agent `tools:` frontmatter.
+- **Tier 1b (OC)** — structural, enforced via `permission: { edit: deny }`.
+- **Tier 1d (Codex)** — pending per-agent `sandbox_mode` verification.
+- **Tier 2 (Cursor/Windsurf/Cline)** — convention-only. Reviews are advisory. The orchestrator surfaces this degradation at run start (stderr advisory) and run end (state-file footer + entry-skill summary).
+
+### Breaking changes
+
+- `WRITE_REVIEW_ISOLATION: TRUE` invariant removed. Replaced by tier-aware `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`. Tooling that hard-asserted the boolean form must update.
+- New `metadata.tier` and `plugin_version` fields required at state init. Pre-v2.0.0 runs without these fields surface informational notes at resume; do not block.
+- Generated entry skills now route through `sk-platform-dispatch` DISPATCH instead of direct `Task()`. Existing pre-v2.0.0 entry skills continue to work on Tier 1; tier portability requires regenerating with the v2.0.0 architect.
+- `CLAUDE.md` Project Version jumps from `v1.2.0` (stale) to `v2.0.0`. Plugin manifest version (`1.0.6` → `2.0.0`) is now the source of truth.
+
+### Known limitations
+
+- `--uninstall` flag stub (full uninstall deferred to v2.1).
+- `--with-init` flag reserved (no-op).
+- Tier 1c (Antigravity Dynamic Subagents) aspirational — falls back to Tier 2 unless dispatch primitive verified.
+- Tier 1d (Codex) `sandbox_mode` per-agent isolation pending verification.
+- Codex installer command syntax unverified against a stable release.
+- No automated cross-platform parity gate (manual tracking via `docs/SYNC.md`).
+
+### Deprecations
+
+- **Gemini CLI** as a distribution target. Runtime retires June 18, 2026. Migrate to Antigravity CLI 2.0 via `agy plugin import gemini`.
+
+### Repo relationship
+
+- `superpipelines` (this repo) — Tier 1 (CC), Tier 1d (Codex), Tier 2 (Cursor/Windsurf/Cline), Tier 1c aspirational (Antigravity).
+- `superpipelines-opencode` — Tier 1b (OpenCode). Permanent sibling repo, not deprecated. Shared skills tracked in `docs/SYNC.md`.
+
+### Upgrade path
+
+Existing Claude Code users:
+
+```bash
+claude plugin update superpipelines
+```
+
+Or re-run the installer to pull v2.0.0 plus any newly detected platforms:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.sh | bash
+```
+
+### Full changelog
+
+See `CHANGELOG.md`.
+
 ## v1.0.6 — Lean Agents & Zero-Body Architecture (2026-05-20)
 
 This release introduces the Lean Agents pattern: agent files become pure frontmatter configuration envelopes, and all operational protocol moves into companion `{agent-name}-protocol` skills. Every framework agent is now a zero-body stub, enforcing a clean contract between configuration and behavior.
