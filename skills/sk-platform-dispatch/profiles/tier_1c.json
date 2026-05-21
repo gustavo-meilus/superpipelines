@@ -13,7 +13,7 @@
   },
   "scope_root": {
     "workspace": ".agents",
-    "user": "~/.gemini/antigravity"
+    "user": "~/.antigravity"
   },
   "degradation_warnings": [
     "Antigravity Dynamic Subagent dispatch primitive unverified. Falling back to Tier 2 inline execution.",

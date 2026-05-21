@@ -20,5 +20,7 @@
     "Parallel fan-out (Pattern 2) degrades to sequential.",
     "Iterative pattern (Pattern 3) cycle limit still enforced inline."
   ],
-  "extensions": {}
+  "extensions": {
+    "skill_tool_note": "Cursor, Windsurf, and Cline load skill content via file read or prompt injection, not a native Skill() primitive. The skill_tool capability flag is treated as equivalent for routing purposes in this profile."
+  }
 }
