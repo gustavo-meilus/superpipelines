@@ -10,12 +10,19 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 
 <architecture_invariants>
 - `SUB_AGENT_SPAWNING: FALSE` — Subagents never spawn children; orchestration resides in top-level skills or the parent session.
-- `WRITE_REVIEW_ISOLATION: TRUE` — The agent generating code is structurally barred from reviewing it.
-- `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` — Pipeline execution agents default to `claude-sonnet-4-6`. Planning and utility agents may utilize category-based dynamic routing (e.g., `deep-plan`, `quick-audit`).
+- `WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2` — On Tier 1 (CC) the writer is barred from reviewing via agent `tools:` frontmatter; on Tier 1b (OC) via `permission: { edit: deny }`; on Tier 1d (Codex) via TOML `sandbox_mode` (pending per-agent verification). On Tier 2 (Cursor/Windsurf/Cline) the orchestrator runs both writer and reviewer protocols with its own full toolset — isolation is convention-only. Implementations MUST surface this degradation in user-facing reports.
+- `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` — Pipeline execution agents default to `claude-sonnet-4-6`. Planning and utility agents may utilize category-based dynamic routing (e.g., `deep-plan`, `quick-audit`). The `creating-a-pipeline` Phase 2 model-preference prompt records the user's per-step tier choice: `deep` → `claude-opus-4-7` (planning/architecture/review), `fast` → `claude-sonnet-4-6` (execution/utility). Architect embeds the resolved model string in each generated agent's `model:` frontmatter field during Phase 4.
 - `PERMISSION_MODE: PER_AGENT` — Agents declare explicit permission boundaries (e.g., `acceptEdits`, `plan`) in frontmatter.
-- `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
+- `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. State carries `plugin_version` and `metadata.tier` from the run start.
 - `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist in isolation per workspace.
-- `LEAN_AGENTS: TRUE` — Agent files are frontmatter-only; zero body text is permitted. All operational protocol resides in a companion `{agent-name}-protocol` skill (loaded via the `skills:` list) with `disable-model-invocation: true` and `user-invocable: false`.
+- `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol-skill pattern is Claude Code specific. OpenCode uses agent bodies ≤150 lines. Codex uses TOML agent files. Tier 2 platforms use protocol skills inline with no agent files.
+- `MULTI_PLATFORM: TRUE` — superpipelines targets CC (Tier 1) + Codex (Tier 1d) + Cursor/Windsurf/Cline (Tier 2) + Antigravity CLI 2.0 (Tier 1c aspirational). superpipelines-opencode targets OC (Tier 1b). Gemini CLI is retired June 18, 2026.
+- `TIER_MODEL: 5-TIER` — Tier 1 (CC: skill-callable `Task()`); Tier 1b (OC: `mode: subagent`); Tier 1c (Antigravity: Dynamic Subagents, aspirational); Tier 1d (Codex: native parallel subagents, model-driven, TOML agents, up to 6 concurrent); Tier 2 (Cursor/Windsurf/Cline: single-agent inline).
+- `SKILL_PRIMACY: TRUE` — Intelligence lives in `SKILL.md`. Platform manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`) are discovery-only.
+- `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2` — Pipelines scaffolded on CC or Codex run on Tier 2 platforms without modification. OC pipelines use OC-specific agent frontmatter and are not portable without re-scaffolding.
+- `OC_FIRST_CLASS: TRUE` — `superpipelines-opencode` is a permanent sibling repo; not deprecated.
+- `SYNC_DISCIPLINE: REQUIRED` — Shared skills are kept in sync between this repo and `superpipelines-opencode` via `docs/SYNC.md`.
+- `PARITY_TESTING: MANUAL_PHASE1` — No automated cross-platform parity gate in v2.0.0. `docs/SYNC.md` tracks per-skill validation. Automated parity tests are a v2.1 objective.
 </architecture_invariants>
 
 ## File-Layout Rules
@@ -46,4 +53,4 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-7`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v1.2.0
+- **Project Version**: v2.0.0
