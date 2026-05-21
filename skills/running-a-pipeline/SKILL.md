@@ -27,13 +27,15 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
 - Load `sk-platform-dispatch` via the `Skill` tool.
-- Run `DETECT()` from the loaded skill.
-- Cache the result in the run's `pipeline-state.json` as `metadata.tier` during Phase 2 state initialization.
-- <HARD-GATE>NEVER perform tier detection more than once per run. If `metadata.tier` is already set (resume case), trust the cached value and skip re-detection.</HARD-GATE>
-- **Branch by tier**:
-  - `tier_1` → Phase 3 uses native `Task()` dispatch (existing behavior).
-  - `tier_1b` / `tier_1c` / `tier_1d` → Phase 3 uses the platform's native subagent dispatch (see entry skill).
-  - `tier_2` → Phase 3 uses the Tier 2 Inline Loop from `sk-platform-dispatch`. Emit one user-facing notice: `"Running on Tier 2 ({platform}). Reviewer isolation is convention-only; reviews are advisory, not structurally enforced."`
+- Call `DETECT()` → receive `platform_profile` object.
+- <HARD-GATE>NEVER perform tier detection more than once per run outside of resume. On resume: re-run DETECT(), compare to `metadata.source_tier`, apply the Cross-Tier Resume Protocol from `sk-platform-dispatch` if tier changed.</HARD-GATE>
+- **Fresh run**: Set `metadata.source_tier = platform_profile.tier`, `metadata.runtime_tier = platform_profile.tier`, `metadata.platform_profile = platform_profile` during Phase 2 state init.
+- **Resume run**: Apply Cross-Tier Resume Protocol (defined in `sk-platform-dispatch` § Cross-Tier Resume Protocol). If `runtime_tier` changed: update `metadata.runtime_tier`, `metadata.platform_profile`, append to `metadata.tier_changes`, emit cross-tier advisory.
+- **Branch by `platform_profile.capabilities.dispatch_mechanism`** for Phase 3:
+  - `native_task` → Phase 3 uses `Task()` dispatch (existing behavior).
+  - `native_subagent` / `model_driven` → Phase 3 uses platform-native dispatch (see entry skill).
+  - `inline` or unknown → Phase 3 uses Tier 2 Inline Loop from `sk-platform-dispatch`.
+- Emit all `platform_profile.degradation_warnings` if non-empty.
 
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
 - Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
@@ -44,6 +46,19 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
   - Pipeline major > installed major → emit advisory: `"⚠️ Pipeline '{P}' targets a newer plugin (v{pipeline_version}) than is installed (v{installed_version}). Upgrade recommended; running anyway may fail on unsupported features."` and ask the user to confirm continuation.
   - Missing `plugin_version` on the pipeline (pre-stamping era) → emit informational note only; do not block.
 - **Advisory only — never blocks execution.** The user's confirmation is required only on a major mismatch.
+
+### PHASE 0.6: PORTABILITY VALIDATION
+- IF `metadata.runtime_tier == metadata.source_tier`: skip silently.
+- ELSE:
+  - `source_root` = `profile[source_tier].scope_root.workspace` (read from the source tier's profile JSON)
+  - `target_root` = `platform_profile.scope_root.workspace`
+  - Scan entry skill content for occurrences of `source_root + "/"` string.
+  - IF found:
+    - Emit: `"⚠️ Portability defect: entry skill contains '{source_root}/' path(s) that will not resolve on {runtime_tier} ({target_root}/). Options: [Abort] [Auto-rewrite in memory] [Proceed as advisory]"`
+    - **Auto-rewrite**: Replace `source_root + "/"` with `target_root + "/"` in entry skill content in-memory only. Do NOT write to disk unless user explicitly requests. Preserves original file for audit.
+    - **Abort**: Stop. User must regenerate entry skill with v2.0.0 architect.
+    - **Proceed as advisory**: Continue with a note in `metadata.isolation_warning`.
+  - IF not found: proceed silently.
 
 ### PHASE 1: RESUME CHECK
 - Check for existing run directories in `{ROOT}/superpipelines/temp/{P}/`.
@@ -73,7 +88,9 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - NEVER pass full file content to the entry skill; use absolute paths.
 - All state updates must utilize the atomic write pattern.
 - ALWAYS perform Phase 0.5 version-compatibility advisory before resume or fresh run; advisory is non-blocking but requires user confirmation on major-version mismatch.
-- ALWAYS perform Phase 0.25 tier detection exactly once per run; cached `metadata.tier` is the source of truth for resume.
+- ALWAYS perform Phase 0.25 tier detection exactly once per fresh run; on resume, re-detect and apply Cross-Tier Resume Protocol if tier changed.
+- ALWAYS perform Phase 0.6 portability validation when `runtime_tier != source_tier`; never silently proceed with unvalidated cross-tier paths.
+- `metadata.source_tier` is immutable after Phase 2 init. Never overwrite it, even on cross-tier resume.
 </invariants>
 
 ## Red Flags — STOP
