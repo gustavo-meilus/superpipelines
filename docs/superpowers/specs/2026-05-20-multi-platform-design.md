@@ -50,8 +50,8 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 | OpenCode | ✅ | `.opencode/opencode.json` + compiled JS entry | `mode: subagent` agents (bodies ≤150 lines) | `.opencode/skills/`, `~/.opencode/skills/` |
 | Cursor | ✅ | `.cursor-plugin/plugin.json` | Background agent (limited) | `npx skills add -a cursor` |
 | Windsurf/Cline | ✅ | Rule files | None | `npx skills add -a windsurf/cline` |
-| Antigravity CLI | ✅ (soft) | `gemini-extension.json` + AGENTS.md | Task Groups (planning/fast) | `antigravity extensions install` |
-| Gemini CLI | ✅ | `gemini-extension.json` | None native | `gemini extensions install` |
+| Antigravity CLI 2.0 | ✅ | Antigravity plugin format (replaces `gemini-extension.json`) | Dynamic Subagents (native parallel) | `agy plugin install` / `/plugin install` in-CLI |
+| ~~Gemini CLI~~ | ~~✅~~ | ~~`gemini-extension.json`~~ | ~~None~~ | **DEPRECATED June 18, 2026** → migrate to Antigravity CLI via `agy plugin import gemini` |
 
 ### Reference Project Lessons
 
@@ -103,7 +103,7 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 
 - **G1:** Single repo supports Claude Code, Codex App/CLI, Cursor/Windsurf/Cline, and Antigravity CLI natively
 - **G2:** Pipeline *creation* workflow is identical across all platforms
-- **G3:** Pipeline *execution* degrades gracefully on platforms without native subagent support (Cursor, Windsurf, Cline, Antigravity) via single-agent mode; OpenCode uses its own native subagent model
+- **G3:** Pipeline *execution* degrades gracefully on platforms without native subagent support (Cursor, Windsurf, Cline, Codex) via single-agent mode; OpenCode uses `mode: subagent`; Antigravity CLI 2.0 uses Dynamic Subagents (dispatch primitive pending verification)
 - **G4:** One installer (`install.sh` / `install.ps1`) auto-detects and wires up all supported platforms
 - **G5:** OpenCode is a first-class target with its own agent files, scope root (`.opencode/`), and platform manifest — not treated as a CC cross-load consumer
 - **G6:** Skills remain the canonical source of intelligence — zero duplication of logic in platform manifests
@@ -150,14 +150,20 @@ The transformation has two independent axes:
 │    Scope root: .opencode/                               │
 │    {P}.md run commands per pipeline                     │
 │                                                          │
-│  Tier 2 (Codex, Cursor/Windsurf/Cline, Antigravity):   │
+│  Tier 1c (Antigravity CLI 2.0):                         │
+│    Dynamic Subagents (native parallel, Go CLI "agy")   │
+│    Skills/Hooks/SKILL.md preserved from Gemini CLI     │
+│    Scheduled Tasks (background automation)              │
+│    Dispatch mechanism: TBD (⚠️ needs official docs)    │
+│                                                          │
+│  Tier 2 (Codex, Cursor/Windsurf/Cline):                │
 │    sk-platform-dispatch → inline sequential execution   │
 │    Protocol skills loaded via Skill tool                 │
 │    Same artifacts, same state format, same outputs      │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Core principle:** Skills are the canonical source of intelligence. Platform manifests make skills discoverable. Agent `.md` files are platform-specific (CC: zero-body Lean Agents; OC: bodies ≤150 lines). Tier 2 platforms execute protocol skills inline without agent frontmatter.
+**Core principle:** Skills are the canonical source of intelligence. Platform manifests make skills discoverable. Agent `.md` files are platform-specific (CC: zero-body Lean Agents; OC: bodies ≤150 lines). Tier 2 platforms execute protocol skills inline without agent frontmatter. Antigravity (Tier 1c) upgraded from original Tier 2 assessment — Dynamic Subagents confirmed; dispatch primitive pending official docs.
 
 ---
 
@@ -181,7 +187,22 @@ OpenCode has its own subagent dispatch mechanism distinct from CC's `Task()`:
 
 OC pipeline execution is multi-agent (not single-agent) but uses OC's native dispatch, not `Task()`. Parallel fan-out degrades to sequential because OC does not have worktree isolation equivalent.
 
-### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline, Antigravity)
+### Tier 1c — Dynamic Subagents (Antigravity CLI 2.0)
+
+Antigravity CLI 2.0 (announced Google I/O May 19, 2026) is the successor to Gemini CLI, which is deprecated June 18, 2026. Key facts:
+
+- **Go-based CLI** (`agy` command) — snappier than Gemini CLI's Node.js base
+- **Dynamic Subagents**: native parallel agent orchestration (confirmed; dispatch primitive details pending official docs verification)
+- **Scheduled Tasks**: background automation — agents run without locking terminal (similar to Codex Automations)
+- **Plugin format**: Antigravity plugins (renamed from Gemini CLI "extensions"). Migration: `agy plugin import gemini` converts old `gemini-extension.json` extensions
+- **Plugin install**: `/plugin install {name}@{marketplace}` within CLI, or `npx antigravity-awesome-skills --antigravity`
+- **Skills/Hooks/SKILL.md**: all preserved from Gemini CLI
+- **Context file**: likely `ANTIGRAVITY.md` (⚠️ unverified — confirm with official docs before implementation)
+- **Models**: Gemini 3.5 Flash default (4x faster than Gemini 3.1 Pro per benchmarks)
+
+⚠️ **Gap**: Specific agent frontmatter schema for Antigravity Dynamic Subagents not yet confirmed. Before implementing Tier 1c dispatch, verify whether Antigravity exposes a `Task()`-equivalent primitive to skills or uses a separate orchestration layer. If no dispatch primitive exists for skills, fall back to Tier 2 (single-agent) for this platform.
+
+### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline)
 
 The orchestrator (the model running the entry skill) executes all pipeline steps inline:
 
@@ -246,11 +267,21 @@ For each step in topology.json (dependency order):
 ```
 Distribution via `npx skills add superpipelines -a cursor` (and equivalents for windsurf, cline).
 
-#### Antigravity CLI + Gemini CLI (new)
+#### Antigravity CLI 2.0 (new — replaces Gemini CLI target)
 ```
-gemini-extension.json    ← { name, version, contextFileName: "GEMINI.md" }
-GEMINI.md                ← Antigravity/Gemini context: commands, usage, pipelines intro
+.antigravity-plugin/
+  plugin.json            ← Antigravity plugin manifest (format TBD — verify with official docs)
+                           ⚠️ gemini-extension.json is the legacy format; Antigravity renamed
+                           the surface to "plugins". Exact schema pending verification.
+
+ANTIGRAVITY.md           ← Antigravity context file (likely successor to GEMINI.md; verify)
 ```
+Install: `/plugin install superpipelines@superpipelines` within Antigravity CLI, or
+`npx antigravity-awesome-skills --antigravity` for skills-only.
+
+Migration from Gemini extension: `agy plugin import gemini` auto-converts old format.
+
+> **Gemini CLI**: No longer a distribution target. Deprecated June 18, 2026. The `gemini-extension.json` file and `GEMINI.md` from prior spec versions are superseded by the Antigravity plugin format above.
 
 #### Universal fallback (new)
 ```
@@ -263,8 +294,9 @@ AGENTS.md               ← Platform-agnostic: introduces Superpipelines command
 | File | Platforms | Content |
 |---|---|---|
 | `CLAUDE.md` | Claude Code | Existing architecture reference |
-| `GEMINI.md` | Antigravity, Gemini CLI | Context intro, commands, pipeline usage |
-| `AGENTS.md` | OpenCode, Antigravity, universal | Commands, trigger phrases, pipeline overview |
+| `ANTIGRAVITY.md` | Antigravity CLI 2.0 | Context intro, commands, pipeline usage (⚠️ filename unverified — may still be `GEMINI.md` for compat) |
+| `AGENTS.md` | OpenCode, universal | Commands, trigger phrases, pipeline overview |
+| ~~`GEMINI.md`~~ | ~~Gemini CLI~~ | **Deprecated** — Gemini CLI retired June 18, 2026 |
 
 ### 7.3 OpenCode (Tier 1b — Maintained via superpipelines-opencode)
 
@@ -346,8 +378,7 @@ A unified Node.js installer (`bin/install.js`) auto-detects all supported platfo
 | `windsurf` | `.windsurf/` config dir exists | `npx skills add superpipelines -a windsurf` |
 | `cline` | `.clinerules/` or Cline extension present | `npx skills add superpipelines -a cline` |
 | `opencode` | `opencode` binary or `.opencode/` dir | Redirect to `superpipelines-opencode` (separate repo, OC Tier 1b) |
-| `antigravity` | `antigravity` binary on PATH (soft probe — pass `--only antigravity` to force) | `antigravity extensions install https://github.com/gustavo-meilus/superpipelines` |
-| `gemini` | `gemini` binary | `gemini extensions install https://github.com/...` |
+| `antigravity` | `agy` binary on PATH | `/plugin install superpipelines@superpipelines` (in-CLI) |
 
 ### Installer Flags
 
@@ -446,23 +477,24 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 
 ## 11. Platform Compatibility Matrix
 
-| Feature | Claude Code (Tier 1) | OpenCode (Tier 1b) | Codex (Tier 2) | Cursor/Windsurf (Tier 2) | Antigravity (Tier 2) |
+| Feature | Claude Code (T1) | OpenCode (T1b) | Antigravity 2.0 (T1c) | Codex (T2) | Cursor/Windsurf (T2) |
 |---|---|---|---|---|---|
 | Pipeline creation | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | Pipeline auditing | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Sequential (P1) | ✅ Multi-agent | ✅ OC native agents | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
-| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential (no worktree) | ⚠️ Sequential | ⚠️ Sequential | ⚠️ Sequential |
+| Sequential (P1) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents | ✅ Single-agent | ✅ Single-agent |
+| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential | ✅ Dynamic Subagents | ⚠️ Sequential | ⚠️ Sequential |
 | Iterative loop (P3) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Human-gated (P4) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native agents | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
-| Worktree isolation | ✅ | ❌ | ❌ | ✅ native | ❓ |
-| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` via `{P}.md` | ❌ | ❌ | ❌ |
-| Version compatibility check | ❌ | ✅ (advisory warning) | ❌ | ❌ | ❌ |
-| Model-per-step selection | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents | ✅ Single-agent | ✅ Single-agent |
+| Background / scheduled | ❌ | ❌ | ✅ Scheduled Tasks | ✅ Automations | ❌ |
+| Worktree isolation | ✅ | ❌ | ❓ (unverified) | ❌ | ✅ native |
+| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | ❓ | ❌ | ❌ |
+| Version compat check | ❌ | ✅ advisory | ❌ | ❌ | ❌ |
+| Model-per-step | ❌ | ✅ | ❓ | ❌ | ❌ |
 | State management | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Slash commands | ✅ native | ✅ native | ✅ | ⚠️ per-session | ⚠️ via AGENTS.md |
-| Installer auto-detect | ✅ | ✅ (→ OC repo) | ✅ | ✅ | ✅ (soft probe) |
-| Plugin marketplace | ✅ | ❌ | ✅ | ❌ | ❓ |
+| Slash commands | ✅ native | ✅ native | ✅ native | ✅ | ⚠️ per-session |
+| Plugin marketplace | ✅ | ❌ | ✅ (`agy`) | ✅ | ❌ |
+| Installer auto-detect | ✅ | ✅ (→ OC repo) | ✅ (`agy` on PATH) | ✅ | ✅ |
 
 ---
 
@@ -497,8 +529,8 @@ Skills that are logically identical across repos (e.g., `creating-a-pipeline`, `
 
 ## 13. Invariants
 
-- `MULTI_PLATFORM: TRUE` — superpipelines targets CC + Codex + Cursor/Windsurf/Cline + Antigravity; superpipelines-opencode targets OC
-- `TIER_MODEL: 3-TIER` — Tier 1 (CC multi-agent), Tier 1b (OC native subagents), Tier 2 (single-agent inline)
+- `MULTI_PLATFORM: TRUE` — superpipelines targets CC + Codex + Cursor/Windsurf/Cline + Antigravity CLI 2.0; superpipelines-opencode targets OC; Gemini CLI is retired
+- `TIER_MODEL: 4-TIER` — Tier 1 (CC multi-agent Task()), Tier 1b (OC mode:subagent), Tier 1c (Antigravity Dynamic Subagents — dispatch primitive TBD), Tier 2 (single-agent inline)
 - `SKILL_PRIMACY: TRUE` — Intelligence lives in SKILL.md; platform manifests are discovery-only
 - `ARTIFACT_PORTABILITY: CC_TO_TIER2` — Pipelines from CC run on Tier 2 without modification; OC pipelines use OC-specific agent frontmatter (not portable to CC without re-scaffolding)
 - `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol skill pattern is CC-specific; OC uses bodies ≤150 lines; Tier 2 uses protocol skills inline
