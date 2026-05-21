@@ -492,12 +492,12 @@ skills/pipeline-runner-references/references/dispatch-protocols.md
 skills/creating-a-pipeline/SKILL.md
   — Add: model preference question in Phase 2 (backport from OC)
   — Add: {P}.md run command to Phase 6 checklist (backport from OC)
-  — Add: version compatibility advisory to running-a-pipeline (backport from OC)
+  — ✅ Add: version compatibility advisory to running-a-pipeline (backport from OC) — resolved in commit 6f8987d (Phase 0.5)
 
 skills/running-a-pipeline/SKILL.md
   — Add: load sk-platform-dispatch at start
   — Add: Tier 2 single-agent execution branch
-  — Add: version compatibility advisory check (backport from OC)
+  — ✅ Add: version compatibility advisory check (backport from OC) — resolved in commit 6f8987d (Phase 0.5)
 
 skills/sk-pipeline-paths/SKILL.md
   — Add: Run Command path template: superpipelines/{P}/{P}.md (backport from OC)
