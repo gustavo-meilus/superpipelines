@@ -29,7 +29,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - Load `sk-platform-dispatch` via the `Skill` tool.
 - Call `DETECT()` → receive `platform_profile` object.
 - <HARD-GATE>NEVER perform tier detection more than once per run outside of resume. On resume: re-run DETECT(), compare to `metadata.source_tier`, apply the Cross-Tier Resume Protocol from `sk-platform-dispatch` if tier changed.</HARD-GATE>
-- **Fresh run**: Set `metadata.source_tier = platform_profile.tier`, `metadata.runtime_tier = platform_profile.tier`, `metadata.platform_profile = platform_profile` during Phase 2 state init.
+- **Fresh run**: Cache `platform_profile` in session context now. During Phase 2 state init, write to state file: `metadata.source_tier = platform_profile.tier`, `metadata.runtime_tier = platform_profile.tier`, `metadata.platform_profile = platform_profile`.
 - **Resume run**: Apply Cross-Tier Resume Protocol (defined in `sk-platform-dispatch` § Cross-Tier Resume Protocol). If `runtime_tier` changed: update `metadata.runtime_tier`, `metadata.platform_profile`, append to `metadata.tier_changes`, emit cross-tier advisory.
 - **Branch by `platform_profile.capabilities.dispatch_mechanism`** for Phase 3:
   - `native_task` → Phase 3 uses `Task()` dispatch (existing behavior).
@@ -50,7 +50,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 ### PHASE 0.6: PORTABILITY VALIDATION
 - IF `metadata.runtime_tier == metadata.source_tier`: skip silently.
 - ELSE:
-  - `source_root` = `profile[source_tier].scope_root.workspace` (read from the source tier's profile JSON)
+  - `source_root` = READ(`skills/sk-platform-dispatch/profiles/{metadata.source_tier}.json`).scope_root.workspace
   - `target_root` = `platform_profile.scope_root.workspace`
   - Scan entry skill content for occurrences of `source_root + "/"` string.
   - IF found:
