@@ -22,30 +22,39 @@ Superpipelines runs across five runtime tiers (Tier 1 Claude Code, Tier 1b OpenC
 ## Tier Detection Protocol
 
 <protocol>
-DETECT() returns one of: `tier_1`, `tier_1b`, `tier_1c`, `tier_1d`, `tier_2`.
+DETECT() returns a platform profile object (not a raw tier string).
 
-Detection signals are checked in order; first match wins:
+Detection heuristics run in order — first match wins:
 
-1. **Tier 1 (Claude Code):** `Task` tool present in the orchestrator's tool list AND `subagent_type` parameter accepted. Secondary signal: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`.
+1. **Tier 1 (Claude Code):** `Task` tool present AND `subagent_type` parameter accepted. Secondary: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`.
 2. **Tier 1b (OpenCode):** `$OPENCODE_PLUGIN_ROOT` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
-3. **Tier 1c (Antigravity):** `agy` binary on PATH OR `.agents/skills/` workspace directory present. **Aspirational:** If a Dynamic Subagent dispatch primitive is exposed to skills, treat as Tier 1c; otherwise fall back to Tier 2.
+3. **Tier 1c (Antigravity):** `agy` binary on PATH OR `.agents/skills/` workspace directory present.
 4. **Tier 1d (Codex):** `.codex-plugin/plugin.json` resolvable OR TOML agent files present under `${CODEX_PLUGIN_ROOT}/agents/`.
 5. **Tier 2 (fallback):** None of the above. Safe default — sequential inline execution always works.
+
+After resolving `tier_id`:
+
+```
+READ(skills/sk-platform-dispatch/profiles/{tier_id}.json) → profile object
+```
+
+Return the full profile object. Caller caches it in `pipeline-state.json` as `metadata.platform_profile` and sets `metadata.runtime_tier = profile.tier`.
 </protocol>
 
 <invariant>
-Tier detection is performed exactly once per orchestrator invocation and cached in the run's `pipeline-state.json` as `metadata.tier`. Re-detection mid-run is forbidden — a runtime switch invalidates state assumptions.
+Tier detection is performed exactly once per orchestrator invocation. On resume: re-run DETECT() to get `runtime_tier`; compare to `metadata.source_tier`; if different, append to `metadata.tier_changes` and emit cross-tier resume advisory. Re-detection mid-run (outside resume) is forbidden.
 </invariant>
 
 ## DISPATCH Contract
 
 <schema>
-Inputs to DISPATCH(step, inputs):
-- `step.id`           — string, topology node id
-- `step.agent`        — string, agent name (used by Tier 1 / 1b / 1d)
-- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (used by Tier 2)
-- `step.output_paths` — array of absolute paths the step is expected to produce
-- `inputs`            — object, key/value inputs resolved from upstream step outputs
+Inputs to DISPATCH(step, inputs, profile):
+- `step.id`             — string, topology node id
+- `step.agent`          — string, agent name (used by Tier 1 / 1b / 1d)
+- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (used by Tier 2 and inline)
+- `step.output_paths`   — array of absolute paths the step is expected to produce
+- `inputs`              — object, key/value inputs resolved from upstream step outputs
+- `profile`             — platform profile object from DETECT()
 
 Returns:
 - `{ status: "DONE" | "DONE_WITH_CONCERNS" | "NEEDS_CONTEXT" | "BLOCKED", outputs: [path...], concerns?: string, missing_context?: string, blocker?: string }`
@@ -53,14 +62,26 @@ Returns:
 
 ## Tier-Specific DISPATCH Behavior
 
+Skills branch on `profile.capabilities` flags — NOT on `profile.tier` string. This ensures unknown future platforms with familiar capabilities route correctly without skill edits.
+
+```
+mechanism = profile.capabilities.dispatch_mechanism
+SWITCH mechanism:
+  "native_task"     → Task(subagent_type=step.agent, prompt=build_prompt(step, inputs))
+  "native_subagent" → OC native mode:subagent dispatch via step.agent file
+  "model_driven"    → Emit orchestration prompt; Codex model fans out per topology.json
+  "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)
+  DEFAULT (unknown) → fallback to "inline" + emit:
+                      "⚠️ Unknown dispatch_mechanism '{mechanism}'. Falling back to inline execution."
+```
+
 <dispatch_tiers>
-| Tier | Mechanism | Reviewer isolation |
-|------|-----------|--------------------|
-| Tier 1 | `Task(subagent_type=step.agent, prompt=build_prompt(step, inputs))` | Structural — reviewer agent's `tools:` frontmatter omits Write/Edit |
-| Tier 1b | OpenCode native subagent dispatch via `mode: subagent` agent file | Structural — reviewer agent's `permission: { edit: deny }` |
-| Tier 1c | Antigravity Dynamic Subagent (if primitive exposed); else fall through to Tier 2 | Unverified — treat as advisory until confirmed |
-| Tier 1d | Skill emits an orchestration prompt instructing the model to fan out per `topology.json`; the orchestrating Codex model spawns subagents from the TOML registry per its native behavior. Skill does NOT call a dispatch primitive on this tier. | TOML `sandbox_mode` — verify per-agent tool restriction |
-| Tier 2 | Inline loop in orchestrator session (see Tier 2 Inline Loop below) | None — convention only |
+| `dispatch_mechanism` | Reviewer isolation source | Notes |
+|---|---|---|
+| `native_task` | `profile.capabilities.reviewer_isolation` = `structural` | Agent `tools:` frontmatter restricts reviewer |
+| `native_subagent` | `structural` | OC `permission: { edit: deny }` on reviewer agent |
+| `model_driven` | `unverified` | Codex `sandbox_mode` per-agent unverified — treat as advisory |
+| `inline` | `convention` or `unverified` | Orchestrator runs both writer and reviewer protocols |
 </dispatch_tiers>
 
 ## Tier 2 Inline Loop
@@ -112,14 +133,19 @@ Path resolution MUST consult `metadata.tier` for any artifact write on a non-CC 
 PORTABILITY_REWRITE is convention-only — no runtime enforcement layer guards it. EVERY caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the v2.0.0 architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
 </invariant>
 
-## Tier 2 Degradation Surfacing
+## Degradation Surfacing (Profile-Driven)
 
-The Tier 2 reviewer-isolation degradation MUST be surfaced in two places:
+Degradation warnings are owned by the profile — not hardcoded in skills. When a profile has non-empty `degradation_warnings`:
 
-1. **At run start** — `running-a-pipeline` Phase 0.25 prints a one-line stderr advisory: `"⚠️ Tier 2 ({platform}) detected. Reviewer isolation is convention-only; reviews are advisory."`
-2. **At run end** — the entry skill's completion summary includes a footer: `"REVIEW_ISOLATION: CONVENTION_ONLY (Tier 2). Treat all spec/quality review verdicts as advisory."` This footer is also written to `pipeline-state.json` as `metadata.isolation_warning` so post-hoc audits surface it without re-running.
+```
+warnings = profile.degradation_warnings
+IF warnings is non-empty:
+  1. Emit each warning at run START with "⚠️" prefix (running-a-pipeline Phase 0.25)
+  2. Emit each warning at run END in entry skill completion summary
+  3. Write join(warnings, "\n") to pipeline-state.json as metadata.isolation_warning
+```
 
-The same surfacing applies on Tier 1c (if Tier 1c falls back to Tier 2) and on Tier 1d (until per-agent `sandbox_mode` is verified). Tier 1 / Tier 1b emit no advisory — isolation is structural.
+Adding or changing a degradation message for any platform requires editing only that tier's JSON profile. No skill edits required.
 
 ## Worktree Behavior
 
@@ -135,6 +161,32 @@ The same surfacing applies on Tier 1c (if Tier 1c falls back to Tier 2) and on T
 
 On Tier 2, the orchestrator MUST verify the workspace is clean (no uncommitted changes) before starting a destructive step, and MUST commit between steps to enable rollback. If the workspace is dirty, surface to user and stop.
 
+## Cross-Tier Resume Protocol
+
+Invoked by `running-a-pipeline` Phase 0.25 when resuming an existing run:
+
+```
+new_profile = DETECT()
+new_tier    = new_profile.tier
+prev_tier   = metadata.runtime_tier ?? metadata.tier  // backward compat
+
+IF new_tier != prev_tier:
+  append { from: prev_tier, to: new_tier, at: iso8601_now() }
+          to metadata.tier_changes (atomic write)
+  metadata.runtime_tier     = new_tier
+  metadata.platform_profile = new_profile
+  metadata.isolation_warning = join(new_profile.degradation_warnings)
+  emit: "⚠️ Cross-tier resume: scaffolded on {metadata.source_tier},
+         now running on {new_tier}.
+         Dispatch adapts to {new_tier} capabilities."
+  emit each new_profile.degradation_warning
+
+ELSE:
+  proceed silently (no tier change, no log entry)
+```
+
+`metadata.source_tier` is NEVER updated on resume. It records where the pipeline was originally scaffolded, permanently.
+
 ## Status Protocol Reference
 
 | Worker status | Orchestrator action (any tier) |
@@ -146,14 +198,15 @@ On Tier 2, the orchestrator MUST verify the workspace is clean (no uncommitted c
 
 <invariants>
 - NEVER perform tier detection more than once per run; cache result in `metadata.tier`.
-- NEVER call `Task()` on Tier 2 — the tool is absent and the call will fail or be ignored.
-- NEVER suppress the Tier 2 reviewer-isolation degradation warning; surface it in every user-facing summary.
+- NEVER call `Task()` when `profile.capabilities.task_primitive` is false — the tool is absent and the call will fail or be ignored.
+- NEVER suppress degradation warnings from `profile.degradation_warnings`; surface in every user-facing summary and write to `metadata.isolation_warning`.
 - Tier 2 inline execution MUST update `pipeline-state.json` after every step, not at end of run.
 </invariants>
 
 ## Red Flags — STOP
 
-- "I'll skip tier detection since I know this is Claude Code." → **STOP**. Detection is cheap; explicit caching enables resume from any tier-aware checkpoint.
+- "I'll skip tier detection since I know this is Claude Code." → **STOP**. Detection is cheap; profile caching enables resume, portability validation, and cross-tier advisory from any checkpoint.
+- "I'll branch on `metadata.tier == 'tier_2'` instead of reading the profile." → **STOP**. Tier string branching breaks when new platforms arrive. Always branch on `profile.capabilities` flags.
 - "I'll call `Task()` from the Tier 2 inline loop." → **STOP**. Tier 2 has no `Task()` primitive; the call fails. Use inline `Skill` + own tools.
 - "Reviewer ran clean on Tier 2, so the code is verified." → **STOP**. Tier 2 reviewer isolation is convention-only. Surface the degradation to the user; do not promote advisory reviews to structural guarantees.
 - "I'll re-detect tier after a tool failure to see if something changed." → **STOP**. Tier is immutable per run. A tool failure is a tool failure, not a tier change.
