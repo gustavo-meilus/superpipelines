@@ -32,6 +32,7 @@ State must be persisted to `<scope-root>/superpipelines/temp/{P}/{runId}/pipelin
 {
   "pipeline_id": "<uuid>",
   "pipeline_name": "<P>",
+  "plugin_version": "<semver — copied from .claude-plugin/plugin.json at run start>",
   "scope_root": "<absolute path>",
   "run_id": "<uuid>",
   "started_at": "<iso8601>",
@@ -85,6 +86,7 @@ mv "${TEMP_DIR}/pipeline-state.json.tmp" "${TEMP_DIR}/pipeline-state.json"
 - **No Model Coupling**: Never use the model's native memory tool for pipeline state management; use structured JSON.
 - **Atomic Renaming**: Direct writes to `pipeline-state.json` are forbidden.
 - **Explicit Resumption**: NEVER auto-resume from an `escalated` or `failed` state without explicit user confirmation.
+- **Version Stamping**: `plugin_version` MUST be set at state initialization by reading the `version` field from `.claude-plugin/plugin.json`. It is read-only after init and used by `running-a-pipeline` for compatibility advisory.
 </invariants>
 
 ## Reference Files
