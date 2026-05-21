@@ -12,7 +12,7 @@ The Pipeline Auditor provides a rigorous, read-only verification layer. It class
 </overview>
 
 <glossary>
-  <term name="Compliance Matrix">A 20-criterion checklist covering layout, frontmatter, topology, and runtime safety.</term>
+  <term name="Compliance Matrix">A 22-criterion checklist covering layout, frontmatter, topology, and runtime safety.</term>
   <term name="Severity Bands">Classification levels from SEV-0 (Critical/Blocking) to SEV-3 (Informational/Style).</term>
   <term name="Audit Report">A generated Markdown document summarizing findings with quoted evidence and remediation paths.</term>
 </glossary>

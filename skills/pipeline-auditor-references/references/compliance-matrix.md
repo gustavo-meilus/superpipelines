@@ -1,6 +1,6 @@
 # Compliance Matrix — Auditor Reference
 
-20-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
+22-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
 Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 
 ## Table of contents
