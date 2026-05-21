@@ -46,7 +46,7 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 | Platform | SKILL.md | Plugin Manifest | Subagent primitive | Install mechanism |
 |---|---|---|---|---|
 | Claude Code | ✅ | `.claude-plugin/plugin.json` + `marketplace.json` | `Task(subagent_type, ...)` | `claude plugin install` |
-| Codex App/CLI | ✅ | `.codex-plugin/plugin.json` | Codex worktree agents (parallel) | Codex marketplace / `npx skills add -a codex` |
+| Codex App/CLI | ✅ | `.codex-plugin/plugin.json` | Native parallel subagents (model-driven; TOML agent files; up to 6 concurrent; Automations for background scheduling) | Codex marketplace / `npx skills add -a codex` |
 | OpenCode | ✅ | `.opencode/opencode.json` + compiled JS entry | `mode: subagent` agents (bodies ≤150 lines) | `.opencode/skills/`, `~/.opencode/skills/` |
 | Cursor | ✅ | `.cursor-plugin/plugin.json` | Background agent (limited) | `npx skills add -a cursor` |
 | Windsurf/Cline | ✅ | Rule files | None | `npx skills add -a windsurf/cline` |
@@ -101,9 +101,9 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 
 ### Goals (Phase 1)
 
-- **G1:** Single repo supports Claude Code, Codex App/CLI, Cursor/Windsurf/Cline, and Antigravity CLI natively
+- **G1:** Single repo supports Claude Code (Tier 1), Codex App/CLI (Tier 1d), Cursor/Windsurf/Cline (Tier 2), and Antigravity CLI (Tier 1c — aspirational; confirmed Tier 2 fallback if dispatch primitive unverified)
 - **G2:** Pipeline *creation* workflow is identical across all platforms
-- **G3:** Pipeline *execution* degrades gracefully on platforms without native subagent support (Cursor, Windsurf, Cline, Codex) via single-agent mode; OpenCode uses `mode: subagent`; Antigravity CLI 2.0 uses Dynamic Subagents (dispatch primitive pending verification)
+- **G3:** Pipeline *execution* degrades gracefully on platforms without native subagent support (Cursor, Windsurf, Cline) via single-agent mode; CC uses `Task()`; OC uses `mode: subagent`; Codex uses native model-driven parallel subagents (TOML agents, up to 6 concurrent); Antigravity CLI 2.0 targets Tier 1c (Dynamic Subagents) pending dispatch primitive verification, confirmed Tier 2 fallback otherwise
 - **G4:** One installer (`install.sh` / `install.ps1`) auto-detects and wires up all supported platforms
 - **G5:** OpenCode is a first-class target with its own agent files, scope root (`.opencode/`), and platform manifest — not treated as a CC cross-load consumer
 - **G6:** Skills remain the canonical source of intelligence — zero duplication of logic in platform manifests
@@ -112,8 +112,8 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 ### Non-Goals (Phase 1)
 
 - **NG1:** Merging CC and OC agent files into a single format (platform agent schemas are fundamentally different)
-- **NG3:** Gemini CLI as a separate target (covered by Antigravity's `gemini-extension.json` compatibility)
-- **NG4:** True parallel execution on Cursor/Windsurf/Cline/Antigravity (graceful degradation to sequential is sufficient)
+- **NG3:** Gemini CLI as a separate target — the Gemini CLI runtime is retired June 18, 2026; no consumer runtime to target regardless of format compatibility
+- **NG4:** True parallel execution on Cursor/Windsurf/Cline (graceful degradation to sequential is sufficient for Tier 2 platforms)
 - **NG5:** Eliminating the separate `superpipelines-opencode` repo (OC's compiled JS entry point requirement makes full unification impractical without a build system)
 
 ---
@@ -150,20 +150,26 @@ The transformation has two independent axes:
 │    Scope root: .opencode/                               │
 │    {P}.md run commands per pipeline                     │
 │                                                          │
-│  Tier 1c (Antigravity CLI 2.0):                         │
+│  Tier 1c (Antigravity CLI 2.0 — aspirational):          │
 │    Dynamic Subagents (native parallel, Go CLI "agy")   │
-│    Skills/Hooks/SKILL.md preserved from Gemini CLI     │
-│    Scheduled Tasks (background automation)              │
-│    Dispatch mechanism: TBD (⚠️ needs official docs)    │
+│    Skills/Hooks/SKILL.md + GEMINI.md preserved         │
+│    Scheduled Tasks in .agents/workflows/ (cron-style)  │
+│    ⚠️ Dispatch primitive TBD — falls back to Tier 2    │
 │                                                          │
-│  Tier 2 (Codex, Cursor/Windsurf/Cline):                │
+│  Tier 1d (Codex App/CLI):                              │
+│    Native parallel subagents (model-driven dispatch)    │
+│    TOML agent files (name/description/developer_instr)  │
+│    Up to 6 concurrent; Automations for background       │
+│    Worktrees at thread level (not per-subagent)         │
+│                                                          │
+│  Tier 2 (Cursor/Windsurf/Cline):                       │
 │    sk-platform-dispatch → inline sequential execution   │
 │    Protocol skills loaded via Skill tool                 │
-│    Same artifacts, same state format, same outputs      │
+│    Isolation convention-only (reviewer has full tools)  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Core principle:** Skills are the canonical source of intelligence. Platform manifests make skills discoverable. Agent `.md` files are platform-specific (CC: zero-body Lean Agents; OC: bodies ≤150 lines). Tier 2 platforms execute protocol skills inline without agent frontmatter. Antigravity (Tier 1c) upgraded from original Tier 2 assessment — Dynamic Subagents confirmed; dispatch primitive pending official docs.
+**Core principle:** Skills are the canonical source of intelligence. Platform manifests make skills discoverable. Agent files are platform-specific (CC: zero-body Lean Agents; OC: bodies ≤150 lines; Codex: TOML). Tier 2 platforms execute protocol skills inline without agent files — write/review isolation is **convention-only** on Tier 2 (structural on Tier 1/1b/1d). Antigravity is Tier 1c aspirational — confirmed Tier 2 fallback if dispatch primitive unverified.
 
 ---
 
@@ -205,9 +211,21 @@ Antigravity CLI 2.0 (announced Google I/O May 19, 2026) is the successor to Gemi
 
 ⚠️ **Gap**: Specific agent frontmatter schema for Antigravity Dynamic Subagents not publicly documented. Known: agents can spawn subagents, depth cap is recommended to prevent budget overruns, subagents run asynchronously (non-blocking terminal). Unknown: whether a `Task()`-equivalent dispatch primitive is exposed to skills, or whether orchestration is model-driven only. **Implementation decision**: treat Antigravity as Tier 1c if Dynamic Subagent dispatch is confirmed available to skills; fall back to Tier 2 (single-agent inline) otherwise. Verify before implementing Tier 1c dispatch logic.
 
-### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline)
+### Tier 1d — Native Subagent Model-Driven (Codex App/CLI)
 
-The orchestrator (the model running the entry skill) executes all pipeline steps inline:
+Codex ships native parallel subagents dispatched by the model (not by a skill-callable `Task()` primitive). The orchestrating model reads pipeline topology and decides to spawn subagents based on the prompt.
+
+- **Agent format**: TOML files. Required fields: `name`, `description`, `developer_instructions`. Optional: `model`, `sandbox_mode`, `mcp_servers`, `nickname_candidates`.
+- **Agent roles**: Three built-ins — `default` (general), `worker` (execution), `explorer` (read-only analysis). Custom agents override these.
+- **Concurrency**: Up to 6 concurrent subagent threads (`agents.max_threads`). Raising this value increases token usage and resource consumption.
+- **Background**: Automations run in dedicated worktrees on schedule (cron-style). Worktrees are per-thread at the app level, not per-subagent.
+- **Isolation**: `sandbox_mode` field exists on TOML agents — **verify** whether it restricts tool access per-agent (reviewer vs. writer). If yes: structural isolation comparable to CC/OC. If no: convention-only.
+- **Skill loading**: Via `.codex-plugin/plugin.json` pointing at `./skills/`. Protocol skills loaded by orchestrator model same as Tier 2.
+- **Write/Review isolation**: Pending `sandbox_mode` verification. Provisionally structural if tool restriction confirmed; convention-only otherwise.
+
+### Tier 2 — Single-Agent Inline (Cursor/Windsurf/Cline)
+
+The orchestrator (the model running the entry skill) executes all pipeline steps inline using its own tools:
 
 ```
 For each step in topology.json (dependency order):
@@ -219,25 +237,38 @@ For each step in topology.json (dependency order):
   6. If BLOCKED: surface to user; stop
 ```
 
+**⚠️ Write/Review isolation on Tier 2**: The orchestrator runs BOTH writer and reviewer protocols with its own full toolset. There is no structural barrier preventing a reviewer from writing. This silently degrades the `WRITE_REVIEW_ISOLATION` guarantee to convention-only. Implementations must document this clearly; users on Tier 2 should understand reviews are advisory, not structurally enforced.
+
 **Tier detection:** Orchestrator checks whether `Task` tool is present in its available tool list. Secondary signal: check for `CLAUDE_CODE` environment variable or `.claude-plugin/` directory in context.
-- `Task` available → Tier 1
-- `Task` not available → Tier 2
-- Ambiguous: default to Tier 2 (safe fallback — sequential always works)
+- `Task` available + `subagent_type` supported → Tier 1 (CC)
+- `mode: subagent` agent files present → Tier 1b (OC)
+- TOML agent files + Codex context → Tier 1d (Codex)
+- None of the above → Tier 2 (safe fallback — sequential always works)
 
-**Pattern behavior on Tier 2:**
+**Pattern behavior across tiers:**
 
-| Pattern | Tier 1 (CC) | Tier 1b (OC) | Tier 2 (Codex/Cursor/Antigravity) |
+| Pattern | Tier 1 (CC) | Tier 1b (OC) | Tier 1c (Antigravity) | Tier 1d (Codex) | Tier 2 (Cursor/Windsurf/Cline) |
+|---|---|---|---|---|---|
+| Sequential | Multi-agent Task() | Native OC subagents | Dynamic Subagents | Model-driven subagents | Single-agent inline |
+| Parallel fan-out | True parallel | Sequential (no worktree) | True parallel (⚠️ TBD) | True parallel (≤6) | Sequential |
+| Iterative loop | Separate worker per cycle | Native OC agents | Dynamic Subagents | Model-driven workers | Inline loop |
+| Human-gated | Gate after Task() | Gate after OC subagent | Gate after subagent | Gate after subagent | Gate after inline exec |
+| Spec-Driven (P5) | Parallel tasks + structural review | Sequential + native review | Parallel + review (⚠️ TBD) | Parallel (≤6) + review | Sequential + inline review |
+
+**Write/Review isolation per tier:**
+
+| Tier | Platform | Isolation mechanism | Strength |
 |---|---|---|---|
-| Sequential | Multi-agent | Native OC subagents | Single-agent inline |
-| Parallel fan-out | True parallel | Sequential (no worktree) | Sequential |
-| Iterative loop | Separate worker per cycle | Native OC agents | Inline loop |
-| Human-gated | Gate after Task() | Gate after OC subagent | Gate after inline exec |
-| Spec-Driven (P5) | Parallel tasks + two-stage review | Sequential tasks + native review | Sequential tasks + inline review |
+| Tier 1 | Claude Code | Agent `tools:` frontmatter restricts reviewer to read-only | ✅ Structural |
+| Tier 1b | OpenCode | `permission: {edit: deny}` on reviewer agent | ✅ Structural |
+| Tier 1c | Antigravity | Unknown — verify Dynamic Subagent tool restriction | ⚠️ TBD |
+| Tier 1d | Codex | TOML `sandbox_mode` — verify per-agent tool restriction | ⚠️ Pending verification |
+| Tier 2 | Cursor/Windsurf/Cline | None — orchestrator runs both roles with full tools | ❌ Convention-only |
 
 **Key invariants:**
-- Pipeline data artifacts (topology.json, spec.md, state.json, outputs) are identical across Tier 1 and Tier 2.
-- A pipeline created on CC can run on Tier 2 platforms without modification.
-- A pipeline created on OC (Tier 1b) uses OC-specific agent frontmatter and run commands — these agents are non-portable to CC without re-scaffolding.
+- Pipeline data artifacts (topology.json, spec.md, state.json, outputs) are identical across all tiers.
+- A pipeline created on CC or Codex can run on Tier 2 platforms without modification.
+- A pipeline created on OC (Tier 1b) uses OC-specific agent frontmatter and run commands — not portable to other tiers without re-scaffolding.
 
 ---
 
@@ -292,6 +323,8 @@ Install: `/plugin install superpipelines@superpipelines` within Antigravity CLI,
 `npx skills install superpipelines` for terminal-level.
 
 Migration from Gemini extension: `agy plugin import gemini` auto-converts old format.
+
+> ⚠️ **Fresh install caveat**: `agy plugin import gemini` is documented as an upgrade path from a previously-installed Gemini extension. Whether it works on a cold repo shipping `gemini-extension.json` for the first time is unverified. If fresh Antigravity installs fail, the canonical new plugin manifest filename must be confirmed from official docs before shipping.
 
 > **Gemini CLI**: No longer a distribution target. Deprecated June 18, 2026.
 
@@ -476,7 +509,7 @@ skills/sk-pipeline-paths/SKILL.md
   — Bump version to 2.0.0
 
 CLAUDE.md
-  — Update architecture invariants (add MULTI_PLATFORM: TRUE, TIER_MODEL: 2-TIER)
+  — Update architecture invariants (add MULTI_PLATFORM: TRUE, TIER_MODEL: 5-TIER, WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2)
   — Update project version to v2.0.0
 ```
 
@@ -488,20 +521,21 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 
 ## 11. Platform Compatibility Matrix
 
-| Feature | Claude Code (T1) | OpenCode (T1b) | Antigravity 2.0 (T1c) | Codex (T2) | Cursor/Windsurf (T2) |
+| Feature | Claude Code (T1) | OpenCode (T1b) | Antigravity 2.0 (T1c ⚠️) | Codex (T1d) | Cursor/Windsurf (T2) |
 |---|---|---|---|---|---|
 | Pipeline creation | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | Pipeline auditing | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Sequential (P1) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents | ✅ Single-agent | ✅ Single-agent |
-| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential | ✅ Dynamic Subagents | ⚠️ Sequential | ⚠️ Sequential |
+| Sequential (P1) | ✅ Multi-agent Task() | ✅ OC native subagents | ✅ Dynamic Subagents | ✅ Model-driven subagents | ✅ Single-agent inline |
+| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential | ✅ Dynamic Subagents (⚠️ TBD) | ✅ True parallel (≤6) | ⚠️ Sequential |
 | Iterative loop (P3) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Human-gated (P4) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents | ✅ Single-agent | ✅ Single-agent |
-| Background / scheduled | ❌ | ❌ | ✅ Scheduled Tasks | ✅ Automations | ❌ |
-| Worktree isolation | ✅ | ❌ | ⚠️ unverified | ❌ | ✅ native |
-| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | Via workflows (.agents/workflows/{P}.md) | ❌ | ❌ |
+| Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents (⚠️ TBD) | ✅ Parallel ≤6 | ✅ Single-agent |
+| Background / scheduled | ❌ | ❌ | ✅ Scheduled Tasks (.agents/workflows/) | ✅ Automations | ❌ |
+| Worktree isolation | ✅ per-subagent | ❌ | ⚠️ unverified | ✅ per-thread (not per-subagent) | ✅ native |
+| Write/Review isolation | ✅ Structural (tools: restriction) | ✅ Structural (permission: deny) | ⚠️ TBD | ⚠️ Pending sandbox_mode verification | ❌ Convention-only |
+| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | Via .agents/workflows/{P}.md | ❌ | ❌ |
 | Version compat check | ❌ | ✅ advisory | ❌ | ❌ | ❌ |
-| Model-per-step | ❌ | ✅ | ⚠️ unverified | ❌ | ❌ |
+| Model-per-step | ❌ | ✅ | ⚠️ unverified | ✅ TOML `model` field | ❌ |
 | State management | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Slash commands | ✅ native | ✅ native | ✅ native | ✅ | ⚠️ per-session |
 | Plugin marketplace | ✅ | ❌ | ✅ (`agy`) | ✅ | ❌ |
@@ -517,7 +551,7 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 
 | | superpipelines | superpipelines-opencode |
 |---|---|---|
-| Tier | 1 (CC) + 2 (Codex/Cursor/Antigravity) | 1b (OpenCode native) |
+| Tier | 1 (CC) + 1d (Codex) + 2 (Cursor/Windsurf/Cline) + 1c aspirational (Antigravity) | 1b (OpenCode native) |
 | Agent format | Zero-body + protocol skill | Bodies ≤150 lines |
 | Scope root | `.claude/` | `.opencode/` |
 | Plugin manifest | `.claude-plugin/plugin.json` | `.opencode/opencode.json` + `dist/index.js` |
@@ -540,10 +574,12 @@ Skills that are logically identical across repos (e.g., `creating-a-pipeline`, `
 
 ## 13. Invariants
 
-- `MULTI_PLATFORM: TRUE` — superpipelines targets CC + Codex + Cursor/Windsurf/Cline + Antigravity CLI 2.0; superpipelines-opencode targets OC; Gemini CLI is retired
-- `TIER_MODEL: 4-TIER` — Tier 1 (CC multi-agent Task()), Tier 1b (OC mode:subagent), Tier 1c (Antigravity Dynamic Subagents — dispatch primitive TBD), Tier 2 (single-agent inline)
+- `MULTI_PLATFORM: TRUE` — superpipelines targets CC + Codex + Cursor/Windsurf/Cline + Antigravity CLI 2.0 (aspirational Tier 1c); superpipelines-opencode targets OC; Gemini CLI is retired
+- `TIER_MODEL: 5-TIER` — Tier 1 (CC: skill-callable Task() dispatch), Tier 1b (OC: mode:subagent, bodies ≤150 lines), Tier 1c (Antigravity: Dynamic Subagents — aspirational, dispatch primitive TBD), Tier 1d (Codex: native parallel subagents, model-driven, TOML agents, up to 6 concurrent), Tier 2 (Cursor/Windsurf/Cline: single-agent inline)
+- `WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2` — CC enforces via agent frontmatter `tools:` restriction; OC enforces via `permission: {edit: deny}` on reviewer agents; Codex enforces via TOML `sandbox_mode` (verify per-agent tool restriction capability). On Tier 2 (Cursor/Windsurf/Cline), the orchestrator runs both writer and reviewer protocols with its own full toolset — isolation is convention-only, not structural. Implementations MUST document this degradation prominently.
 - `SKILL_PRIMACY: TRUE` — Intelligence lives in SKILL.md; platform manifests are discovery-only
-- `ARTIFACT_PORTABILITY: CC_TO_TIER2` — Pipelines from CC run on Tier 2 without modification; OC pipelines use OC-specific agent frontmatter (not portable to CC without re-scaffolding)
-- `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol skill pattern is CC-specific; OC uses bodies ≤150 lines; Tier 2 uses protocol skills inline
+- `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2` — Pipelines from CC or Codex run on Tier 2 platforms without modification. OC pipelines (Tier 1b) use OC-specific agent frontmatter and are not portable to CC or Tier 2 without re-scaffolding.
+- `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol skill pattern is CC-specific; OC uses bodies ≤150 lines; Codex uses TOML agent files; Tier 2 uses protocol skills inline with no agent files
 - `OC_FIRST_CLASS: TRUE` — superpipelines-opencode is a permanent sibling repo, not deprecated
 - `SYNC_DISCIPLINE: REQUIRED` — Shared skills must be kept in sync across both repos via SYNC.md tracking
+- `PARITY_TESTING: MANUAL_PHASE1` — No automated cross-platform parity gate in Phase 1. SYNC.md tracks which skills have been validated per platform. Automated parity tests are a Phase 2 objective.
