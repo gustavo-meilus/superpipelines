@@ -108,6 +108,10 @@ For each step in `topology.json` (dependency order):
 Path resolution MUST consult `metadata.tier` for any artifact write on a non-CC tier. Hardcoded `.claude/` paths in scaffolding output break `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2`.
 </invariant>
 
+<invariant>
+PORTABILITY_REWRITE is convention-only — no runtime enforcement layer guards it. EVERY caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the v2.0.0 architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
+</invariant>
+
 ## Tier 2 Degradation Surfacing
 
 The Tier 2 reviewer-isolation degradation MUST be surfaced in two places:
