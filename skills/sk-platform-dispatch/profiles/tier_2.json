@@ -1,0 +1,24 @@
+{
+  "tier": "tier_2",
+  "name": "Cursor / Windsurf / Cline",
+  "profile_version": "1.0.0",
+  "capabilities": {
+    "subagents": false,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "convention",
+    "dispatch_mechanism": "inline"
+  },
+  "scope_root": {
+    "workspace": ".superpipelines",
+    "user": "~/.superpipelines"
+  },
+  "degradation_warnings": [
+    "Reviewer isolation is convention-only; reviews are advisory, not structurally enforced.",
+    "Parallel fan-out (Pattern 2) degrades to sequential.",
+    "Iterative pattern (Pattern 3) cycle limit still enforced inline."
+  ],
+  "extensions": {}
+}

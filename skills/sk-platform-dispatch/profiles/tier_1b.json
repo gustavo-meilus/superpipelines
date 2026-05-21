@@ -1,0 +1,22 @@
+{
+  "tier": "tier_1b",
+  "name": "OpenCode",
+  "profile_version": "1.0.0",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "structural",
+    "dispatch_mechanism": "native_subagent"
+  },
+  "scope_root": {
+    "workspace": ".opencode",
+    "user": "~/.opencode"
+  },
+  "degradation_warnings": [
+    "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
+  ],
+  "extensions": {}
+}

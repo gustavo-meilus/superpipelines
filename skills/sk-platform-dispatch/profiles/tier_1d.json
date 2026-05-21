@@ -1,0 +1,24 @@
+{
+  "tier": "tier_1d",
+  "name": "Codex",
+  "profile_version": "1.0.0",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": true,
+    "task_primitive": false,
+    "skill_tool": false,
+    "worktrees": false,
+    "reviewer_isolation": "unverified",
+    "dispatch_mechanism": "model_driven"
+  },
+  "scope_root": {
+    "workspace": ".codex",
+    "user": "~/.codex"
+  },
+  "degradation_warnings": [
+    "Codex sandbox_mode per-agent tool restriction unverified. Reviewer isolation treated as advisory until confirmed."
+  ],
+  "extensions": {
+    "max_concurrent_subagents": 6
+  }
+}

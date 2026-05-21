@@ -1,0 +1,20 @@
+{
+  "tier": "tier_1",
+  "name": "Claude Code",
+  "profile_version": "1.0.0",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": true,
+    "task_primitive": true,
+    "skill_tool": true,
+    "worktrees": true,
+    "reviewer_isolation": "structural",
+    "dispatch_mechanism": "native_task"
+  },
+  "scope_root": {
+    "workspace": ".claude",
+    "user": "~/.claude"
+  },
+  "degradation_warnings": [],
+  "extensions": {}
+}

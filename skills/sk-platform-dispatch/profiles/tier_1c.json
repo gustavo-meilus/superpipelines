@@ -1,0 +1,26 @@
+{
+  "tier": "tier_1c",
+  "name": "Antigravity",
+  "profile_version": "1.0.0",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "unverified",
+    "dispatch_mechanism": "inline"
+  },
+  "scope_root": {
+    "workspace": ".agents",
+    "user": "~/.gemini/antigravity"
+  },
+  "degradation_warnings": [
+    "Antigravity Dynamic Subagent dispatch primitive unverified. Falling back to Tier 2 inline execution.",
+    "Reviewer isolation is unverified. Treat reviews as advisory until confirmed structural."
+  ],
+  "extensions": {
+    "aspirational": true,
+    "verification_pending": ["dispatch_primitive", "reviewer_isolation"]
+  }
+}
