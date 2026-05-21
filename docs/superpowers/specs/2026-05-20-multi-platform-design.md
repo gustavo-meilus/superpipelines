@@ -197,10 +197,13 @@ Antigravity CLI 2.0 (announced Google I/O May 19, 2026) is the successor to Gemi
 - **Plugin format**: Antigravity plugins (renamed from Gemini CLI "extensions"). Migration: `agy plugin import gemini` converts old `gemini-extension.json` extensions
 - **Plugin install**: `/plugin install {name}@{marketplace}` within CLI, or `npx antigravity-awesome-skills --antigravity`
 - **Skills/Hooks/SKILL.md**: all preserved from Gemini CLI
-- **Context file**: likely `ANTIGRAVITY.md` (⚠️ unverified — confirm with official docs before implementation)
+- **Context file**: `GEMINI.md` continues unchanged (confirmed — migration guide explicitly states "GEMINI.md and AGENTS.md in the workspace, plus ~/.gemini/GEMINI.md globally, all keep working unchanged"). No ANTIGRAVITY.md introduced.
+- **Skills directories**: `~/.gemini/antigravity/skills/` (global, auto-loaded), `.agents/skills/` (workspace). Legacy `.gemini/skills/` must be manually relocated.
+- **Workflows (Scheduled Tasks)**: `.md` files in `.agents/workflows/` (workspace) or `~/.gemini/antigravity/global_workflows/<NAME>.md` (global). Cron-style scheduling.
+- **Rules**: `.agents/rules/` directory (workspace), `~/.gemini/GEMINI.md` (global).
 - **Models**: Gemini 3.5 Flash default (4x faster than Gemini 3.1 Pro per benchmarks)
 
-⚠️ **Gap**: Specific agent frontmatter schema for Antigravity Dynamic Subagents not yet confirmed. Before implementing Tier 1c dispatch, verify whether Antigravity exposes a `Task()`-equivalent primitive to skills or uses a separate orchestration layer. If no dispatch primitive exists for skills, fall back to Tier 2 (single-agent) for this platform.
+⚠️ **Gap**: Specific agent frontmatter schema for Antigravity Dynamic Subagents not publicly documented. Known: agents can spawn subagents, depth cap is recommended to prevent budget overruns, subagents run asynchronously (non-blocking terminal). Unknown: whether a `Task()`-equivalent dispatch primitive is exposed to skills, or whether orchestration is model-driven only. **Implementation decision**: treat Antigravity as Tier 1c if Dynamic Subagent dispatch is confirmed available to skills; fall back to Tier 2 (single-agent inline) otherwise. Verify before implementing Tier 1c dispatch logic.
 
 ### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline)
 
@@ -269,19 +272,28 @@ Distribution via `npx skills add superpipelines -a cursor` (and equivalents for 
 
 #### Antigravity CLI 2.0 (new — replaces Gemini CLI target)
 ```
-.antigravity-plugin/
-  plugin.json            ← Antigravity plugin manifest (format TBD — verify with official docs)
-                           ⚠️ gemini-extension.json is the legacy format; Antigravity renamed
-                           the surface to "plugins". Exact schema pending verification.
+gemini-extension.json    ← Plugin manifest (Antigravity CLI continues reading gemini-extension.json;
+                           plugin format renamed "Antigravity plugins" but migration via
+                           `agy plugin import gemini` uses same schema. Exact new manifest
+                           filename for fresh plugins is ⚠️ TBD — official docs are JS SPA.
+                           Safe default: keep gemini-extension.json; it migrates automatically.)
 
-ANTIGRAVITY.md           ← Antigravity context file (likely successor to GEMINI.md; verify)
+GEMINI.md                ← Context file (confirmed unchanged — migration guide: "GEMINI.md
+                           and AGENTS.md all keep working unchanged". NO ANTIGRAVITY.md.)
+
+.agents/
+  skills/                ← Workspace skills (canonical Antigravity location)
+  workflows/             ← Scheduled Tasks (.md files, cron-style)
+  rules/                 ← Rules (workspace-level)
 ```
+Global paths: `~/.gemini/antigravity/skills/` (skills), `~/.gemini/antigravity/global_workflows/` (workflows).
+
 Install: `/plugin install superpipelines@superpipelines` within Antigravity CLI, or
-`npx antigravity-awesome-skills --antigravity` for skills-only.
+`npx skills install superpipelines` for terminal-level.
 
 Migration from Gemini extension: `agy plugin import gemini` auto-converts old format.
 
-> **Gemini CLI**: No longer a distribution target. Deprecated June 18, 2026. The `gemini-extension.json` file and `GEMINI.md` from prior spec versions are superseded by the Antigravity plugin format above.
+> **Gemini CLI**: No longer a distribution target. Deprecated June 18, 2026.
 
 #### Universal fallback (new)
 ```
@@ -294,9 +306,8 @@ AGENTS.md               ← Platform-agnostic: introduces Superpipelines command
 | File | Platforms | Content |
 |---|---|---|
 | `CLAUDE.md` | Claude Code | Existing architecture reference |
-| `ANTIGRAVITY.md` | Antigravity CLI 2.0 | Context intro, commands, pipeline usage (⚠️ filename unverified — may still be `GEMINI.md` for compat) |
+| `GEMINI.md` | Antigravity CLI 2.0 | Context intro, commands, pipeline usage (confirmed unchanged from Gemini CLI — migration guide explicit) |
 | `AGENTS.md` | OpenCode, universal | Commands, trigger phrases, pipeline overview |
-| ~~`GEMINI.md`~~ | ~~Gemini CLI~~ | **Deprecated** — Gemini CLI retired June 18, 2026 |
 
 ### 7.3 OpenCode (Tier 1b — Maintained via superpipelines-opencode)
 
@@ -378,7 +389,7 @@ A unified Node.js installer (`bin/install.js`) auto-detects all supported platfo
 | `windsurf` | `.windsurf/` config dir exists | `npx skills add superpipelines -a windsurf` |
 | `cline` | `.clinerules/` or Cline extension present | `npx skills add superpipelines -a cline` |
 | `opencode` | `opencode` binary or `.opencode/` dir | Redirect to `superpipelines-opencode` (separate repo, OC Tier 1b) |
-| `antigravity` | `agy` binary on PATH | `/plugin install superpipelines@superpipelines` (in-CLI) |
+| `antigravity` | `agy` binary on PATH | Install `gemini-extension.json` + skills to `.agents/skills/`; `agy plugin import gemini` migrates from Gemini extension |
 
 ### Installer Flags
 
@@ -415,11 +426,11 @@ irm https://raw.githubusercontent.com/.../main/install.ps1 | iex
 .cursor-plugin/
   plugin.json
 
-gemini-extension.json
+gemini-extension.json   ← Antigravity plugin manifest (migrates automatically via agy plugin import gemini)
 
 AGENTS.md
 
-GEMINI.md
+GEMINI.md               ← Antigravity context file (confirmed — GEMINI.md unchanged in Antigravity CLI)
 
 bin/
   install.js           ← Node.js unified installer
@@ -487,10 +498,10 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 | Human-gated (P4) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native | ✅ Dynamic Subagents | ✅ Single-agent | ✅ Single-agent |
 | Background / scheduled | ❌ | ❌ | ✅ Scheduled Tasks | ✅ Automations | ❌ |
-| Worktree isolation | ✅ | ❌ | ❓ (unverified) | ❌ | ✅ native |
-| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | ❓ | ❌ | ❌ |
+| Worktree isolation | ✅ | ❌ | ⚠️ unverified | ❌ | ✅ native |
+| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | Via workflows (.agents/workflows/{P}.md) | ❌ | ❌ |
 | Version compat check | ❌ | ✅ advisory | ❌ | ❌ | ❌ |
-| Model-per-step | ❌ | ✅ | ❓ | ❌ | ❌ |
+| Model-per-step | ❌ | ✅ | ⚠️ unverified | ❌ | ❌ |
 | State management | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Slash commands | ✅ native | ✅ native | ✅ native | ✅ | ⚠️ per-session |
 | Plugin marketplace | ✅ | ❌ | ✅ (`agy`) | ✅ | ❌ |
