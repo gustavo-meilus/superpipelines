@@ -1,22 +1,36 @@
-# Superpipelines: Multi-Agent Orchestration for Claude Code
+# Superpipelines: Multi-Agent Orchestration Across AI Coding Platforms
 
-Superpipelines turns Claude Code from a chaotic generator into a disciplined engineering team. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output.
+Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. As of v2.0.0, the same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, Cline, and Antigravity CLI 2.0.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
-[![GitHub Stars](https://img.shields.io/github/stars/gustavo-meilus/superpipelines?style=social)](https://github.com/gustavo-meilus/superpipelines/stargazers)
-
-[![Star History Chart](https://api.star-history.com/svg?repos=gustavo-meilus/superpipelines&type=Date)](https://star-history.com/#gustavo-meilus/superpipelines&Date)
 
 ---
 
 ## Quick Start
 
-Step 1: Install
+Step 1: Install (universal — auto-detects your platform)
 
 ```bash
-claude plugin install github:gustavo-meilus/superpipelines
+# POSIX (macOS/Linux)
+curl -fsSL https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.ps1 | iex
+
+# Or via npm (any platform with Node ≥18)
+npx -y superpipelines-install
 ```
+
+Platform-specific install commands:
+
+| Platform | Install |
+| :--- | :--- |
+| Claude Code | `claude plugin install github:gustavo-meilus/superpipelines` |
+| OpenCode | See [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) |
+| Codex App/CLI | `codex plugin add github:gustavo-meilus/superpipelines` (syntax pending verification — see RELEASE-NOTES) |
+| Antigravity 2.0 | `agy plugin install github:gustavo-meilus/superpipelines` |
+| Cursor / Windsurf / Cline | `npx -y skills add superpipelines -a <cursor\|windsurf\|cline>` |
 
 Step 2: Create your first pipeline
 
@@ -41,7 +55,19 @@ The system handles spec generation, agent coordination, state persistence, and c
   <img alt="Superpipelines Architecture Diagram" src="assets/architecture-light.svg" width="100%">
 </picture>
 
-By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent cannot rationalize its way into modifying code. The only outputs it can produce are a passing verdict or an explicit failure that halts the pipeline.
+By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent cannot rationalize its way into modifying code. The only outputs it can produce are a passing verdict or an explicit failure that halts the pipeline. On platforms that support structural isolation (Claude Code, OpenCode, Codex), this constraint is enforced at the permission layer. On Cursor, Windsurf, and Cline (Tier 2), the same protocol runs as a convention — surfaced explicitly at run start and end so reviewers know reviews are advisory rather than structurally guaranteed.
+
+### Platform Tiers
+
+| Tier | Platforms | Subagent Dispatch | Reviewer Isolation |
+| :--- | :--- | :--- | :--- |
+| **1** | Claude Code | Native `Task()` | Structural (`tools:` restriction) |
+| **1b** | OpenCode | `mode: subagent` | Structural (`permission: { edit: deny }`) |
+| **1c** | Antigravity CLI 2.0 | Dynamic Subagents *(aspirational)* | Unverified |
+| **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` *(pending verification)* |
+| **2** | Cursor, Windsurf, Cline | Single-agent inline loop | Convention-only (advisory) |
+
+Pipelines scaffolded on Tier 1 (Claude Code) or Tier 1d (Codex) run on Tier 2 platforms without modification — `sk-platform-dispatch` rewrites paths at read/write time.
 
 ---
 
@@ -116,13 +142,23 @@ Pipeline state persists to a deterministic path at `<scope-root>/superpipelines/
 <!-- <file_structure> -->
 ```
 superpipelines/
-├── .claude-plugin/           # Plugin manifest and marketplace data
-├── agents/                   # Core agent definitions (Architect, Auditor, Executor, Reviewers)
-├── skills/                   # Shared skills (State, Paths, Patterns, Worktree Safety)
+├── .claude-plugin/           # Claude Code manifest + marketplace data
+├── .codex-plugin/            # Codex App/CLI manifest
+├── .cursor-plugin/           # Cursor / Windsurf / Cline manifest
+├── gemini-extension.json     # Antigravity CLI 2.0 extension manifest
+├── agents/                   # Core agent definitions (zero-body; Lean Agent pattern)
+├── skills/                   # Intelligence layer — skills hold the orchestration logic
+│   ├── sk-platform-dispatch/ # Tier detection + DISPATCH contract + Tier 2 inline loop
+│   ├── *-protocol/           # Per-agent protocol skills (companion to zero-body agents)
 │   ├── *-references/         # Deep reference libraries (on-demand loading)
 ├── commands/                 # Slash command wrappers
-├── hooks/                    # SessionStart hooks for bootstrap injection
-└── settings.json             # Global plugin configuration
+├── hooks/                    # SessionStart hooks (per-platform variants)
+├── bin/install.js            # Universal Node installer (7 platforms auto-detected)
+├── install.sh / install.ps1  # POSIX + PowerShell installer wrappers
+├── AGENTS.md                 # Universal context (any AGENTS.md-aware tool)
+├── GEMINI.md                 # Antigravity-specific context
+├── CLAUDE.md                 # Claude Code project reference + invariants
+└── docs/SYNC.md              # Cross-repo skill-sync tracker (CC ↔ OC)
 ```
 <!-- </file_structure> -->
 
@@ -130,7 +166,7 @@ superpipelines/
 
 ## Related Projects
 
-The companion project [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) contains the opencode implementation of the Superpipelines plugin, with alternative skill definitions, agent configurations, pipeline artifacts, and command wrappers adapted for the opencode environment.
+The companion project [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) is the OpenCode (Tier 1b) sibling repo. It is a permanent first-class sibling — not deprecated — with its own skill definitions, agent configurations, and command wrappers adapted for the OpenCode environment. Shared skills stay in sync via [`docs/SYNC.md`](./docs/SYNC.md).
 
 ## Contributing
 
@@ -139,3 +175,11 @@ Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](
 ## License
 
 MIT. See [LICENSE](./LICENSE).
+
+---
+
+## Star History
+
+[![GitHub Stars](https://img.shields.io/github/stars/gustavo-meilus/superpipelines?style=social)](https://github.com/gustavo-meilus/superpipelines/stargazers)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=gustavo-meilus/superpipelines&type=Date)](https://star-history.com/#gustavo-meilus/superpipelines&Date)
