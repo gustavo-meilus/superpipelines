@@ -25,6 +25,16 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - Read and merge `registry.json` files from `local`, `project`, and `user` scopes.
 - Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
 
+### PHASE 0.25: TIER DETECT & DISPATCH LOAD
+- Load `sk-platform-dispatch` via the `Skill` tool.
+- Run `DETECT()` from the loaded skill.
+- Cache the result in the run's `pipeline-state.json` as `metadata.tier` during Phase 2 state initialization.
+- <HARD-GATE>NEVER perform tier detection more than once per run. If `metadata.tier` is already set (resume case), trust the cached value and skip re-detection.</HARD-GATE>
+- **Branch by tier**:
+  - `tier_1` → Phase 3 uses native `Task()` dispatch (existing behavior).
+  - `tier_1b` / `tier_1c` / `tier_1d` → Phase 3 uses the platform's native subagent dispatch (see entry skill).
+  - `tier_2` → Phase 3 uses the Tier 2 Inline Loop from `sk-platform-dispatch`. Emit one user-facing notice: `"Running on Tier 2 ({platform}). Reviewer isolation is convention-only; reviews are advisory, not structurally enforced."`
+
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
 - Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
 - Read the currently installed plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
@@ -47,7 +57,8 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 - Invoke the pipeline's entry skill (`run-{P}`).
-- **Context Handoff**: Pass absolute paths to the scope root, state file, and topology.
+- **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.tier` from Phase 0.25.
+- **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
 - **Responsibility**: The entry skill owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup.
 
 ### PHASE 4: COMPLETION & CLEANUP
@@ -62,6 +73,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - NEVER pass full file content to the entry skill; use absolute paths.
 - All state updates must utilize the atomic write pattern.
 - ALWAYS perform Phase 0.5 version-compatibility advisory before resume or fresh run; advisory is non-blocking but requires user confirmation on major-version mismatch.
+- ALWAYS perform Phase 0.25 tier detection exactly once per run; cached `metadata.tier` is the source of truth for resume.
 </invariants>
 
 ## Red Flags — STOP
@@ -82,5 +94,6 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 ## Reference Files
 - `sk-pipeline-paths/SKILL.md` — Scope root resolution.
 - `sk-pipeline-state/SKILL.md` — State schema and recovery rules.
+- `sk-platform-dispatch/SKILL.md` — Tier detection and Tier 2 inline dispatch.
 - `sk-write-review-isolation/SKILL.md` — Two-stage review protocol.
 - `creating-a-pipeline/SKILL.md` — Pipeline scaffolding.
