@@ -17,6 +17,9 @@ Superpipelines utilize a structured JSON state to manage the lifecycle of multi-
   <term name="Pipeline State">A structured JSON file (`pipeline-state.json`) representing the source of truth for a specific run.</term>
   <term name="Atomic Write">The process of writing to a temporary file and renaming it to ensure file integrity.</term>
   <term name="Run ID">A UUID v4 uniquely identifying a single execution instance of a pipeline.</term>
+  <term name="source_tier">The execution tier where the pipeline was scaffolded. Set once at run init; never updated.</term>
+  <term name="runtime_tier">The execution tier of the current or most-recent run. Re-detected on every resume; updated on cross-tier resume.</term>
+  <term name="tier_changes">Append-only audit log of every cross-tier resume event. Never overwritten.</term>
 </glossary>
 
 ## State Location
@@ -49,7 +52,16 @@ State must be persisted to `<scope-root>/superpipelines/temp/{P}/{runId}/pipelin
       "error": null
     }
   ],
-  "metadata": {}
+  "metadata": {
+    "source_tier": "<tier_id — tier where pipeline was scaffolded; immutable after init>",
+    "runtime_tier": "<tier_id — tier where current execution runs; re-detected on every resume>",
+    "platform_profile": "<full profile object snapshot — updated when runtime_tier changes>",
+    "tier_changes": [
+      { "from": "<tier_id>", "to": "<tier_id>", "at": "<iso8601>" }
+    ],
+    "source_scope_root": "<original workspace scope root directory name, e.g. .claude>",
+    "isolation_warning": "<joined degradation_warnings from active profile; null if none>"
+  }
 }
 ```
 </schema>
@@ -86,6 +98,7 @@ mv "${TEMP_DIR}/pipeline-state.json.tmp" "${TEMP_DIR}/pipeline-state.json"
 - **No Model Coupling**: Never use the model's native memory tool for pipeline state management; use structured JSON.
 - **Atomic Renaming**: Direct writes to `pipeline-state.json` are forbidden.
 - **Explicit Resumption**: NEVER auto-resume from an `escalated` or `failed` state without explicit user confirmation.
+- **Backward Compatibility**: Pre-v2.0.0 state files carry `metadata.tier` (single field). On resume of an old state file: treat `metadata.tier` as `source_tier` when `metadata.source_tier` is absent; set `runtime_tier` to the re-detected current tier. New state writes MUST use `source_tier` and `runtime_tier`; never write `metadata.tier` in new state.
 - **Version Stamping**: `plugin_version` MUST be set at state initialization by reading the `version` field from `.claude-plugin/plugin.json`. It is read-only after init and used by `running-a-pipeline` for compatibility advisory.
 </invariants>
 
