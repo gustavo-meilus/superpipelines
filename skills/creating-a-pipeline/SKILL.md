@@ -20,7 +20,13 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 ## Workflow Phases
 
 <protocol>
-### PHASE 0: GIT PREFLIGHT
+### PHASE 0: TIER DETECT
+- Load `sk-platform-dispatch` via the `Skill` tool → call `DETECT()` → receive `platform_profile` object.
+- Cache `platform_profile` in session context (no state file exists yet during creation).
+- IF `platform_profile.degradation_warnings` is non-empty: emit each warning with "⚠️" prefix before proceeding.
+- Store `platform_profile` for use in Phase 4 dispatch branching.
+
+### PHASE 0b: GIT PREFLIGHT
 - <HARD-GATE>Run git preflight FIRST — before any other action. STOP if the workspace is not a valid git repository and present the user with three options: (a) proceed without git (Pattern 1 or 4 only), (b) initialize git, (c) cancel. Do NOT advance to Phase 1 until this gate is resolved.</HARD-GATE>
 - **Goal**: Ensure the environment supports the isolation requirements of the selected pattern.
 
@@ -38,9 +44,13 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - **Restriction**: If git is absent, limit selection to Pattern 1 or 4.
 
 ### PHASE 4: DESIGN & AUDIT LOOP
-- **Dispatch Architect**: Generate `spec.md`, `plan.md`, `tasks.md`, `topology.json`, and all step-specific agents/skills.
+- **Dispatch Architect** (profile-driven from Phase 0):
+  - `dispatch_mechanism == "native_task"` → `Task(pipeline-architect, ...)`
+  - `dispatch_mechanism == "native_subagent"` → OC native `mode: subagent` dispatch
+  - `dispatch_mechanism == "model_driven"` → model-driven orchestration prompt
+  - `dispatch_mechanism == "inline"` OR unknown → `Skill(pipeline-architect-protocol)` then execute inline using own `Read`/`Write`/`Edit`/`Bash` tools
 - **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
-- **Dispatch Auditor**: Review all generated files in DELTA mode.
+- **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
 
 
@@ -54,11 +64,11 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   1. `<scope-root>/superpipelines/pipelines/{P}/spec.md`
   2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
   3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
-  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` stamped)
+  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0)
   5. `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Run Launcher — single-page launcher document referencing the entry skill, registry entry, topology, and last-run state. Required artifact. NOTE: on Claude Code this is a documentation/discovery file only; CC does NOT auto-register it as a `/superpipelines:{P}` slash command. On OpenCode the same artifact is auto-routed by OC's scope-aware command resolver. Cross-platform `/superpipelines:{P}` direct invocation is OC-only in v2.0.0.)
   6. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
   7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
-  8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
+  8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0)
 </HARD-GATE>
 - Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Claude Code: this is a documentation/discovery file ONLY — it is NOT registered as a `/superpipelines:{P}` slash command). On OpenCode the same launcher IS auto-routed as `/superpipelines:{P}` direct invocation."
 </protocol>
@@ -69,6 +79,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - All internal step skills MUST be marked `user-invocable: false`.
 - Any modification to the design MUST trigger a re-audit for SEV-0/1 issues.
 - ALWAYS stamp `plugin_version` in `topology.json`, the registry entry, and agent frontmatter to the current superpipelines version.
+- NEVER use `Task()` directly in Phase 4 without checking `platform_profile.capabilities.task_primitive`; use profile-driven dispatch branching.
 </invariants>
 
 ## Red Flags — STOP
