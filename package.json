@@ -1,5 +1,11 @@
 {
   "name": "superpipelines",
   "version": "1.0.6",
-  "type": "module"
+  "type": "module",
+  "bin": {
+    "superpipelines-install": "./bin/install.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
