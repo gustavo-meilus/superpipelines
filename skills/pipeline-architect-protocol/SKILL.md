@@ -52,7 +52,9 @@ The Pipeline Architect treats every component as a discrete software system with
   result = DISPATCH(step={id: "<step.id>", agent: "<step.agent>", protocol_skill: "<step.agent>-protocol", output_paths: [...]}, inputs=<resolved>)
   if result.status != "DONE": handle per status protocol
   ```
-  Do NOT emit raw `Task(subagent_type=...)` invocations in entry skills. (Architect's own internal Task() calls during PIPELINE mode are unchanged — this constraint applies only to the *generated* entry skills.)
+  Do NOT emit raw `Task(subagent_type=...)` invocations in entry skills for **top-level step dispatch**. Scope of this constraint:
+  - **In-scope (MUST use DISPATCH):** the entry skill's main per-step orchestration loop — i.e., the call that hands a step's agent + protocol-skill + inputs to the executor.
+  - **Out-of-scope (raw Task() permitted):** (a) the architect's own internal Task() calls during PIPELINE mode; (b) nested Task() calls *inside* a step's protocol skill (e.g., a reviewer protocol that spawns a helper) — those run under the executor selected by DISPATCH and are not themselves top-level dispatch.
 
 ### 3. DEVELOP
 
