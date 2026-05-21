@@ -50,6 +50,11 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 ### PHASE 0.6: PORTABILITY VALIDATION
 - IF `metadata.runtime_tier == metadata.source_tier`: skip silently.
 - ELSE:
+  - **OC frontmatter check**: IF `metadata.source_tier == "tier_1b"` AND `metadata.runtime_tier != "tier_1b"`:
+    - Emit: `"⚠️ Cross-tier incompatibility: pipeline was scaffolded on OpenCode (tier_1b). OC agent files use 'mode: subagent' frontmatter that is not recognized by other tiers. This is a frontmatter incompatibility, not a path problem — the Auto-rewrite below cannot fix it. Re-scaffolding on the current platform is required. Abort recommended."`
+    - Offer: `[Abort] [Proceed as advisory (expect dispatch failures)]`
+    - **Abort**: Stop. User must re-scaffold on current platform.
+    - **Proceed as advisory**: Continue with a note in `metadata.isolation_warning`. Dispatch failures are expected.
   - `source_root` = READ(`skills/sk-platform-dispatch/profiles/{metadata.source_tier}.json`).scope_root.workspace
   - `target_root` = `platform_profile.scope_root.workspace`
   - Scan entry skill content for occurrences of `source_root + "/"` string.
@@ -68,11 +73,11 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 ### PHASE 2: STATE INITIALIZATION
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
-- **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `.claude-plugin/plugin.json` at init), and the selected execution `pattern`.
+- **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `.claude-plugin/plugin.json` at init), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 - Invoke the pipeline's entry skill (`run-{P}`).
-- **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
+- **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.runtime_tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
 - **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
 - **Responsibility**: The entry skill owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup.
 
