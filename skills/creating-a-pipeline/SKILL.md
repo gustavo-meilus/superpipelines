@@ -29,6 +29,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
+- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps; resolves to `claude-opus-4-7`) or `fast` (execution/utility steps; resolves to `claude-sonnet-4-6`). Record the user's mapping in Phase 2 output (`{step_id: tier}`); the architect MUST embed the resolved model string in each generated agent's frontmatter `model:` field during Phase 4. If the user declines to choose, default every step to `claude-sonnet-4-6` per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET`. The deep/fast → opus/sonnet mapping is also documented in the `MODEL_SELECTION` invariant update in Sub-Plan 5.
 - Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 
