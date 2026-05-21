@@ -45,7 +45,15 @@ Superpipelines runs on five tiers. The active platform's tier determines paralle
 
 ## Pipeline artifacts
 
-All pipelines produce these files under the active scope root (`<workspace>/.claude/`, `<workspace>/.opencode/`, or `~/.claude/`):
+All pipelines produce these files under the active scope root. Roots vary per tier (resolved by `sk-pipeline-paths`):
+
+- Tier 1 (Claude Code): `<workspace>/.claude/` → `~/.claude/`
+- Tier 1b (OpenCode): `<workspace>/.opencode/` → `~/.config/opencode/`
+- Tier 1c (Antigravity): `<workspace>/.agents/` → `~/.gemini/antigravity/`
+- Tier 1d (Codex): `<workspace>/.codex/` → `~/.codex/`
+- Tier 2 (Cursor/Windsurf/Cline): `<workspace>/.superpipelines/` (universal fallback)
+
+The artifacts below appear under whichever root the active tier resolves:
 
 - `superpipelines/pipelines/{P}/spec.md` — Approved specification.
 - `superpipelines/pipelines/{P}/plan.md` — Implementation plan.
