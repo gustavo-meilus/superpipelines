@@ -8,7 +8,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 1. Layout & registry (criteria 1–5)
 2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
-4. Runtime safety (criteria 17–20)
+4. Runtime safety (criteria 17–22)
 
 ---
 
@@ -53,13 +53,14 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 | 19 | Write/review isolation honored | Review-role agents (`*-spec-reviewer`, `*-quality-reviewer`) have `disallowedTools: Write, Edit, Bash` (or equivalent) in frontmatter |
 | 20 | Cleanup contract present in entry skill | Entry skill body explicitly: (a) writes `status: completed` to `pipeline-state.json` on success, (b) deletes `temp/{P}/{runId}/` on DONE, (c) preserves temp on ESCALATED/FAILED/BLOCKED |
 | 21 | `plugin_version` present and consistent | `topology.json` has a `plugin_version` field; all agent frontmatter have `plugin_version`; registry entry has `plugin_version`. Missing → SEV-2. Mismatch between topology and agents → SEV-3 |
+| 22 | No hardcoded scope-root paths (PORTABILITY) | Entry skill, all step agents, all protocol skills, and topology.json contain no hardcoded scope-root directory names (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`) outside of comments that explicitly document `PORTABILITY_REWRITE`. Paths must use `{ROOT}` template variable resolved via `sk-pipeline-paths`. — **SEV-1** |
 
 ---
 
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–21 (including 10a) in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–22 (including 10a) in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.
