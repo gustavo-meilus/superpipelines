@@ -55,11 +55,12 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
   3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
   4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` stamped)
-  5. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
-  6. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
-  7. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
+  5. `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Run Launcher — single-page launcher document referencing the entry skill, registry entry, topology, and last-run state. Required artifact. NOTE: on Claude Code this is a documentation/discovery file only; CC does NOT auto-register it as a `/superpipelines:{P}` slash command. On OpenCode the same artifact is auto-routed by OC's scope-aware command resolver. Cross-platform `/superpipelines:{P}` direct invocation is OC-only in v2.0.0.)
+  6. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
+  7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
+  8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
 </HARD-GATE>
-- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it."
+- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md`. On OpenCode the same launcher is invocable directly as `/superpipelines:{P}`."
 </protocol>
 
 <invariants>
