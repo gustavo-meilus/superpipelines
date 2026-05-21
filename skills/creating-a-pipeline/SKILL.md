@@ -45,10 +45,13 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect** (profile-driven from Phase 0):
-  - `dispatch_mechanism == "native_task"` → `Task(pipeline-architect, ...)`
-  - `dispatch_mechanism == "native_subagent"` → OC native `mode: subagent` dispatch
-  - `dispatch_mechanism == "model_driven"` → model-driven orchestration prompt
-  - `dispatch_mechanism == "inline"` OR unknown → `Skill(pipeline-architect-protocol)` then execute inline using own `Read`/`Write`/`Edit`/`Bash` tools
+
+  | `dispatch_mechanism` | Architect action |
+  |---|---|
+  | `native_task` | `Task(pipeline-architect, ...)` |
+  | `native_subagent` | OC native `mode: subagent` dispatch |
+  | `model_driven` | Model-driven orchestration prompt |
+  | `inline` or unknown | `Skill(pipeline-architect-protocol)` → execute inline with own tools |
 - **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
