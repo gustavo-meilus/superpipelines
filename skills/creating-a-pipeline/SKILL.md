@@ -60,7 +60,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
   8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` stamped)
 </HARD-GATE>
-- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md`. On OpenCode the same launcher is invocable directly as `/superpipelines:{P}`."
+- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Claude Code: this is a documentation/discovery file ONLY — it is NOT registered as a `/superpipelines:{P}` slash command). On OpenCode the same launcher IS auto-routed as `/superpipelines:{P}` direct invocation."
 </protocol>
 
 <invariants>
