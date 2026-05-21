@@ -41,7 +41,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - **SCOPE-WIDE**: Iterate through all scope roots and registered pipelines.
 
 ### 2. AUDIT
-- **Compliance Matrix**: Execute the 22-criterion check in `references/compliance-matrix.md` (criteria 1–22, including 10a and new criterion 22 PORTABILITY CHECK).
+- **Compliance Matrix**: Execute the 22-criterion check in `references/compliance-matrix.md` (criteria 1–22, including 10a and new criterion 22 PORTABILITY CHECK — SEV-1).
 - **Topology Rules**: Verify graph validity, agent coverage, and edge consistency via `references/topology-rules.md`.
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 
@@ -61,7 +61,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - DELTA mode must ignore findings outside the changed scope to prevent unrelated blocking.
 - NEVER skip the compliance matrix checks, regardless of file appearance.
 - NEVER create or modify pipeline components directly.
-- Criterion 22 (PORTABILITY CHECK) applies in FULL and DELTA modes. In DELTA mode, scan only changed files and the entry skill (entry skill is always in scope for portability checks regardless of delta scope).
+- Criterion 22 (PORTABILITY CHECK) applies in FULL and DELTA modes. FULL scope: all agents, skills, and topology.json. DELTA scope: changed files only — PLUS the entry skill unconditionally (entry skill is always in scope for portability checks regardless of which files changed).
 </invariants>
 
 ## Reference Files
