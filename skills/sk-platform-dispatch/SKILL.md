@@ -123,14 +123,14 @@ For each step in `topology.json` (dependency order):
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` (universal fallback — created on demand) |
 </scope_roots_per_tier>
 
-`sk-pipeline-paths` resolves scope-root by reading `metadata.tier` from the pipeline state and walking the chain above. For Tier 2, if a pipeline was scaffolded on CC (paths reference `.claude/`), the dispatch layer rewrites `.claude/` → `.superpipelines/` at read/write time so portable artifacts continue to resolve. This rewrite is invertible: state files stamp the original scope-root string for auditability.
+`sk-pipeline-paths` resolves scope-root by reading `metadata.runtime_tier` from the pipeline state and walking the chain above. For Tier 2, if a pipeline was scaffolded on CC (paths reference `.claude/`), the dispatch layer rewrites `.claude/` → `.superpipelines/` at read/write time so portable artifacts continue to resolve. This rewrite is invertible: state files stamp the original scope-root string for auditability.
 
 <invariant>
-Path resolution MUST consult `metadata.tier` for any artifact write on a non-CC tier. Hardcoded `.claude/` paths in scaffolding output break `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2`.
+Path resolution MUST consult `metadata.runtime_tier` for any artifact write on a non-CC tier. Hardcoded `.claude/` paths in scaffolding output break `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2; OC_NOT_PORTABLE`.
 </invariant>
 
 <invariant>
-PORTABILITY_REWRITE is convention-only — no runtime enforcement layer guards it. EVERY caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the v2.0.0 architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
+PORTABILITY_REWRITE is checked at two levels: (1) creation time — auditor criterion 22, SEV-1, blocking; (2) run time — `running-a-pipeline` Phase 0.6, scans entry skill and offers Abort/Rewrite/Proceed (user-acknowledged advisory, non-blocking). EVERY caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the v2.0.0 architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
 </invariant>
 
 ## Degradation Surfacing (Profile-Driven)
@@ -197,7 +197,7 @@ ELSE:
 | `BLOCKED` | (1) provide more context; (2) higher effort/model (Tier 1 only); (3) decompose; (4) escalate. NEVER retry same approach. |
 
 <invariants>
-- NEVER perform tier detection more than once per run; cache result in `metadata.tier`.
+- NEVER perform tier detection more than once per run; cache result in `metadata.runtime_tier`.
 - NEVER call `Task()` when `profile.capabilities.task_primitive` is false — the tool is absent and the call will fail or be ignored.
 - NEVER suppress degradation warnings from `profile.degradation_warnings`; surface in every user-facing summary and write to `metadata.isolation_warning`.
 - Tier 2 inline execution MUST update `pipeline-state.json` after every step, not at end of run.
@@ -214,6 +214,6 @@ ELSE:
 ## Reference Files
 
 - `pipeline-runner-references/references/dispatch-protocols.md` — Tier-specific dispatch shapes.
-- `sk-pipeline-state/SKILL.md` — State schema (including `metadata.tier`).
+- `sk-pipeline-state/SKILL.md` — State schema (including `metadata.source_tier` and `metadata.runtime_tier`).
 - `sk-pipeline-patterns/SKILL.md` — Pattern definitions referenced by Tier 2 inline loop.
 - `running-a-pipeline/SKILL.md` — Loads this skill in Phase 0.25.
