@@ -48,10 +48,10 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
   | `dispatch_mechanism` | Architect action |
   |---|---|
-  | `native_task` | `Task(pipeline-architect, ...)` |
-  | `native_subagent` | OC native `mode: subagent` dispatch |
-  | `model_driven` | Model-driven orchestration prompt |
-  | `inline` or unknown | `Skill(pipeline-architect-protocol)` → execute inline with own tools |
+  | `native_task` | `Task(pipeline-architect, ...)` — include `platform_profile` in the Task prompt; subagent context is fresh and has no access to the session-cached profile |
+  | `native_subagent` | OC native `mode: subagent` dispatch — include `platform_profile` in the dispatch payload |
+  | `model_driven` | Model-driven orchestration prompt — include `platform_profile` in the prompt context |
+  | `inline` or unknown | `Skill(pipeline-architect-protocol)` → execute inline with own tools — profile already in session context |
 - **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
@@ -83,6 +83,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - Any modification to the design MUST trigger a re-audit for SEV-0/1 issues.
 - ALWAYS stamp `plugin_version` in `topology.json`, the registry entry, and agent frontmatter to the current superpipelines version.
 - NEVER use `Task()` directly in Phase 4 without checking `platform_profile.capabilities.task_primitive`; use profile-driven dispatch branching.
+- ALWAYS include `platform_profile` in the dispatch payload or Task prompt when invoking the Architect or Auditor; subagent and model-driven contexts are fresh and cannot read the session-cached profile.
 </invariants>
 
 ## Red Flags — STOP
