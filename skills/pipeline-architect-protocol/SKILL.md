@@ -45,6 +45,14 @@ The Pipeline Architect treats every component as a discrete software system with
 - **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
 - **Constraint**: Agent files are zero-body (frontmatter only). Preload `sk-*` method skills and the companion `{agent-name}-protocol` skill. All protocol goes into the companion skill.
+- **Multi-Platform Entry Skill Constraint (v2.0.0+)**: Generated entry skills (`skills/superpipelines/{P}/run-{P}/SKILL.md`) MUST dispatch every step via `sk-platform-dispatch` DISPATCH, not via direct `Task(subagent_type=...)` calls. The entry-skill body must load `sk-platform-dispatch` in its first phase, branch on cached `metadata.tier`, and call DISPATCH for every step in topology order. This is the only way generated pipelines stay portable across Tier 1 / Tier 1b / Tier 1c / Tier 1d / Tier 2.
+- **Generated Entry Skill Template**: For each step in `topology.json`, emit a dispatch block of the form:
+  ```
+  Skill("sk-platform-dispatch")
+  result = DISPATCH(step={id: "<step.id>", agent: "<step.agent>", protocol_skill: "<step.agent>-protocol", output_paths: [...]}, inputs=<resolved>)
+  if result.status != "DONE": handle per status protocol
+  ```
+  Do NOT emit raw `Task(subagent_type=...)` invocations in entry skills. (Architect's own internal Task() calls during PIPELINE mode are unchanged — this constraint applies only to the *generated* entry skills.)
 
 ### 3. DEVELOP
 
@@ -79,6 +87,7 @@ See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates
 - Absolute paths are forbidden; resolve all paths via scope-aware variables or `${CLAUDE_PLUGIN_ROOT}`.
 - `permissionMode: bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill.
 - `memory: project` is strictly forbidden in all agent frontmatter.
+- Generated entry skills MUST route every step through `sk-platform-dispatch` DISPATCH. Direct `Task(subagent_type=...)` invocations in entry-skill bodies are forbidden as of v2.0.0; they break Tier 1b/1c/1d/2 execution and violate `MULTI_PLATFORM: TRUE`.
 </invariants>
 
 ## Reference Files
