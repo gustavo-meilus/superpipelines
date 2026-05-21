@@ -1,13 +1,13 @@
 ---
 name: release
-description: Use when preparing and publishing a new versioned release of superpipelines — bumps versions across all manifests, prepends CHANGELOG.md, overwrites RELEASE-NOTES.md with the latest entry, commits, tags, pushes to main, and creates the GitHub release. Requires being on main with a clean working tree.
+description: Use when preparing and publishing a new versioned release of superpipelines — bumps versions across all manifests (package.json, .claude-plugin/, .codex-plugin/, .cursor-plugin/, gemini-extension.json, marketplace.json plugin entry), prepends CHANGELOG.md, overwrites RELEASE-NOTES.md with the latest entry, commits, tags, pushes to main, and creates the GitHub release. Requires being on main with a clean working tree.
 user-invocable: true
 ---
 
 # Superpipelines Release Process
 
 <overview>
-Eight-step release workflow for the superpipelines Claude Code plugin. Covers version discovery, user-gated version selection, commit categorization, multi-file version bumping, changelog authoring, staged user approval, git tagging, and GitHub release publication.
+Eight-step release workflow for the superpipelines multi-platform plugin (CC + Codex + Cursor/Windsurf/Cline + Antigravity). Covers version discovery, user-gated version selection, commit categorization, multi-file version bumping (across all per-platform manifests), changelog authoring, staged user approval, git tagging, and GitHub release publication.
 </overview>
 
 <constraints>
@@ -26,8 +26,8 @@ Eight-step release workflow for the superpipelines Claude Code plugin. Covers ve
 git branch --show-current          # must output "main"; abort if not
 git status --porcelain             # must be empty; abort if dirty
 git fetch origin main --tags       # sync remote tags
-git describe --tags --abbrev=0     # find the most recent tag, e.g. v1.0.5
-git log v1.0.5..HEAD --oneline     # list all commits since last release
+git describe --tags --abbrev=0     # find the most recent tag, e.g. v2.0.0
+git log v2.0.0..HEAD --oneline     # list all commits since last release
 ```
 
 If the current branch is not `main`, stop and instruct the user to merge their work to `main` first.
@@ -68,7 +68,7 @@ Draft the human-readable release title: a short (≤60 chars) phrase capturing t
 
 ## Step 4 — Bump Version in All Manifests
 
-Update exactly these three files. No others.
+Update exactly these six files. No others.
 
 ### 4a. `package.json`
 
@@ -98,6 +98,27 @@ Change only `plugins[0].version` — NOT the root `"version"` field (that is the
     ...
   }
 ]
+```
+
+### 4d. `.codex-plugin/plugin.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+### 4e. `.cursor-plugin/plugin.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+### 4f. `gemini-extension.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
 ```
 
 ---
@@ -175,6 +196,9 @@ Files to be modified:
   package.json                                  {prev} → {NEW_VERSION}
   .claude-plugin/plugin.json                    {prev} → {NEW_VERSION}
   .claude-plugin/marketplace.json               {prev} → {NEW_VERSION}
+  .codex-plugin/plugin.json                     {prev} → {NEW_VERSION}
+  .cursor-plugin/plugin.json                    {prev} → {NEW_VERSION}
+  gemini-extension.json                         {prev} → {NEW_VERSION}
   CHANGELOG.md                                  (prepend entry)
   RELEASE-NOTES.md                              (overwrite with latest + history)
 
@@ -198,6 +222,9 @@ Proceed? (yes / show diff / modify)
 git add package.json \
         .claude-plugin/plugin.json \
         .claude-plugin/marketplace.json \
+        .codex-plugin/plugin.json \
+        .cursor-plugin/plugin.json \
+        gemini-extension.json \
         CHANGELOG.md \
         RELEASE-NOTES.md
 

@@ -87,7 +87,7 @@ Never ignore a non-`DONE` status. Never re-dispatch without addressing the root 
 
 ## 4. Write/review isolation
 
-`WRITE_REVIEW_ISOLATION: TRUE`. Writer ≠ Reviewer (separate instances). Two stages:
+`WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2` (v2.0.0+). Writer ≠ Reviewer (separate instances). Structural on Tier 1/1b/1d; convention-only on Tier 2 (advisory surfacing required). Two stages:
 
 - **Stage 1 (Spec Compliance):** Does output match spec exactly? Under-build AND over-build both fail.
 - **Stage 2 (Code Quality):** Idiomatic? Maintainable? Edge cases per spec handled?
