@@ -26,7 +26,7 @@ const PLATFORMS = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    tier: 1,
+    tier: '1',
     detect: () => which('claude'),
     install: ({ dryRun }) => {
       const cmds = [
@@ -54,21 +54,21 @@ const PLATFORMS = [
   {
     id: 'cursor',
     name: 'Cursor',
-    tier: 2,
+    tier: '2',
     detect: () => dirExists('.cursor'),
     install: ({ dryRun }) => runAll([`npx -y skills add superpipelines -a cursor`], dryRun),
   },
   {
     id: 'windsurf',
     name: 'Windsurf',
-    tier: 2,
+    tier: '2',
     detect: () => dirExists('.windsurf'),
     install: ({ dryRun }) => runAll([`npx -y skills add superpipelines -a windsurf`], dryRun),
   },
   {
     id: 'cline',
     name: 'Cline',
-    tier: 2,
+    tier: '2',
     detect: () => dirExists('.clinerules') || dirExists('.cline'),
     install: ({ dryRun }) => runAll([`npx -y skills add superpipelines -a cline`], dryRun),
   },
