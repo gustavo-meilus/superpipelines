@@ -25,6 +25,16 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - Read and merge `registry.json` files from `local`, `project`, and `user` scopes.
 - Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
 
+### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
+- Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
+- Read the currently installed plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
+- **Compare major versions** (semver `MAJOR.minor.patch`):
+  - Match → proceed silently.
+  - Pipeline major < installed major → emit advisory: `"⚠️ Pipeline '{P}' was scaffolded under plugin v{pipeline_version}; installed plugin is v{installed_version}. Schema or topology conventions may have changed. Review the migration notes before resuming."` and ask the user to confirm continuation.
+  - Pipeline major > installed major → emit advisory: `"⚠️ Pipeline '{P}' targets a newer plugin (v{pipeline_version}) than is installed (v{installed_version}). Upgrade recommended; running anyway may fail on unsupported features."` and ask the user to confirm continuation.
+  - Missing `plugin_version` on the pipeline (pre-stamping era) → emit informational note only; do not block.
+- **Advisory only — never blocks execution.** The user's confirmation is required only on a major mismatch.
+
 ### PHASE 1: RESUME CHECK
 - Check for existing run directories in `{ROOT}/superpipelines/temp/{P}/`.
 - **Logic**: If runs exist, prompt the user to start new or resume.
@@ -51,6 +61,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - ALWAYS preserve the temp directory on any status other than `completed`.
 - NEVER pass full file content to the entry skill; use absolute paths.
 - All state updates must utilize the atomic write pattern.
+- ALWAYS perform Phase 0.5 version-compatibility advisory before resume or fresh run; advisory is non-blocking but requires user confirmation on major-version mismatch.
 </invariants>
 
 ## Red Flags — STOP
