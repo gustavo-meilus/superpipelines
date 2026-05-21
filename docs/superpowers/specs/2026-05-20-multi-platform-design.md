@@ -534,7 +534,7 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 | Worktree isolation | ✅ per-subagent | ❌ | ⚠️ unverified | ✅ per-thread (not per-subagent) | ✅ native |
 | Write/Review isolation | ✅ Structural (tools: restriction) | ✅ Structural (permission: deny) | ⚠️ TBD | ⚠️ Pending sandbox_mode verification | ❌ Convention-only |
 | Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` | Via .agents/workflows/{P}.md | ❌ | ❌ |
-| Version compat check | ❌ | ✅ advisory | ❌ | ❌ | ❌ |
+| Version compat check | ✅ advisory (v2.0.0+) | ✅ advisory | ❌ | ❌ | ❌ |
 | Model-per-step | ❌ | ✅ | ⚠️ unverified | ✅ TOML `model` field | ❌ |
 | State management | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Slash commands | ✅ native | ✅ native | ✅ native | ✅ | ⚠️ per-session |
