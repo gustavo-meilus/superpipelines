@@ -35,7 +35,7 @@ Superpipelines (v1.0.6) is a Claude Code-only plugin. It orchestrates multi-agen
 
 The broader agent ecosystem (Codex App/CLI, Cursor/Windsurf/Cline, OpenCode, Antigravity CLI, Gemini CLI) has converged on the SKILL.md open standard for skills discovery, and most platforms now support SKILL.md-based plugins. However, each platform has its own plugin manifest format, installation mechanism, and subagent primitive (or lack thereof).
 
-A parallel port effort (`superpipelines-opencode`) revealed that maintaining separate repos leads to architectural drift: the OpenCode version lost Lean Agents, re-introduced agent bodies, and diverged on model IDs and permission schemas. This spec defines the unified architecture.
+A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fundamentally different agent architecture: native subagent support via `mode: subagent`, agent bodies ≤150 lines (vs CC's zero-body Lean Agents), a separate scope root (`.opencode/`), and platform-specific artifacts. These are intentional platform differences, not drift. This spec defines the unified architecture that treats both CC and OC as first-class targets while adding Codex, Cursor/Windsurf/Cline, and Antigravity.
 
 ---
 
@@ -47,7 +47,7 @@ A parallel port effort (`superpipelines-opencode`) revealed that maintaining sep
 |---|---|---|---|---|
 | Claude Code | ✅ | `.claude-plugin/plugin.json` + `marketplace.json` | `Task(subagent_type, ...)` | `claude plugin install` |
 | Codex App/CLI | ✅ | `.codex-plugin/plugin.json` | Codex worktree agents (parallel) | Codex marketplace / `npx skills add -a codex` |
-| OpenCode | ✅ | `.opencode/` + compiled JS | `mode: subagent` agents | Cross-loads `.claude/skills/` + own dirs |
+| OpenCode | ✅ | `.opencode/opencode.json` + compiled JS entry | `mode: subagent` agents (bodies ≤150 lines) | `.opencode/skills/`, `~/.opencode/skills/` |
 | Cursor | ✅ | `.cursor-plugin/plugin.json` | Background agent (limited) | `npx skills add -a cursor` |
 | Windsurf/Cline | ✅ | Rule files | None | `npx skills add -a windsurf/cline` |
 | Antigravity CLI | ✅ (soft) | `gemini-extension.json` + AGENTS.md | Task Groups (planning/fast) | `antigravity extensions install` |
@@ -81,11 +81,19 @@ A parallel port effort (`superpipelines-opencode`) revealed that maintaining sep
 - 8 commands (`/new-pipeline`, `/run-pipeline`, `/audit-pipeline`, etc.)
 - Marketplace listing via `marketplace.json`
 
-### superpipelines-opencode (v1.0.0 — to be deprecated)
-- OpenCode-specific agent frontmatter (`mode: subagent`, `permission: {...}`)
-- Compiled TypeScript plugin (`dist/index.js`)
-- Diverged from CC version: missing Lean Agents, protocol skills absent, agents have bodies
-- Backport candidates: model preference prompting in `creating-a-pipeline` Phase 2
+### superpipelines-opencode (v1.0.0 — parallel first-class implementation)
+- OC-native agent frontmatter: `mode: subagent`, `hidden: true`, `steps:`, `permission: { edit: allow, bash: allow }`, bodies ≤150 lines
+- `task: {"*": "deny"}` on task-executor — prevents recursive subagent spawning
+- Scope root: `.opencode/` (project) / `~/.opencode/` (user) — separate from CC's `.claude/`
+- `$OPENCODE_PLUGIN_ROOT` env var (vs CC's `$CLAUDE_PLUGIN_ROOT`)
+- `sk-opencode-code-conventions` skill (OC-specific, not in CC)
+- Compiled TypeScript entry point (`dist/index.js`) for slash command routing in OC
+
+**OC innovations not yet in CC — to backport:**
+- Model preference selection per step in `creating-a-pipeline` Phase 2
+- `{P}.md` run command file as Phase 6 artifact (enables `/superpipelines:{P}` direct invocation)
+- Version compatibility advisory check in `running-a-pipeline` (major version diff → warning)
+- `plugin_version` stamped in every generated artifact including `pipeline-state.json`
 
 ---
 
@@ -95,18 +103,18 @@ A parallel port effort (`superpipelines-opencode`) revealed that maintaining sep
 
 - **G1:** Single repo supports Claude Code, Codex App/CLI, Cursor/Windsurf/Cline, and Antigravity CLI natively
 - **G2:** Pipeline *creation* workflow is identical across all platforms
-- **G3:** Pipeline *execution* degrades gracefully on platforms without `Task()` via single-agent mode
+- **G3:** Pipeline *execution* degrades gracefully on platforms without native subagent support (Cursor, Windsurf, Cline, Antigravity) via single-agent mode; OpenCode uses its own native subagent model
 - **G4:** One installer (`install.sh` / `install.ps1`) auto-detects and wires up all supported platforms
-- **G5:** OpenCode continues to work via cross-loading from `.claude/skills/` (no additional OpenCode-specific files required)
+- **G5:** OpenCode is a first-class target with its own agent files, scope root (`.opencode/`), and platform manifest — not treated as a CC cross-load consumer
 - **G6:** Skills remain the canonical source of intelligence — zero duplication of logic in platform manifests
-- **G7:** `superpipelines-opencode` repo is deprecated; improvements backported to this repo
+- **G7:** OC innovations (run command, model selection, version check) are backported to CC; `superpipelines-opencode` continues as the OC platform release
 
 ### Non-Goals (Phase 1)
 
-- **NG1:** Compiled TypeScript plugin for any platform (OpenCode uses cross-loading instead)
+- **NG1:** Merging CC and OC agent files into a single format (platform agent schemas are fundamentally different)
 - **NG3:** Gemini CLI as a separate target (covered by Antigravity's `gemini-extension.json` compatibility)
-- **NG4:** True parallel execution on non-CC platforms (graceful degradation to sequential is sufficient)
-- **NG5:** Platform-specific agent frontmatter files (agent files are CC-specific; non-CC platforms use single-agent mode with protocol skills)
+- **NG4:** True parallel execution on Cursor/Windsurf/Cline/Antigravity (graceful degradation to sequential is sufficient)
+- **NG5:** Eliminating the separate `superpipelines-opencode` repo (OC's compiled JS entry point requirement makes full unification impractical without a build system)
 
 ---
 
@@ -133,15 +141,23 @@ The transformation has two independent axes:
 │                                                          │
 │  Tier 1 (Claude Code):                                  │
 │    Task(subagent_type, ...) → true parallel subagents   │
+│    Zero-body agents + protocol skills (Lean Agents)     │
+│    Scope root: .claude/                                  │
 │                                                          │
-│  Tier 2 (all others):                                   │
+│  Tier 1b (OpenCode):                                    │
+│    mode: subagent agents → native OC subagent dispatch  │
+│    Agent bodies <= 150 lines (no protocol companion)    │
+│    Scope root: .opencode/                               │
+│    {P}.md run commands per pipeline                     │
+│                                                          │
+│  Tier 2 (Codex, Cursor/Windsurf/Cline, Antigravity):   │
 │    sk-platform-dispatch → inline sequential execution   │
 │    Protocol skills loaded via Skill tool                 │
 │    Same artifacts, same state format, same outputs      │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Core principle:** Skills are the source of intelligence. Platform manifests are thin wrappers that make skills discoverable. Agent `.md` files are Claude Code-specific and ignored by other platforms. On Tier 2 platforms, protocol skills execute inline without needing agent frontmatter.
+**Core principle:** Skills are the canonical source of intelligence. Platform manifests make skills discoverable. Agent `.md` files are platform-specific (CC: zero-body Lean Agents; OC: bodies ≤150 lines). Tier 2 platforms execute protocol skills inline without agent frontmatter.
 
 ---
 
@@ -151,7 +167,21 @@ The transformation has two independent axes:
 
 Current behavior, unchanged. The orchestrator uses `Task(subagent_type, prompt)` to spawn isolated workers. Worktree isolation available for parallel patterns.
 
-### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline, Antigravity, OpenCode)
+### Tier 1b — Native Subagent (OpenCode)
+
+OpenCode has its own subagent dispatch mechanism distinct from CC's `Task()`:
+
+- Agent files use `mode: subagent` + `hidden: true` frontmatter
+- Bodies contain protocol inline (≤150 lines) — no separate companion protocol skill
+- `task: {"*": "deny"}` on leaf workers prevents recursive spawning
+- Scope root is `.opencode/` (project) or `~/.opencode/` (user) — separate from CC's `.claude/`
+- `$OPENCODE_PLUGIN_ROOT` resolves the plugin installation path
+- Run commands: each pipeline generates `superpipelines/{P}/{P}.md` enabling `/superpipelines:{P}` direct invocation
+- Version compatibility: `running-a-pipeline` emits advisory warning on major version mismatch
+
+OC pipeline execution is multi-agent (not single-agent) but uses OC's native dispatch, not `Task()`. Parallel fan-out degrades to sequential because OC does not have worktree isolation equivalent.
+
+### Tier 2 — Single-Agent (Codex, Cursor/Windsurf/Cline, Antigravity)
 
 The orchestrator (the model running the entry skill) executes all pipeline steps inline:
 
@@ -172,15 +202,18 @@ For each step in topology.json (dependency order):
 
 **Pattern behavior on Tier 2:**
 
-| Pattern | Tier 1 | Tier 2 |
-|---|---|---|
-| Sequential | Multi-agent | Single-agent (identical outcome) |
-| Parallel fan-out | True parallel via Task() | Sequential fan-out (same outputs, slower) |
-| Iterative loop | Separate worker per cycle | Inline loop (same logic) |
-| Human-gated | Gate after Task() result | Gate after inline execution |
-| Spec-Driven (P5) | Parallel tasks + two-stage review | Sequential tasks + inline review |
+| Pattern | Tier 1 (CC) | Tier 1b (OC) | Tier 2 (Codex/Cursor/Antigravity) |
+|---|---|---|---|
+| Sequential | Multi-agent | Native OC subagents | Single-agent inline |
+| Parallel fan-out | True parallel | Sequential (no worktree) | Sequential |
+| Iterative loop | Separate worker per cycle | Native OC agents | Inline loop |
+| Human-gated | Gate after Task() | Gate after OC subagent | Gate after inline exec |
+| Spec-Driven (P5) | Parallel tasks + two-stage review | Sequential tasks + native review | Sequential tasks + inline review |
 
-**Key invariant:** All pipeline artifacts (topology.json, spec.md, state.json, outputs) are identical across tiers. A pipeline created on Claude Code runs on Codex without modification.
+**Key invariants:**
+- Pipeline data artifacts (topology.json, spec.md, state.json, outputs) are identical across Tier 1 and Tier 2.
+- A pipeline created on CC can run on Tier 2 platforms without modification.
+- A pipeline created on OC (Tier 1b) uses OC-specific agent frontmatter and run commands — these agents are non-portable to CC without re-scaffolding.
 
 ---
 
@@ -233,18 +266,26 @@ AGENTS.md               ← Platform-agnostic: introduces Superpipelines command
 | `GEMINI.md` | Antigravity, Gemini CLI | Context intro, commands, pipeline usage |
 | `AGENTS.md` | OpenCode, Antigravity, universal | Commands, trigger phrases, pipeline overview |
 
-### 7.3 OpenCode (Cross-Loading — Zero New Files)
+### 7.3 OpenCode (Tier 1b — Maintained via superpipelines-opencode)
 
-OpenCode natively cross-loads skills from three directories:
-1. `.claude/skills/` (installed by CC plugin)
-2. `.opencode/skills/` (OpenCode native)
-3. `~/.opencode/skills/` (user global)
+OpenCode is a first-class platform with its own dedicated repo (`superpipelines-opencode`). It is NOT cross-loading from CC's `.claude/` directory.
 
-**If the user also has Claude Code:** CC plugin install populates `.claude/skills/` automatically. OpenCode discovers all pipeline skills with zero additional steps.
+OC scope roots:
+- Project: `<workspace>/.opencode/`
+- User: `~/.opencode/`
 
-**If the user has OpenCode only (no CC):** The installer (`bin/install.js --only opencode`) copies skill files directly to `~/.opencode/skills/superpipelines/` and writes `AGENTS.md` to the workspace root.
+OC uses a compiled JS entry point (`dist/index.js` via `opencode.json`) for slash command routing. The unified installer handles OC installation by directing users to `superpipelines-opencode`.
 
-**No TypeScript compilation required.** OpenCode runs pipelines in Tier 2 (single-agent mode) using protocol skills. The compiled TypeScript plugin in `superpipelines-opencode` is deprecated.
+**Relationship between repos:**
+- `superpipelines` (this repo) = CC + Tier 2 platforms
+- `superpipelines-opencode` = OC Tier 1b platform
+- Skills shared in spirit — kept in sync via periodic cross-repo backports
+- Agent files are NOT shared — CC uses zero-body + protocol skill, OC uses bodies ≤150 lines
+
+**From `superpipelines-opencode`, the installer (`bin/install.js --only opencode`) directs users to:**
+```
+https://github.com/gustavo-meilus/superpipelines-opencode
+```
 
 ---
 
@@ -304,7 +345,7 @@ A unified Node.js installer (`bin/install.js`) auto-detects all supported platfo
 | `cursor` | `.cursor/` config dir exists | `npx skills add superpipelines -a cursor` |
 | `windsurf` | `.windsurf/` config dir exists | `npx skills add superpipelines -a windsurf` |
 | `cline` | `.clinerules/` or Cline extension present | `npx skills add superpipelines -a cline` |
-| `opencode` | `opencode` binary or `.opencode/` dir | Writes AGENTS.md; skills auto-discovered |
+| `opencode` | `opencode` binary or `.opencode/` dir | Redirect to `superpipelines-opencode` (separate repo, OC Tier 1b) |
 | `antigravity` | `antigravity` binary on PATH (soft probe — pass `--only antigravity` to force) | `antigravity extensions install https://github.com/gustavo-meilus/superpipelines` |
 | `gemini` | `gemini` binary | `gemini extensions install https://github.com/...` |
 
@@ -374,11 +415,17 @@ skills/pipeline-runner-references/references/dispatch-protocols.md
   — Add: Tier 2 dispatch pseudocode section
 
 skills/creating-a-pipeline/SKILL.md
-  — Add: model preference question in Phase 2 (backport from superpipelines-opencode)
-  — No structural changes
+  — Add: model preference question in Phase 2 (backport from OC)
+  — Add: {P}.md run command to Phase 6 checklist (backport from OC)
+  — Add: version compatibility advisory to running-a-pipeline (backport from OC)
+
+skills/running-a-pipeline/SKILL.md
+  — Add: load sk-platform-dispatch at start
+  — Add: Tier 2 single-agent execution branch
+  — Add: version compatibility advisory check (backport from OC)
 
 skills/sk-pipeline-paths/SKILL.md
-  — No changes (paths are already platform-agnostic)
+  — Add: Run Command path template: superpipelines/{P}/{P}.md (backport from OC)
 
 .claude-plugin/plugin.json
   — Bump version to 2.0.0
@@ -399,50 +446,61 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 
 ## 11. Platform Compatibility Matrix
 
-| Feature | Claude Code | Codex | OpenCode | Cursor/Windsurf | Antigravity |
+| Feature | Claude Code (Tier 1) | OpenCode (Tier 1b) | Codex (Tier 2) | Cursor/Windsurf (Tier 2) | Antigravity (Tier 2) |
 |---|---|---|---|---|---|
 | Pipeline creation | ✅ Full | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
 | Pipeline auditing | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Sequential execution (P1) | ✅ Multi-agent | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
-| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential | ⚠️ Sequential | ⚠️ Sequential | ⚠️ Sequential |
+| Sequential (P1) | ✅ Multi-agent | ✅ OC native agents | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
+| Parallel fan-out (P2) | ✅ True parallel | ⚠️ Sequential (no worktree) | ⚠️ Sequential | ⚠️ Sequential | ⚠️ Sequential |
 | Iterative loop (P3) | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Human-gated (P4) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Spec-Driven (P5) | ✅ Multi-agent | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
+| Spec-Driven (P5) | ✅ Multi-agent | ✅ OC native agents | ✅ Single-agent | ✅ Single-agent | ✅ Single-agent |
 | Worktree isolation | ✅ | ❌ | ❌ | ✅ native | ❓ |
+| Named pipeline command | `/superpipelines:{P}` | `/superpipelines:{P}` via `{P}.md` | ❌ | ❌ | ❌ |
+| Version compatibility check | ❌ | ✅ (advisory warning) | ❌ | ❌ | ❌ |
+| Model-per-step selection | ❌ | ✅ | ❌ | ❌ | ❌ |
 | State management | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Slash commands | ✅ | ✅ | ⚠️ via AGENTS.md | ⚠️ per-session | ⚠️ via AGENTS.md |
-| Installer auto-detect | ✅ | ✅ | ✅ | ✅ | ✅ (soft probe) |
-| Plugin marketplace | ✅ | ✅ | ❌ | ❌ | ❓ |
+| Slash commands | ✅ native | ✅ native | ✅ | ⚠️ per-session | ⚠️ via AGENTS.md |
+| Installer auto-detect | ✅ | ✅ (→ OC repo) | ✅ | ✅ | ✅ (soft probe) |
+| Plugin marketplace | ✅ | ❌ | ✅ | ❌ | ❓ |
 
 ---
 
-## 12. Migration: superpipelines-opencode
+## 12. Relationship: superpipelines + superpipelines-opencode
 
-### Backport to main repo
+### Two repos, coordinated releases
 
-The following improvements from `superpipelines-opencode` are backported to this repo:
-- Model preference prompting in `creating-a-pipeline` Phase 2 (let users assign models per step)
-- Updated model catalog in `skills/change-models/references/model-catalog.md`
+`superpipelines` (this repo) and `superpipelines-opencode` are sibling repositories, each targeting distinct runtime tiers. Neither is deprecated.
 
-### Deprecation
+| | superpipelines | superpipelines-opencode |
+|---|---|---|
+| Tier | 1 (CC) + 2 (Codex/Cursor/Antigravity) | 1b (OpenCode native) |
+| Agent format | Zero-body + protocol skill | Bodies ≤150 lines |
+| Scope root | `.claude/` | `.opencode/` |
+| Plugin manifest | `.claude-plugin/plugin.json` | `.opencode/opencode.json` + `dist/index.js` |
+| Env var | `$CLAUDE_PLUGIN_ROOT` | `$OPENCODE_PLUGIN_ROOT` |
 
-`superpipelines-opencode` repo is archived after v2.0.0 ships. Its README is updated to redirect users to the main `superpipelines` repo. OpenCode users install via Claude Code plugin (cross-loading handles skill discovery automatically).
+### Backports: OC → CC (this repo)
 
-### Why compiled TS is not needed
+The following OC innovations are backported to `creating-a-pipeline` and `running-a-pipeline` in this repo:
 
-The compiled TypeScript plugin in `superpipelines-opencode` was required because OpenCode's slash command system needed a JS entry point. However:
-1. OpenCode already cross-loads skills from `.claude/skills/` — pipeline skills are discoverable without any additional files
-2. Slash commands in OpenCode can be triggered via natural language or AGENTS.md instructions
-3. Tier 2 single-agent mode requires no agent frontmatter — only protocol skills
+1. **Model preference per step** — Phase 2 of `creating-a-pipeline` asks user to assign model tiers (deep/fast) to steps; embedded in generated agent frontmatter
+2. **`{P}.md` run command artifact** — Phase 6 generates `superpipelines/{P}/{P}.md`; added to CC's `sk-pipeline-paths` path table and `creating-a-pipeline` Phase 6 checklist
+3. **Version compatibility advisory** — `running-a-pipeline` warns on major version mismatch between pipeline's `plugin_version` and installed plugin
+4. **`plugin_version` in `pipeline-state.json`** — already partially in CC; made mandatory in state initialization
+
+### Sync discipline
+
+Skills that are logically identical across repos (e.g., `creating-a-pipeline`, `running-a-pipeline`, `sk-pipeline-patterns`) must be kept in sync. Recommended: track divergence via a `SYNC.md` file in each repo listing which skills have been synced and at what version.
 
 ---
 
 ## 13. Invariants
 
-- `MULTI_PLATFORM: TRUE` — Plugin supports Claude Code, Codex, Cursor/Windsurf/Cline, OpenCode, Antigravity
-- `TIER_MODEL: 2-TIER` — Tier 1 (multi-agent, CC only), Tier 2 (single-agent, all others)
-- `SKILL_PRIMACY: TRUE` — All intelligence lives in SKILL.md files; platform manifests are discovery-only
-- `ARTIFACT_PORTABILITY: TRUE` — Pipelines created on CC run on any Tier 2 platform without modification
-- `NO_COMPILED_PLUGINS` — No TypeScript compilation in Phase 1; SKILL.md + JSON manifests only
-- `LEAN_AGENTS_CC_ONLY` — Zero-body agent files are CC-specific; Tier 2 uses protocol skills inline
-- `SINGLE_REPO: TRUE` — All platform support lives in `superpipelines` repo; `superpipelines-opencode` is deprecated
+- `MULTI_PLATFORM: TRUE` — superpipelines targets CC + Codex + Cursor/Windsurf/Cline + Antigravity; superpipelines-opencode targets OC
+- `TIER_MODEL: 3-TIER` — Tier 1 (CC multi-agent), Tier 1b (OC native subagents), Tier 2 (single-agent inline)
+- `SKILL_PRIMACY: TRUE` — Intelligence lives in SKILL.md; platform manifests are discovery-only
+- `ARTIFACT_PORTABILITY: CC_TO_TIER2` — Pipelines from CC run on Tier 2 without modification; OC pipelines use OC-specific agent frontmatter (not portable to CC without re-scaffolding)
+- `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol skill pattern is CC-specific; OC uses bodies ≤150 lines; Tier 2 uses protocol skills inline
+- `OC_FIRST_CLASS: TRUE` — superpipelines-opencode is a permanent sibling repo, not deprecated
+- `SYNC_DISCIPLINE: REQUIRED` — Shared skills must be kept in sync across both repos via SYNC.md tracking
