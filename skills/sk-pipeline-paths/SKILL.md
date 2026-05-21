@@ -43,6 +43,7 @@ The Path Resolver enforces a canonical layout for the Superpipelines v2 architec
 | **Topology Graph** | `superpipelines/pipelines/{P}/topology.json` |
 | **Audit Report** | `superpipelines/pipelines/{P}/audit/latest.md` |
 | **Entry Skill** | `skills/superpipelines/{P}/run-{P}/SKILL.md` |
+| **Run Command** | `superpipelines/pipelines/{P}/{P}.md` |
 | **Step Skill** | `skills/superpipelines/{P}/{step}/SKILL.md` |
 | **Step Agent** | `agents/superpipelines/{P}/{agent-name}.md` |
 | **Pipeline State** | `superpipelines/temp/{P}/{runId}/pipeline-state.json` |
