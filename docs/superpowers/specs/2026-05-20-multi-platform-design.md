@@ -85,7 +85,7 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 - OC-native agent frontmatter: `mode: subagent`, `hidden: true`, `steps:`, `permission: { edit: allow, bash: allow }`, bodies ≤150 lines
 - `task: {"*": "deny"}` on task-executor — prevents recursive subagent spawning
 - Scope root: `.opencode/` (project) / `~/.opencode/` (user) — separate from CC's `.claude/`
-- `$OPENCODE_PLUGIN_ROOT` env var (vs CC's `$CLAUDE_PLUGIN_ROOT`)
+- `$OPENCODE_CONFIG_DIR` env var (vs CC's `$CLAUDE_PLUGIN_ROOT`)
 - `sk-opencode-code-conventions` skill (OC-specific, not in CC)
 - Compiled TypeScript entry point (`dist/index.js`) for slash command routing in OC
 
@@ -187,7 +187,7 @@ OpenCode has its own subagent dispatch mechanism distinct from CC's `Task()`:
 - Bodies contain protocol inline (≤150 lines) — no separate companion protocol skill
 - `task: {"*": "deny"}` on leaf workers prevents recursive spawning
 - Scope root is `.opencode/` (project) or `~/.opencode/` (user) — separate from CC's `.claude/`
-- `$OPENCODE_PLUGIN_ROOT` resolves the plugin installation path
+- `$OPENCODE_CONFIG_DIR` resolves the plugin installation path
 - Run commands: each pipeline generates `superpipelines/{P}/{P}.md` enabling `/superpipelines:{P}` direct invocation
 - Version compatibility: `running-a-pipeline` emits advisory warning on major version mismatch
 
@@ -555,7 +555,7 @@ All agent files, all existing skills (except running-a-pipeline and creating-a-p
 | Agent format | Zero-body + protocol skill | Bodies ≤150 lines |
 | Scope root | `.claude/` | `.opencode/` |
 | Plugin manifest | `.claude-plugin/plugin.json` | `.opencode/opencode.json` + `dist/index.js` |
-| Env var | `$CLAUDE_PLUGIN_ROOT` | `$OPENCODE_PLUGIN_ROOT` |
+| Env var | `$CLAUDE_PLUGIN_ROOT` | `$OPENCODE_CONFIG_DIR` |
 
 ### Backports: OC → CC (this repo)
 

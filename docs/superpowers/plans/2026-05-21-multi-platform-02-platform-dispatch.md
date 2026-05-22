@@ -71,7 +71,7 @@ DETECT() returns one of: `tier_1`, `tier_1b`, `tier_1c`, `tier_1d`, `tier_2`.
 Detection signals are checked in order; first match wins:
 
 1. **Tier 1 (Claude Code):** `Task` tool present in the orchestrator's tool list AND `subagent_type` parameter accepted. Secondary signal: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`.
-2. **Tier 1b (OpenCode):** `$OPENCODE_PLUGIN_ROOT` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
+2. **Tier 1b (OpenCode):** `$OPENCODE_CONFIG_DIR` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
 3. **Tier 1c (Antigravity):** `agy` binary on PATH OR `.agents/skills/` workspace directory present. **Aspirational:** If a Dynamic Subagent dispatch primitive is exposed to skills, treat as Tier 1c; otherwise fall back to Tier 2.
 4. **Tier 1d (Codex):** `.codex-plugin/plugin.json` resolvable OR TOML agent files present under `${CODEX_PLUGIN_ROOT}/agents/`.
 5. **Tier 2 (fallback):** None of the above. Safe default — sequential inline execution always works.
