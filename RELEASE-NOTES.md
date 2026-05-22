@@ -71,6 +71,7 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
 - Tier 1d (Codex) `sandbox_mode` per-agent isolation pending verification.
 - Codex installer command syntax unverified against a stable release.
 - No automated cross-platform parity gate (manual tracking via `docs/SYNC.md`).
+- Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.
 
 ### Deprecations
 

@@ -115,6 +115,7 @@ A parallel port (`superpipelines-opencode`) revealed that OpenCode requires a fu
 - **NG3:** Gemini CLI as a separate target — the Gemini CLI runtime is retired June 18, 2026; no consumer runtime to target regardless of format compatibility
 - **NG4:** True parallel execution on Cursor/Windsurf/Cline (graceful degradation to sequential is sufficient for Tier 2 platforms)
 - **NG5:** Eliminating the separate `superpipelines-opencode` repo (OC's compiled JS entry point requirement makes full unification impractical without a build system)
+- **NG6:** Kiro (AWS) as a distribution target in v2.0.x. Kiro 0.9 (Feb 2026) shipped SKILL.md parity, custom subagents (markdown frontmatter, slash-invoked), steering files (`.kiro/steering/*.md`), workspace hooks, and MCP — making it a viable Tier 1e candidate (single-agent inline + native subagents, no plugin manifest analog, workspace-only hooks). Deferred to v2.1+: requires a dedicated `tier_1e` profile in `skills/sk-platform-dispatch/profiles/`, `.kiro/` detection in `bin/install.js`, a steering-file context handoff (no AGENTS.md convention adopted in Kiro yet), and verification of parallel-subagent dispatch semantics (undocumented as of May 2026). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, adding Kiro is a profile-JSON + detection-heuristic addition with zero skill-body edits.
 
 ---
 
