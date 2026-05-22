@@ -42,11 +42,10 @@ const PLATFORMS = [
     tier: '1d',
     detect: () => which('codex') || dirExists(path.join(os.homedir(), '.codex')),
     install: ({ dryRun }) => {
-      // NOTE: Codex plugin-install command syntax is not publicly stabilized at v2.0.0 release.
-      // The form below is best-guess from spec §9; verify against `codex plugin --help` before tagging.
-      // If the verified command differs, patch this handler in v2.0.1.
+      // Verified May 2026: Codex install surface is `codex plugin marketplace add owner/repo`.
+      // Interactive UI is the `/plugins` slash command. Ref: developers.openai.com/codex/plugins
       const cmds = [
-        `codex plugin add ${MARKETPLACE}`,
+        `codex plugin marketplace add ${REPO}`,
       ];
       runAll(cmds, dryRun);
     },
