@@ -41,7 +41,7 @@ The Path Resolver enforces a canonical layout for the Superpipelines v2 architec
 | Tier 1 (CC) | `<workspace>/.claude/` | `~/.claude/` |
 | Tier 1b (OC) | `<workspace>/.opencode/` | `~/.opencode/` |
 | Tier 1c (Antigravity) | `<workspace>/.agents/` | `~/.antigravity/` |
-| Tier 1d (Codex) | `<workspace>/.codex/` | `~/.codex/` |
+| Tier 1d (Codex) | `<workspace>/.agents/` | `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` | `~/.superpipelines/` |
 </scope_roots_per_tier>
 

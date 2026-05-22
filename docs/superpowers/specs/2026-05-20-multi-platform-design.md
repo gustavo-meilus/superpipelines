@@ -517,6 +517,8 @@ CLAUDE.md
 
 All agent files, all existing skills (except running-a-pipeline and creating-a-pipeline noted above), all commands, hooks/hooks.json, all reference files.
 
+**Tier 1c / Tier 1d shared workspace root**: Antigravity and Codex both anchor pipeline workspace at `.agents/` because the open skill-path standard (`.agents/skills`) is shared by Codex Skills and Antigravity Skills. If both tools are installed in the same workspace, pipeline state files coexist under `.agents/superpipelines/` — registry entries and `metadata.runtime_tier` disambiguate which orchestrator ran which pipeline.
+
 ---
 
 ## 11. Platform Compatibility Matrix
