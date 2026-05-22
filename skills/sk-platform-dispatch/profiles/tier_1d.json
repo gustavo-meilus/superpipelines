@@ -1,24 +1,24 @@
 {
   "tier": "tier_1d",
   "name": "Codex",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": true,
     "task_primitive": false,
-    "skill_tool": false,
+    "skill_tool": true,
     "worktrees": false,
-    "reviewer_isolation": "unverified",
+    "reviewer_isolation": "structural",
     "dispatch_mechanism": "model_driven"
   },
   "scope_root": {
-    "workspace": ".codex",
+    "workspace": ".agents",
     "user": "~/.codex"
   },
-  "degradation_warnings": [
-    "Codex sandbox_mode per-agent tool restriction unverified. Reviewer isolation treated as advisory until confirmed."
-  ],
+  "degradation_warnings": [],
   "extensions": {
-    "max_concurrent_subagents": 6
+    "max_concurrent_subagents": 6,
+    "reviewer_isolation_recipe": "Set sandbox_mode = \"read-only\" in the reviewer agent TOML to achieve structural write-deny. sandbox_mode = \"workspace-write\" is the writer default.",
+    "skill_tool_note": "Codex discovers SKILL.md via `.agents/skills` (cross-tool open path) and `$HOME/.agents/skills`. Skill content preloads at session start; no runtime Skill() primitive callable from another skill."
   }
 }
