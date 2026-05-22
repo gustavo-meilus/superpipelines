@@ -74,7 +74,7 @@ See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates
 - Set `permissionMode: plan` for reviewers and architects.
 - Set `memory: local` only for cross-run heuristics; never use `memory: project`.
 - Set `user-invocable: false` for internal step skills.
-- **Tier 1d reviewer agents (Codex)**: Generate the reviewer's TOML agent with `sandbox_mode = "read-only"` to achieve the structural write-deny required by `WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D`. Writer agents default to `sandbox_mode = "workspace-write"`. This is the structural isolation source for Tier 1d; previously marked `unverified` in `tier_1d.json` and now resolved per May 2026 Codex docs (developers.openai.com/codex/subagents).
+- **Reviewer-agent isolation recipe (all tiers)**: When generating a reviewer agent, the architect MUST consult `platform_profile.extensions.reviewer_isolation_recipe` (a free-form string carried by each tier profile under `skills/sk-platform-dispatch/profiles/`). If present, the architect applies the recipe verbatim to the generated agent frontmatter. If absent or empty, the tier's structural isolation source is whichever native mechanism the profile already encodes (CC: agent `tools:` allowlist; OC: `permission: { edit: deny }`; Tier 2: convention-only — surface degradation). NEVER duplicate per-tier recipe text in this skill body — the profile JSON is the single source of truth so new tiers (e.g. future Kiro Tier 1e) drop in as profile data without skill edits.
 
 **Build** files via `Write` (new) or `Edit` (update), resolving all paths via `sk-pipeline-paths`.
 

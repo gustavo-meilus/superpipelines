@@ -35,14 +35,17 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
-- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps) or `fast` (execution/utility steps). Record the user's mapping in Phase 2 output (`{step_id: tier}`). The architect MUST resolve the tier to a concrete model string via the active `platform_profile.model_tiers` table (loaded in Phase 0) and embed it in each generated agent's frontmatter `model:` field during Phase 4. Resolution by tier:
-  - Tier 1 (CC): `deep` → `claude-opus-4-7`, `fast` → `claude-sonnet-4-6`
-  - Tier 1b (OC): same as Tier 1 (override post-scaffold via `/superpipelines:change-models` if a non-Anthropic provider is desired)
-  - Tier 1c (Antigravity): `deep` → `gemini-3.5-pro`, `fast` → `gemini-3.5-flash`
-  - Tier 1d (Codex): `deep` → `gpt-5.5`, `fast` → `gpt-5.4-mini`
-  - Tier 2 (Cursor/Windsurf/Cline): both map to `inherit` (omit `model:` from generated agent; defer to the user's IDE selection)
+- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps) or `fast` (execution/utility steps). Record the user's mapping in Phase 2 output (`{step_id: tier}`). The architect MUST resolve the tier to a concrete model string via `platform_profile.model_tiers[tier]` (loaded in Phase 0 from `skills/sk-platform-dispatch/profiles/{tier_id}.json`) and embed the resolved string in each generated agent's frontmatter `model:` field during Phase 4. Concrete per-tier model IDs live in the profile JSONs — the single source of truth — and MUST NOT be duplicated in this skill body. If the user declines to choose, default every step to `platform_profile.model_tiers.fast` per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` (interpreted as "default to the fast tier of the active platform"). NEVER hardcode model IDs in this skill body or in generated agents — always read from `platform_profile.model_tiers`. New platforms scale in via profile JSON edits without changes here.
 
-  If the user declines to choose, default every step to the active tier's `fast` model per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` (interpreted as "default to the fast tier of the active platform"). NEVER hardcode `claude-*` IDs in generated agents on non-CC tiers — read from `platform_profile.model_tiers`.
+  *Illustrative only (NOT authoritative — consult profile JSONs at runtime):*
+
+  | Tier | profile path |
+  |------|--------------|
+  | Tier 1 (CC) | `profiles/tier_1.json` |
+  | Tier 1b (OC) | `profiles/tier_1b.json` |
+  | Tier 1c (Antigravity) | `profiles/tier_1c.json` |
+  | Tier 1d (Codex) | `profiles/tier_1d.json` |
+  | Tier 2 (Cursor/Windsurf/Cline) | `profiles/tier_2.json` |
 - Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 

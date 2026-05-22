@@ -23,6 +23,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - `OC_FIRST_CLASS: TRUE` — `superpipelines-opencode` is a permanent sibling repo; not deprecated.
 - `SYNC_DISCIPLINE: REQUIRED` — Shared skills are kept in sync between this repo and `superpipelines-opencode` via `docs/SYNC.md`.
 - `PARITY_TESTING: MANUAL_PHASE1` — No automated cross-platform parity gate in v2.0.0. `docs/SYNC.md` tracks per-skill validation. Automated parity tests are a v2.1 objective.
+- `DEPENDENCY_INVERSION: PROFILE_DRIVEN` — Per-platform facts (dispatch mechanism, reviewer-isolation recipe, scope roots, model_tiers, degradation warnings) live exclusively in `skills/sk-platform-dispatch/profiles/{tier_id}.json`. Skill bodies depend on the abstract shape (`platform_profile.<field>`), never on concrete platform names or values. Adding a new platform = adding a new profile JSON + detection heuristic; no skill-body edits required. Concrete per-tier values duplicated in any skill body are a defect (auditor SEV-2: source-of-truth drift).
 </architecture_invariants>
 
 ## File-Layout Rules
