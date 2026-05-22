@@ -40,7 +40,7 @@ The Path Resolver enforces a canonical layout for the Superpipelines v2 architec
 | :--- | :--- | :--- |
 | Tier 1 (CC) | `<workspace>/.claude/` | `~/.claude/` |
 | Tier 1b (OC) | `<workspace>/.opencode/` | `~/.opencode/` |
-| Tier 1c (Antigravity) | `<workspace>/.agents/` | `~/.gemini/antigravity/` |
+| Tier 1c (Antigravity) | `<workspace>/.agents/` | `~/.antigravity/` |
 | Tier 1d (Codex) | `<workspace>/.codex/` | `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` | `~/.superpipelines/` |
 </scope_roots_per_tier>
@@ -58,7 +58,7 @@ PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
 </protocol>
 
 <invariant>
-Path resolution MUST consult `metadata.tier` from the pipeline state for any artifact read/write on a non-Tier-1 tier. CC-scaffolded pipelines running on Tier 2 invoke `PORTABILITY_REWRITE(path, 1, 2)` at every state-update site. The original (source-tier) path is stamped in `pipeline-state.json` `metadata.source_scope_root` for audit.
+Path resolution MUST consult `metadata.runtime_tier` from the pipeline state for any artifact read/write on a non-Tier-1 tier. CC-scaffolded pipelines running on Tier 2 invoke `PORTABILITY_REWRITE(path, "tier_1", "tier_2")` at every state-update site. The original (source-tier) path is stamped in `pipeline-state.json` `metadata.source_scope_root` for audit.
 </invariant>
 
 ## Path Templates

@@ -45,7 +45,7 @@ The Pipeline Architect treats every component as a discrete software system with
 - **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
 - **Constraint**: Agent files are zero-body (frontmatter only). Preload `sk-*` method skills and the companion `{agent-name}-protocol` skill. All protocol goes into the companion skill.
-- **Multi-Platform Entry Skill Constraint (v2.0.0+)**: Generated entry skills (`skills/superpipelines/{P}/run-{P}/SKILL.md`) MUST dispatch every step via `sk-platform-dispatch` DISPATCH, not via direct `Task(subagent_type=...)` calls. The entry-skill body must load `sk-platform-dispatch` in its first phase, branch on cached `metadata.tier`, and call DISPATCH for every step in topology order. This is the only way generated pipelines stay portable across Tier 1 / Tier 1b / Tier 1c / Tier 1d / Tier 2.
+- **Multi-Platform Entry Skill Constraint (v2.0.0+)**: Generated entry skills (`skills/superpipelines/{P}/run-{P}/SKILL.md`) MUST dispatch every step via `sk-platform-dispatch` DISPATCH, not via direct `Task(subagent_type=...)` calls. The entry-skill body must load `sk-platform-dispatch` in its first phase, branch on cached `metadata.runtime_tier`, and call DISPATCH for every step in topology order. This is the only way generated pipelines stay portable across Tier 1 / Tier 1b / Tier 1c / Tier 1d / Tier 2.
 - **Generated Entry Skill Template**: For each step in `topology.json`, emit a dispatch block of the form:
   ```
   Skill("sk-platform-dispatch")

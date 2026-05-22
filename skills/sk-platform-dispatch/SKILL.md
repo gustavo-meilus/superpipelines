@@ -118,7 +118,7 @@ For each step in `topology.json` (dependency order):
 |------|-------------------------------------------------|
 | Tier 1 (CC) | `<workspace>/.claude/` → `~/.claude/` |
 | Tier 1b (OC) | `<workspace>/.opencode/` → `~/.opencode/` |
-| Tier 1c (Antigravity) | `<workspace>/.agents/` → `~/.gemini/antigravity/` |
+| Tier 1c (Antigravity) | `<workspace>/.agents/` → `~/.antigravity/` |
 | Tier 1d (Codex) | `<workspace>/.codex/` → `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` (universal fallback — created on demand) |
 </scope_roots_per_tier>
