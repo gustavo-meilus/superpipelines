@@ -35,7 +35,14 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
-- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps; resolves to `claude-opus-4-7`) or `fast` (execution/utility steps; resolves to `claude-sonnet-4-6`). Record the user's mapping in Phase 2 output (`{step_id: tier}`); the architect MUST embed the resolved model string in each generated agent's frontmatter `model:` field during Phase 4. If the user declines to choose, default every step to `claude-sonnet-4-6` per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET`. The deep/fast → opus/sonnet mapping is also documented in the `MODEL_SELECTION` invariant update in Sub-Plan 5.
+- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps) or `fast` (execution/utility steps). Record the user's mapping in Phase 2 output (`{step_id: tier}`). The architect MUST resolve the tier to a concrete model string via the active `platform_profile.model_tiers` table (loaded in Phase 0) and embed it in each generated agent's frontmatter `model:` field during Phase 4. Resolution by tier:
+  - Tier 1 (CC): `deep` → `claude-opus-4-7`, `fast` → `claude-sonnet-4-6`
+  - Tier 1b (OC): same as Tier 1 (override post-scaffold via `/superpipelines:change-models` if a non-Anthropic provider is desired)
+  - Tier 1c (Antigravity): `deep` → `gemini-3.5-pro`, `fast` → `gemini-3.5-flash`
+  - Tier 1d (Codex): `deep` → `gpt-5.5`, `fast` → `gpt-5.4-mini`
+  - Tier 2 (Cursor/Windsurf/Cline): both map to `inherit` (omit `model:` from generated agent; defer to the user's IDE selection)
+
+  If the user declines to choose, default every step to the active tier's `fast` model per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` (interpreted as "default to the fast tier of the active platform"). NEVER hardcode `claude-*` IDs in generated agents on non-CC tiers — read from `platform_profile.model_tiers`.
 - Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 

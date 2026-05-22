@@ -1,7 +1,7 @@
 {
   "tier": "tier_2",
   "name": "Cursor / Windsurf / Cline",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
   "capabilities": {
     "subagents": false,
     "parallel_subagents": false,
@@ -22,5 +22,9 @@
   ],
   "extensions": {
     "skill_tool_note": "Cursor, Windsurf, and Cline load skill content via file read or prompt injection, not a native Skill() primitive. The skill_tool capability flag is treated as equivalent for routing purposes in this profile."
+  },
+  "model_tiers": {
+    "deep": "inherit",
+    "fast": "inherit"
   }
 }

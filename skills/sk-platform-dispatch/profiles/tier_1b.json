@@ -1,7 +1,7 @@
 {
   "tier": "tier_1b",
   "name": "OpenCode",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": false,
@@ -18,5 +18,9 @@
   "degradation_warnings": [
     "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
   ],
-  "extensions": {}
+  "extensions": {},
+  "model_tiers": {
+    "deep": "claude-opus-4-7",
+    "fast": "claude-sonnet-4-6"
+  }
 }

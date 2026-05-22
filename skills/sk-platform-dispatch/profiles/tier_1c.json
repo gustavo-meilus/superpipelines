@@ -1,7 +1,7 @@
 {
   "tier": "tier_1c",
   "name": "Antigravity",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": false,
@@ -22,5 +22,9 @@
   "extensions": {
     "aspirational": true,
     "verification_pending": ["dispatch_primitive", "reviewer_isolation"]
+  },
+  "model_tiers": {
+    "deep": "gemini-3.5-pro",
+    "fast": "gemini-3.5-flash"
   }
 }
