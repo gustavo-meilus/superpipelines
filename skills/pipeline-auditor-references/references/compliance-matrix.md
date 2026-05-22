@@ -27,7 +27,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 | # | Criterion | PASS condition |
 |---|-----------|----------------|
 | 6 | `name` valid | Lowercase + hyphens only, ≤64 chars, matches filename (without `.md`) |
-| 7 | `description` triggering-only | Third person, ≤1024 chars, no workflow summary, no first/second person ("I", "you") |
+| 7 | `description` triggering-only | Third person, ≤1536 chars combined with `when_to_use`, no workflow summary, no first/second person ("I", "you") |
 | 8 | `model` appropriate | `sonnet` by default; any non-sonnet model must have a justification comment in the Architect's Brief or the companion `{agent-name}-protocol` skill |
 | 9 | Core agent fields set | `effort` (one of `low/medium/high/xhigh/max`), `maxTurns` (integer), `version` (semver string) all present |
 | 10 | `permissionMode` valid | If present: one of `default \| acceptEdits \| plan \| bypassPermissions`; `bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill |

@@ -40,7 +40,7 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 <authoring_rules>
 - **Skill Descriptions**: Use triggering conditions only; avoid workflow summaries.
 - **Voice**: Enforce third-person impersonal voice throughout all documentation and skills.
-- **Constraints**: Skill bodies ≤500 lines; agent bodies are empty (frontmatter only); every skill description ≤1024 characters.
+- **Constraints**: Skill bodies ≤500 lines; agent bodies are empty (frontmatter only); every skill description ≤1536 characters (combined with `when_to_use` if present).
 - **Reference Topology**: References >100 lines must include a Table of Contents.
 - **Status Reporting**: Agents must emit exactly one terminal status: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`.
 </authoring_rules>

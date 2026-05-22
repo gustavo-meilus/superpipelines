@@ -43,7 +43,7 @@ Findings classified into four severity tiers.
 - Missing uncertainty permission ("if you don't know, ask").
 - References nested >1 level deep from SKILL.md.
 - Reference file >100 lines without ToC.
-- Description >1024 chars (truncation).
+- Description + `when_to_use` combined >1536 chars (truncation).
 
 ## SEV-3 examples
 
