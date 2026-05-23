@@ -1,6 +1,6 @@
 ---
 name: sk-dynamic-routing
-description: Use when determining the appropriate LLM for a specific pipeline stage. Defines category constraints for dynamic model routing, allowing specific utility and planning agents to diverge from the Sonnet default.
+description: Use only on Tier 1 (Claude Code) when determining the appropriate LLM for a specific pipeline stage. Defines Anthropic-centric category constraints for dynamic model routing on CC, allowing specific utility and planning agents to diverge from the Sonnet default. Non-CC tiers route via platform_profile.model_tiers instead — do not invoke this skill on tier_1b/1c/1d/2.
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -10,7 +10,7 @@ user-invocable: false
 > Provides the ruleset for dynamically assigning Large Language Models based on the task intent category. Trigger when architecting new pipelines or configuring subagents to ensure cost-efficiency and optimal reasoning paths.
 
 <overview>
-While Superpipelines maintains `claude-sonnet-4-6` as the baseline default for all implementation workers, certain specialized roles (e.g., fast audits, deep architectural planning, vision analysis) benefit from dynamic routing. This skill defines the permitted categories and fallback chains for those overrides.
+This skill is **Claude Code-scoped (tier_1 only)**. While Superpipelines on Tier 1 maintains `claude-sonnet-4-6` as the baseline default for implementation workers (the Tier 1 resolution of `platform_profile.model_tiers.fast`), certain specialized roles (e.g., fast audits, deep architectural planning, vision analysis) benefit from dynamic routing beyond the 2-slot `fast`/`deep` model_tiers abstraction. This skill defines the CC-specific categories and fallback chains for those overrides. Non-CC tiers do not consult this skill — they resolve models via `platform_profile.model_tiers` only.
 </overview>
 
 <glossary>
@@ -49,5 +49,6 @@ While Superpipelines maintains `claude-sonnet-4-6` as the baseline default for a
 <invariants>
 - NEVER override `pipeline-task-executor` or `pipeline-spec-reviewer`; they MUST remain on `claude-sonnet-4-6` (`default`).
 - NEVER route to a model not explicitly defined in the category mapping table.
-- Maintain `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` adherence.
+- Maintain `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` adherence. On Tier 1 the `default` category equals `platform_profile.model_tiers.fast` (`claude-sonnet-4-6`).
+- NEVER invoke this skill from tier-agnostic orchestrator skills (`creating-a-pipeline`, `pipeline-architect-protocol`, `sk-platform-dispatch`). Caller MUST gate on `platform_profile.tier == "tier_1"` before reading this skill's category table.
 </invariants>
