@@ -29,7 +29,7 @@ Detection heuristics run in order — first match wins:
 1. **Tier 1 (Claude Code):** `Task` tool present AND `subagent_type` parameter accepted. Secondary: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`.
 2. **Tier 1b (OpenCode):** `$OPENCODE_CONFIG_DIR` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
 3. **Tier 1c (Antigravity):** `agy` binary on PATH OR `.agents/skills/` workspace directory present.
-4. **Tier 1d (Codex):** `.codex-plugin/plugin.json` resolvable OR TOML agent files present under `${CODEX_PLUGIN_ROOT}/agents/`.
+4. **Tier 1d (Codex):** `.codex-plugin/plugin.json` resolvable OR `codex` binary on PATH OR TOML agent files present under `<workspace>/.agents/` (the Tier 1d workspace scope-root per `tier_1d.json`).
 5. **Tier 2 (fallback):** None of the above. Safe default — sequential inline execution always works.
 
 After resolving `tier_id`:
@@ -80,7 +80,7 @@ SWITCH mechanism:
 |---|---|---|
 | `native_task` | `profile.capabilities.reviewer_isolation` = `structural` | Agent `tools:` frontmatter restricts reviewer |
 | `native_subagent` | `structural` | OC `permission: { edit: deny }` on reviewer agent |
-| `model_driven` | `unverified` | Codex `sandbox_mode` per-agent unverified — treat as advisory |
+| `model_driven` | `profile.capabilities.reviewer_isolation` (see `extensions.reviewer_isolation_recipe`) | Codex: structural via per-agent `sandbox_mode = "read-only"` on reviewer TOML |
 | `inline` | `convention` or `unverified` | Orchestrator runs both writer and reviewer protocols |
 </dispatch_tiers>
 
