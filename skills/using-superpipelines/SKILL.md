@@ -41,7 +41,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 <invariants>
 - **`SUB_AGENT_SPAWNING: FALSE`**: Subagents must not spawn children; orchestration is restricted to the top-level parent.
 - **`WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`**: The agent that writes code never reviews it. Stage 1 (Compliance) gates Stage 2 (Quality). Structurally enforced on Tier 1/1b/1d; convention-only with explicit advisory surfacing on Tier 2.
-- **`MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET`**: Pipeline execution agents default to `claude-sonnet-4-6`. Planning/architecture/review agents may opt into `claude-opus-4-7` via per-step model preference (Phase 2 of `creating-a-pipeline`).
+- **`MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET`**: Pipeline execution and utility agents default to `platform_profile.model_tiers.fast`. Planning, architecture, and review agents may opt into `platform_profile.model_tiers.deep` via per-step model preference (Phase 2 of `creating-a-pipeline`). Concrete model IDs per platform live in `skills/sk-platform-dispatch/profiles/{tier_id}.json` — never restated in skill bodies (per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`).
 - **`MULTI_PLATFORM: TRUE`**: superpipelines runs across Tier 1 (CC), Tier 1b (OC, sibling repo), Tier 1c (Antigravity, aspirational), Tier 1d (Codex), and Tier 2 (Cursor/Windsurf/Cline). Step orchestration routes through `sk-platform-dispatch`.
 - **`STATE_PERSISTENCE`**: All state must reside in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - **`ATOMIC_MUTATION`**: Topology changes must be staged in `edit-{ts}/` before promotion.

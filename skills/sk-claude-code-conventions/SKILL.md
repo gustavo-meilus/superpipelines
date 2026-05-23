@@ -30,7 +30,7 @@ The Claude Code Conventions define the structural and behavioral invariants requ
 </model_tier_table>
 
 <invariant>
-Pipelines enforce `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` (v2.0.0+). Execution and utility agents default to `claude-sonnet-4-6`. Planning, architecture, and review agents MAY opt into `claude-opus-4-7` via the per-step model preference recorded in Phase 2 of `creating-a-pipeline` (`fast` → sonnet; `deep` → opus). Scale within-tier reasoning via `effort`; switch tiers only when the step category genuinely warrants it.
+This skill is **Claude Code-scoped** (tier_1 only). Concrete model IDs above describe the Tier 1 resolution of the universal `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` invariant — i.e., Tier 1's `platform_profile.model_tiers.fast` resolves to `claude-sonnet-4-6` and `.deep` to `claude-opus-4-7`. On other tiers the same `fast`/`deep` slots resolve to that platform's idiomatic models (see `skills/sk-platform-dispatch/profiles/{tier_id}.json`). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, pipeline-architect and other tier-agnostic skills MUST consult `platform_profile.model_tiers` rather than the CC literals shown here. Scale within-tier reasoning via `effort`; switch tiers only when the step category genuinely warrants it.
 </invariant>
 
 ## Caching & Context Discipline
