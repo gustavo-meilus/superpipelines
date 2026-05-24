@@ -1,7 +1,8 @@
 {
   "tier": "tier_1d",
   "name": "Codex",
-  "profile_version": "1.1.0",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": true,
@@ -9,7 +10,15 @@
     "skill_tool": true,
     "worktrees": false,
     "reviewer_isolation": "structural",
-    "dispatch_mechanism": "model_driven"
+    "dispatch_mechanism": "model_driven",
+    "dynamic_subagents": false,
+    "model_field_format": "toml_split",
+    "effort_field_name": "model_reasoning_effort",
+    "effort_field_applies_to_providers": null,
+    "effort_emit_map": { "low": "minimal", "medium": "medium", "high": "high" },
+    "subagent_env_override": null,
+    "subagent_inherit_target": "session",
+    "provider_families": ["openai"]
   },
   "scope_root": {
     "workspace": ".agents",
@@ -22,7 +31,9 @@
     "skill_tool_note": "Codex discovers SKILL.md via `.agents/skills` (cross-tool open path) and `$HOME/.agents/skills`. Skill content preloads at session start; no runtime Skill() primitive callable from another skill."
   },
   "model_tiers": {
-    "deep": "gpt-5.5",
-    "fast": "gpt-5.4-mini"
+    "triage": { "model": "gpt-5.4-mini", "effort": "low" },
+    "fast":   { "model": "gpt-5.4-mini", "effort": "medium" },
+    "medium": { "model": "gpt-5.4",      "effort": "medium" },
+    "deep":   { "model": "gpt-5.5",      "effort": "high" }
   }
 }
