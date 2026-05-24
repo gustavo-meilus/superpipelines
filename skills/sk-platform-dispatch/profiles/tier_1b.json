@@ -1,7 +1,8 @@
 {
   "tier": "tier_1b",
   "name": "OpenCode",
-  "profile_version": "1.1.0",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": false,
@@ -9,7 +10,14 @@
     "skill_tool": true,
     "worktrees": false,
     "reviewer_isolation": "structural",
-    "dispatch_mechanism": "native_subagent"
+    "dispatch_mechanism": "native_subagent",
+    "dynamic_subagents": false,
+    "model_field_format": "provider_prefixed",
+    "effort_field_name": "reasoningEffort",
+    "effort_field_applies_to_providers": ["opencode", "opencode-go"],
+    "subagent_env_override": null,
+    "subagent_inherit_target": "primary",
+    "provider_families": ["anthropic", "opencode-go", "opencode"]
   },
   "scope_root": {
     "workspace": ".opencode",
@@ -20,7 +28,9 @@
   ],
   "extensions": {},
   "model_tiers": {
-    "deep": "claude-opus-4-7",
-    "fast": "claude-sonnet-4-6"
+    "triage": { "model": "opencode/big-pickle",           "effort": "low",    "free_tier": true,  "quota_class": "free-unlimited" },
+    "fast":   { "model": "opencode-go/deepseek-v4-flash", "effort": "medium", "free_tier": false, "quota_class": "go-high" },
+    "medium": { "model": "opencode-go/qwen3.6-plus",      "effort": "medium", "free_tier": false, "quota_class": "go-medium" },
+    "deep":   { "model": "opencode-go/kimi-k2.6",         "effort": "high",   "free_tier": false, "quota_class": "go-low" }
   }
 }
