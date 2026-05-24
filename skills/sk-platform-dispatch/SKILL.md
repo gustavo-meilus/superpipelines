@@ -39,11 +39,32 @@ READ(skills/sk-platform-dispatch/profiles/{tier_id}.json) → profile object
 ```
 
 Return the full profile object. Caller caches it in `pipeline-state.json` as `metadata.platform_profile` and sets `metadata.runtime_tier = profile.tier`.
+
+### Profile capability fields (v2.0 additions)
+
+| Field | Purpose |
+|---|---|
+| `dynamic_subagents` | If true, user picks orchestrator tier only; per-step assignment skipped |
+| `model_field_format` | `shorthand` (CC) \| `provider_prefixed` (OC) \| `toml_split` (Codex) \| `omit` (Tier 2, Antigravity) |
+| `effort_field_name` | Name of the reasoning-effort key in agent files (null = platform has no effort field) |
+| `effort_field_applies_to_providers` | List of provider prefixes for which effort emits (null = all) |
+| `effort_emit_map` | Translation table for effort values (Codex `low → minimal`) |
+| `subagent_env_override` | Env var that forces all subagents to one model (CC `CLAUDE_CODE_SUBAGENT_MODEL`) |
+| `subagent_inherit_target` | What `inherit` resolves to natively (`session`, `primary`, `orchestrator`) |
+| `provider_families` | Provider prefixes this platform accepts |
+| `model_tiers_version` | ISO date stamp for drift detection |
+| `model_tiers[*]` | 4-tier table: `triage`, `fast`, `medium`, `deep` — each with `model`, `effort`, optional `free_tier`, `quota_class` |
 </protocol>
 
 <invariant>
 Tier detection is performed exactly once per orchestrator invocation. On resume: re-run DETECT() to get `runtime_tier`; compare to `metadata.source_tier`; if different, append to `metadata.tier_changes` and emit cross-tier resume advisory. Re-detection mid-run (outside resume) is forbidden.
 </invariant>
+
+## Model Resolution Hook
+
+Before DISPATCH executes any step, callers MUST load `sk-model-resolver` and call `RESOLVE(agent, profile, prefs)` for each topology step. The resolved object is persisted to `pipeline-state.json metadata.resolved_models[step_id]` and consulted by DISPATCH (`native_task` model override; `native_subagent` payload; `toml_split` agent file rewrite; `omit` = no-op).
+
+`running-a-pipeline` Phase 0.4 handles this for run-time execution. `creating-a-pipeline` Phase 4 uses resolution only for the preview table in Phase 5 approval; architect output writes `model_tier:` and never `model:`.
 
 ## DISPATCH Contract
 
@@ -76,12 +97,13 @@ SWITCH mechanism:
 ```
 
 <dispatch_tiers>
-| `dispatch_mechanism` | Reviewer isolation source | Notes |
-|---|---|---|
-| `native_task` | `profile.capabilities.reviewer_isolation` = `structural` | Agent `tools:` frontmatter restricts reviewer |
-| `native_subagent` | `structural` | OC `permission: { edit: deny }` on reviewer agent |
-| `model_driven` | `profile.capabilities.reviewer_isolation` (see `extensions.reviewer_isolation_recipe`) | Codex: structural via per-agent `sandbox_mode = "read-only"` on reviewer TOML |
-| `inline` | `convention` or `unverified` | Orchestrator runs both writer and reviewer protocols |
+| `dispatch_mechanism` | Model resolution source | Effort handling | Reviewer isolation source |
+|---|---|---|---|
+| `native_task` | Resolved model passed in Task() payload (overrides agent frontmatter) | Ignored (CC has no effort field) | `profile.capabilities.reviewer_isolation = structural`; agent `tools:` restricts reviewer |
+| `native_subagent` | Resolved model + reasoningEffort written to dispatch payload | Only for `opencode/*` and `opencode-go/*` provider prefixes | `structural`; OC `permission: { edit: deny }` on reviewer agent |
+| `model_driven` (Codex) | Resolved model + model_reasoning_effort written to TOML | `effort_emit_map` translates `low → minimal` | `structural`; per-agent `sandbox_mode = "read-only"` on reviewer TOML |
+| `model_driven` (Antigravity) | Orchestrator tier only; subagents auto-managed | N/A (no per-subagent control) | `convention` |
+| `inline` (Tier 2) | No emission — host IDE selects model | N/A | `convention` |
 </dispatch_tiers>
 
 ## Tier 2 Inline Loop
