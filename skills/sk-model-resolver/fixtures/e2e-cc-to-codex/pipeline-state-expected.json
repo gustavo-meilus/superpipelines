@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "source_tier": "tier_1",
+    "runtime_tier": "tier_1d",
+    "resolved_models": {
+      "triage": {
+        "model": "gpt-5.4-mini",
+        "effort": "minimal",
+        "effort_field_name": "model_reasoning_effort",
+        "model_field_format": "toml_split",
+        "source": "profile_default",
+        "warnings": []
+      },
+      "architect": {
+        "model": "gpt-5.5",
+        "effort": "high",
+        "effort_field_name": "model_reasoning_effort",
+        "model_field_format": "toml_split",
+        "source": "profile_default",
+        "warnings": []
+      }
+    }
+  }
+}
