@@ -37,6 +37,38 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
   - `inline` or unknown → Phase 3 uses Tier 2 Inline Loop from `sk-platform-dispatch`.
 - Emit all `platform_profile.degradation_warnings` if non-empty.
 
+### PHASE 0.4 — Model Resolution
+
+- Load `sk-model-resolver` via the `Skill` tool.
+- `LOAD_PREFS(workspace_root)` → user + workspace preference objects.
+- `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
+- FOR each agent in `topology.json` steps:
+  - Read frontmatter.
+  - `resolved = RESOLVE(agent, platform_profile, prefs)`.
+  - Cache to `state.metadata.resolved_models[step_id]` via atomic write.
+  - IF `resolved.warnings` non-empty: append each to run advisory queue.
+- Emit user-facing resolution table:
+  ```
+  Step           Tier    Source           → Model                          Effort
+  architect      deep    user_prefs       → claude-opus-4-7                (none)
+  implementer    medium  profile_default  → claude-sonnet-4-6              (none)
+  formatter      fast    workspace_prefs  → opencode/big-pickle            (none)
+  ```
+- Persist `metadata.resolved_models`, `metadata.preference_files_consulted`, `metadata.model_tiers_version_at_run` to state file.
+
+<invariant>
+Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_models` exists AND `metadata.runtime_tier` matches the new `runtime_tier` AND profile `model_tiers_version` unchanged: skip re-resolution. ELSE re-resolve and log a "models re-resolved on resume" entry to `metadata.resolution_events`.
+</invariant>
+
+### PHASE 0.45 — Model Migration Check
+
+- Scan all agent files under the pipeline scope.
+- IF any agent has `model:` field AND no `model_tier:` field:
+  - Load `sk-model-migration` via `Skill` tool.
+  - Execute the migration protocol (creates git checkpoint + rewrites frontmatter + commits).
+  - Re-run Phase 0.4 (resolution) against the migrated agents.
+- ELSE: skip; proceed to next phase.
+
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
 - Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
 - Read the currently installed plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
@@ -80,6 +112,14 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.runtime_tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
 - **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
 - **Responsibility**: The entry skill owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup.
+
+**Model field at dispatch:** Every dispatch path MUST read `state.metadata.resolved_models[step_id]` rather than re-resolving:
+
+- `native_task`: pass `model: resolved.model` as a Task() argument (overrides agent frontmatter).
+- `native_subagent`: write `model: resolved.model` (and `reasoningEffort: resolved.effort` if non-null) into the dispatch payload.
+- `model_driven` (Codex): rewrite the spawned agent's TOML file with `model = "..."` and `model_reasoning_effort = "..."` lines before dispatching.
+- `model_driven` (Antigravity): set orchestrator model only; subagent model selection is owned by Antigravity.
+- `inline` (Tier 2): no-op — host IDE controls the model.
 
 ### PHASE 4: COMPLETION & CLEANUP
 - Read final state from `pipeline-state.json`.
