@@ -10,8 +10,8 @@ name: lowercase-hyphens          # ≤64 chars, matches filename
 description: triggering conditions only — third person, ≤1024 chars
 tools: Read, Write, Edit, Bash, Glob, Grep   # explicit allowlist
 disallowedTools: Write, Edit                 # explicit denylist (read-only agents)
-model: sonnet                                 # SONNET_ONLY default; non-sonnet requires user opt-in
-effort: low | medium | high | xhigh | max
+model_tier: medium                            # triage | fast | medium | deep | inherit (runtime-resolved via sk-model-resolver)
+effort_tier: medium                           # low | medium | high (optional; orthogonal to model_tier)
 maxTurns: 25                                  # bounds execution
 version: "1.0"                                # bump on breaking change
 plugin_version: "1.0.6"                       # superpipelines version that created/last-modified this agent
@@ -36,8 +36,9 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | `description` | yes | Routing contract. Triggering conditions only. NEVER summarize workflow. Third person. |
 | `tools` | recommended | Minimal allowlist. Read-only agents: omit Write/Edit/Bash. |
 | `disallowedTools` | optional | Use to deny tools the agent must never call. Reviewers must deny Write/Edit/Bash. |
-| `model` | yes | `sonnet` by default. Non-sonnet: document user opt-in in the Architect's Brief or companion `{agent-name}-protocol` skill. |
-| `effort` | yes | Architect/auditor: `high`. Workers: `medium`. Triage: `low`. |
+| `model_tier` | yes | One of `triage | fast | medium | deep | inherit`. Runtime-resolved via `sk-model-resolver`. Architect MUST emit this; MUST NOT emit `model:`. |
+| `effort_tier` | optional | One of `low | medium | high`. Orthogonal to `model_tier`. Emitted only on platforms with `effort_field_name` set. |
+| `model` | DISCOURAGED | Escape hatch. Explicit concrete model bypasses tier resolution. Auditor surfaces as SEV-3 info. Use only for advanced cases (e.g., custom fine-tuned model). |
 | `maxTurns` | yes | Read-only: 15–25. Generation: 30–40. Validation: 10–15. |
 | `version` | yes | Bump major on breaking change to output schema or required inputs. |
 | `plugin_version` | yes | The superpipelines package version (semver) that created or last modified this agent. Stamp at creation and on any mutation (add/update/delete step). Enables future retro-compatibility checks. |
