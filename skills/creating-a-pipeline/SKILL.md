@@ -35,17 +35,24 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
-- **Model preference per step**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier — `deep` (planning/architecture/review steps) or `fast` (execution/utility steps). Record the user's mapping in Phase 2 output (`{step_id: tier}`). The architect MUST resolve the tier to a concrete model string via `platform_profile.model_tiers[tier]` (loaded in Phase 0 from `skills/sk-platform-dispatch/profiles/{tier_id}.json`) and embed the resolved string in each generated agent's frontmatter `model:` field during Phase 4. Concrete per-tier model IDs live in the profile JSONs — the single source of truth — and MUST NOT be duplicated in this skill body. If the user declines to choose, default every step to `platform_profile.model_tiers.fast` per `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` (interpreted as "default to the fast tier of the active platform"). NEVER hardcode model IDs in this skill body or in generated agents — always read from `platform_profile.model_tiers`. New platforms scale in via profile JSON edits without changes here.
+- **Model preference per step (4-tier)**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier:
 
-  *Illustrative only (NOT authoritative — consult profile JSONs at runtime):*
+  | Tier | Use cases |
+  |---|---|
+  | `triage` | Routers, classifiers, simple decisions (cheapest model) |
+  | `fast` | Execution, utility, code generation workhorse-cheap |
+  | `medium` | Standard coding workhorse |
+  | `deep` | Planning, architecture, review (most capable model) |
 
-  | Tier | profile path |
-  |------|--------------|
-  | Tier 1 (CC) | `profiles/tier_1.json` |
-  | Tier 1b (OC) | `profiles/tier_1b.json` |
-  | Tier 1c (Antigravity) | `profiles/tier_1c.json` |
-  | Tier 1d (Codex) | `profiles/tier_1d.json` |
-  | Tier 2 (Cursor/Windsurf/Cline) | `profiles/tier_2.json` |
+  Recommended defaults: planning/architecture/review → `deep`; coding/execution → `medium`; utility/formatting → `fast`; routers/classifiers → `triage`.
+
+  Optionally ask per-step `effort_tier` (`low | medium | high`). Skip = use the tier's default effort from the active profile.
+
+  Record `{step_id: {model_tier, effort_tier}}` in Phase 2 output. The architect MUST write `model_tier:` (and optional `effort_tier:`) to each generated agent's frontmatter in Phase 4. The architect MUST NOT write `model:` — that field is resolved at runtime by `sk-model-resolver`.
+
+  Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, concrete per-tier model IDs live exclusively in `skills/sk-platform-dispatch/profiles/{tier_id}.json` and user/workspace preference files. NEVER hardcode model IDs in this skill body or in generated agents.
+
+  If the user declines per-step choice, default every step to `fast`.
 - Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
 - <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 
