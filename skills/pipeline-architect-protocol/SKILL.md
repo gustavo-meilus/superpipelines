@@ -70,7 +70,7 @@ Every new agent MUST follow the Lean Agent pattern: the agent file is frontmatte
 See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates" for exact templates.
 
 **Frontmatter rules:**
-- Default to `model: sonnet`.
+- Write `model_tier:` (one of `triage | fast | medium | deep | inherit`) and optional `effort_tier:` (`low | medium | high`). NEVER write a concrete `model:` field — that is resolved at runtime by `sk-model-resolver`. Defaults: planning/architecture/review steps → `deep`; coding/execution → `medium`; utility/formatting → `fast`; routers/classifiers → `triage`.
 - Set `permissionMode: plan` for reviewers and architects.
 - Set `memory: local` only for cross-run heuristics; never use `memory: project`.
 - Set `user-invocable: false` for internal step skills.
