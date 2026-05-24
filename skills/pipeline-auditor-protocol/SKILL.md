@@ -54,6 +54,26 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - Auditor remains read-only.
 - **SEV-0/1**: Route to `pipeline-architect` with the remediation plan.
 - **SEV-2/3**: Surface to the user for manual decision.
+
+### Model-Tier Resolution Criteria (v2.0)
+
+| ID | Criterion | SEV | Detection |
+|---|---|---|---|
+| MT-01 | Hardcoded model ID in skill body | SEV-2 | `grep -E "claude-(sonnet\|opus\|haiku)-[0-9]\|gpt-5\.[0-9]\|gemini-3\." skills/**/SKILL.md skills/**/references/*.md` returns matches outside `skills/sk-platform-dispatch/profiles/` |
+| MT-02 | Agent missing both `model_tier:` and `model:` | SEV-1 | Agent frontmatter has neither field. Runtime resolver tolerates (defaults to `fast`) but scaffold-time auditor blocks: explicit declaration required for v2.0+ agents. |
+| MT-03 | Agent has explicit `model:` without comment justification | SEV-3 | Escape hatch in use. Surface to reviewer; do not block. |
+| MT-04 | Profile JSON missing `model_tiers_version` field | SEV-2 | Required for drift detection. |
+| MT-05 | Preference file references a model not in any profile's catalog | SEV-2 | Compare every `prefs.platforms[*].tiers[*]` value against the union of all profiles' `model_tiers[*].model`. Mismatch likely typo or stale ID. |
+| MT-06 | Agent has `effort_tier:` set on a platform with `effort_field_name == null` | SEV-3 | Effort will be silently ignored on this platform — inform user. Detection requires knowing the source/runtime tier. |
+
+### Resolution
+
+- MT-01: Move the hardcoded ID to a profile JSON; reference via `platform_profile.model_tiers[tier]`.
+- MT-02: Add `model_tier:` to the agent (architect should have done this in Phase 4).
+- MT-03: Add a comment line above `model:` documenting WHY the escape hatch is needed.
+- MT-04: Add `"model_tiers_version": "YYYY-MM-DD"` to the profile.
+- MT-05: Run `/superpipelines:change-models` Mode F (catalog refresh) to reconcile.
+- MT-06: Either drop `effort_tier:` or accept that it's a no-op on this platform.
 </protocol>
 
 <invariants>
