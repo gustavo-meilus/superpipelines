@@ -1,30 +1,40 @@
 {
   "tier": "tier_1c",
   "name": "Antigravity",
-  "profile_version": "1.1.0",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
+  "aspirational": true,
   "capabilities": {
     "subagents": true,
-    "parallel_subagents": false,
+    "parallel_subagents": true,
     "task_primitive": false,
     "skill_tool": true,
     "worktrees": false,
-    "reviewer_isolation": "unverified",
-    "dispatch_mechanism": "inline"
+    "reviewer_isolation": "convention",
+    "dispatch_mechanism": "model_driven",
+    "dynamic_subagents": true,
+    "model_field_format": "omit",
+    "effort_field_name": null,
+    "effort_field_applies_to_providers": null,
+    "subagent_env_override": null,
+    "subagent_inherit_target": "orchestrator",
+    "provider_families": ["google"]
   },
   "scope_root": {
     "workspace": ".agents",
     "user": "~/.antigravity"
   },
   "degradation_warnings": [
-    "Antigravity Dynamic Subagent dispatch primitive unverified. Falling back to Tier 2 inline execution.",
-    "Reviewer isolation is unverified. Treat reviews as advisory until confirmed structural."
+    "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
   ],
   "extensions": {
-    "aspirational": true,
-    "verification_pending": ["dispatch_primitive", "reviewer_isolation"]
+    "default_orchestrator_model": "gemini-3.5-flash",
+    "subagent_model_control": "orchestrator-only"
   },
   "model_tiers": {
-    "deep": "gemini-3.5-pro",
-    "fast": "gemini-3.5-flash"
+    "triage": { "model": "gemini-3.5-flash", "effort": "low" },
+    "fast":   { "model": "gemini-3.5-flash", "effort": "medium" },
+    "medium": { "model": "gemini-3.5-pro",   "effort": "medium" },
+    "deep":   { "model": "gemini-3.5-pro",   "effort": "high" }
   }
 }
