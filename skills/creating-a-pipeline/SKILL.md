@@ -69,6 +69,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   | `native_subagent` | OC native `mode: subagent` dispatch — include `platform_profile` in the dispatch payload |
   | `model_driven` | Model-driven orchestration prompt — include `platform_profile` in the prompt context |
   | `inline` or unknown | `Skill(pipeline-architect-protocol)` → execute inline with own tools — profile already in session context |
+- **Architect output rule for agent frontmatter**: every generated agent file MUST declare `model_tier:` (one of `triage | fast | medium | deep | inherit`) and MAY declare `effort_tier:` (`low | medium | high`). The architect MUST NOT write a concrete `model:` field — that resolves at runtime via `sk-model-resolver`. For preview-only display in Phase 5, the architect MAY call `sk-model-resolver.RESOLVE` and `EMIT` against the active profile, but the resolved string is for the approval table only, never written to agent files.
 - **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
@@ -89,6 +90,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   6. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
   7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
   8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0)
+  9. **Preference bootstrap check**: IF `~/.superpipelines/model-preferences.json` does NOT contain an entry for `platform_profile.tier`, emit advisory: "No model preferences configured for `<platform_profile.name>`. Run `/superpipelines:change-models` Mode E to set them, or accept profile defaults at first run." This is non-blocking — scaffolding completes either way.
 </HARD-GATE>
 - Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Claude Code: this is a documentation/discovery file ONLY — it is NOT registered as a `/superpipelines:{P}` slash command). On OpenCode the same launcher IS auto-routed as `/superpipelines:{P}` direct invocation."
 </protocol>
