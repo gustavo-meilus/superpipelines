@@ -91,6 +91,9 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 </invariant>
 
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
+
+> **Scope clarifier:** Phase 0.5 inspects the **pipeline-level** `plugin_version` (stamped on `registry.json` or `topology.json` at scaffold time). It does NOT inspect agent-level `plugin_version` — that is owned by Phase 0.45. Phase 0.5 output MUST NOT reference agent migration state; Phase 0.45 output MUST NOT reference pipeline-version state. Mixing the two scopes in a single advisory line is a known failure mode.
+
 - Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
 - Read the currently installed plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
 - **Compare major versions** (semver `MAJOR.minor.patch`):
