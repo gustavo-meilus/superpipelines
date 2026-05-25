@@ -68,13 +68,18 @@ Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_mode
   - IF `plugin_version` absent OR semver `< 2.0.0`: classify as **v1-legacy candidate** (stale schema).
   - ELSE (`plugin_version >= 2.0.0`): classify as **v2 intentional escape hatch**. Skip migration; auditor surfaces as MT-03 SEV-3 informational only.
 - IF any v1-legacy candidates found:
-  - Load `sk-model-migration` via `Skill` tool. Pass the candidate list.
-  - Execute the migration protocol (creates git checkpoint + rewrites frontmatter + commits + stamps `plugin_version` to current).
+  - <HARD-GATE>MUST load `sk-model-migration` via the `Skill` tool and execute the migration protocol. NEVER classify migration as "optional", "deferred", "informational", or "user discretion". The presence of a v1-legacy candidate is unambiguous evidence of schema drift that breaks dispatch metadata, audit reporting, and tier resolution provenance. The only legitimate skip path is the `plugin_version >= 2.0.0` classifier above.</HARD-GATE>
+  - Pass the candidate list to `sk-model-migration`.
+  - The migration protocol (creates git checkpoint + rewrites frontmatter + commits + stamps `plugin_version` to current) is non-interactive past the dirty-tree confirmation; do not insert additional prompts.
   - Re-run Phase 0.4 (resolution) against the migrated agents.
-- ELSE: skip; proceed to next phase.
+- ELSE: skip silently; proceed to next phase.
 
 <invariant>
 The classifier MUST use `plugin_version` to distinguish v1 legacy from v2 intentional escape hatch. NEVER migrate agents that explicitly stamp `plugin_version >= 2.0.0` — those are user-authored escape hatches and migration would clobber intent. Conversely, NEVER skip agents missing `plugin_version` — stamping was introduced in v2.0, so absence is unambiguous v1 evidence.
+</invariant>
+
+<invariant>
+Once v1-legacy candidates are identified, migration is mandatory before dispatch. The orchestrator MUST NOT proceed to Phase 0.5 with un-migrated v1-legacy agents in scope. Rationalizing the migration as "optional" because agents "still function" is a known failure mode — the resolver's `source`, `warnings`, and state-file `resolved_models[step_id]` cannot be trusted while v1 schema is present.
 </invariant>
 
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
