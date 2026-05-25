@@ -38,3 +38,19 @@ User smoke test: PASS — ran all 4 commands in ai-rpi workspace (throwaway pipe
 Architecture invariants verified post-smoke: model_tier: only (no model:), plugin_version: "2.0.0" on all artifacts, state path template correct, reviewer-agent + protocol deleted, registry nodes list consistent with topology.
 
 Backlog item from project_v2_resolver_impl.md memory: CLOSED.
+
+## 2026-05-25 — Cross-platform fallback (plan 2026-05-25-cross-platform-skill-tool-fallback)
+
+Changes committed on branch `feat/multi-platform-impl`:
+- running-a-pipeline Phase 0.25: skill-tool probe + INLINE-DETECT() fallback with embedded 5-tier profile snapshots (commit 78024d0)
+- running-a-pipeline Phase 0.4: inline model-resolution path when skill tool unavailable (commit 353d3e0)
+- running-a-pipeline Phase 0.45: HARD-STOP branch when migration needed but Skill tool absent (commit baab81b)
+- running-a-pipeline Phase 1: excludes edit-* staging dirs from resume list (commit 3ce8caa)
+- sk-platform-dispatch: AGY activate_skill tool-name table + installation note (commit 778b1f2)
+- tier_1c.json: skill_tool_name=activate_skill, skill_tool_requires_extension_installed=true, installation_note (commit 112c4de)
+- Cache synced: 3/3 hash match (running-a-pipeline/SKILL.md, sk-platform-dispatch/SKILL.md, tier_1c.json)
+
+Sanity checks: INLINE-DETECT() ×8 in running-a-pipeline, edit-* EXCLUDE ×1, MIGRATION REQUIRED ×1, activate_skill ×2 in sk-platform-dispatch, skill_tool_name ×1 in tier_1c.json. File 258 lines (≤500).
+
+CC regression test: PENDING — user to verify no PLATFORM ADVISORY emitted on CC run-pipeline
+AGY fallback test: PENDING — user to verify advisory fires + HALT on v1-legacy when plugin not installed in AGY
