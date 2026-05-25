@@ -69,7 +69,7 @@ Present six modes:
 
 ### PHASE 3 — Apply
 
-**Modes A/B**: Read existing prefs file (or initialize). For each tier, write the chosen model. Write `model_tiers_version_acked = profile.model_tiers_version`. Atomic write (temp file + rename).
+**Modes A/B**: Read existing prefs file (or initialize). For each tier, write the chosen model. Write `model_tiers_version_acked = profile.model_tiers_version`. **Stamp `platforms[profile.tier].name = profile.name`** so the JSON is self-describing (display-only sibling of `tiers`; resolver ignores it). Atomic write (temp file + rename).
 
 **Mode C**: For each selected agent, edit frontmatter `model_tier:` field (add if absent). Preserve all other fields and ordering.
 
@@ -148,6 +148,7 @@ If detection file does not exist: prompt user to specify subscription state manu
 - NEVER modify a profile JSON. Profiles are plugin-owned source of truth.
 - NEVER modify an agent file without showing the user the before/after frontmatter and obtaining explicit confirmation.
 - ALWAYS bump `model_tiers_version_acked` when writing prefs (Modes A/B/E/F).
+- ALWAYS stamp `platforms[profile.tier].name = profile.name` when writing prefs. Canonical key stays `tier_1` / `tier_1b` / etc.; `name` is a display-only sibling.
 - ALWAYS preserve frontmatter field ordering when editing agent files.
 - NEVER remove or alter frontmatter fields other than the targeted field (`model_tier:`, `effort_tier:`, `model:`).
 - NEVER auto-migrate v1 agents in this skill — `sk-model-migration` owns that path (called from `running-a-pipeline` Phase 0.45).

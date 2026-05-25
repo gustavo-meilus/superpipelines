@@ -119,6 +119,40 @@ DETECT_CATALOG_DRIFT(prefs, profile) → { drifted: bool, message: string | null
     }
 ```
 
+## Preference File Schema
+
+```json
+{
+  "platforms": {
+    "tier_1": {
+      "name": "Claude Code",
+      "model_tiers_version_acked": "2026-05-19",
+      "tiers": {
+        "triage": "claude-haiku-4-5-20251001",
+        "fast":   "claude-haiku-4-5-20251001",
+        "medium": "claude-sonnet-4-6",
+        "deep":   "claude-sonnet-4-6"
+      },
+      "effort_default": {
+        "deep": "high"
+      }
+    },
+    "tier_1b": {
+      "name": "OpenCode",
+      "model_tiers_version_acked": "2026-05-19",
+      "tiers": { "fast": "opencode-go/deepseek-v4-flash" }
+    }
+  }
+}
+```
+
+**Key rules:**
+- `tier_1`, `tier_1b`, `tier_1c`, `tier_1d`, `tier_2` are the **canonical keys** — never localize them. They map directly to `platform_profile.tier`.
+- `name` is a **display-only** sibling field. Writers (wizard/change-models) MUST stamp it from `platform_profile.name` so future readers (and users browsing the JSON) can identify the platform without consulting profile JSONs. Readers (resolver) MUST NOT branch on `name` — it has no effect on resolution.
+- `tiers` holds the four-tier model overrides (`triage | fast | medium | deep`). Partial maps allowed; missing keys fall through to profile default.
+- `model_tiers_version_acked` mirrors `profile.model_tiers_version` at write-time; drift detector compares to current.
+- `effort_default` is optional; per-tier effort override.
+
 ## LOAD_PREFS Algorithm
 
 ```
