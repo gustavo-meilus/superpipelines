@@ -42,22 +42,30 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - Load `sk-model-resolver` via the `Skill` tool.
 - `LOAD_PREFS(workspace_root)` → user + workspace preference objects.
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
-- FOR each agent in `topology.json` steps:
-  - Read frontmatter.
+- FOR each agent in `topology.json` steps (no exceptions — iterate every node):
+  - Read frontmatter from the agent's `agent` path in topology.
   - `resolved = RESOLVE(agent, platform_profile, prefs)`.
   - Cache to `state.metadata.resolved_models[step_id]` via atomic write.
-  - IF `resolved.warnings` non-empty: append each to run advisory queue.
-- Emit user-facing resolution table:
+  - Append every entry of `resolved.warnings` to the run advisory queue.
+- <HARD-GATE>The resolution table MUST use the literal `resolved.source` enum value (one of `frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit`) in the Source column. NEVER translate, paraphrase, abbreviate, or annotate the source value (e.g., `"agent frontmatter (model: sonnet)"` is wrong — emit `frontmatter_override`). The Model column MUST use `resolved.model` verbatim (e.g., if resolver returns `sonnet`, emit `sonnet`, not `claude-sonnet-4-6`). Display expansion belongs to `EMIT()`, not the orchestrator.</HARD-GATE>
+- <HARD-GATE>Every `resolved.warnings` entry MUST be printed verbatim under the table as a bullet list before proceeding to the next phase. Suppressing warnings (including the `frontmatter_override` advisory) hides the only signal the user has that resolution bypassed preferences.</HARD-GATE>
+- Emit user-facing resolution table with these exact columns:
   ```
-  Step           Tier    Source           → Model                          Effort
-  architect      deep    user_prefs       → claude-opus-4-7                (none)
-  implementer    medium  profile_default  → claude-sonnet-4-6              (none)
-  formatter      fast    workspace_prefs  → opencode/big-pickle            (none)
+  Step           Tier    Source              Model                   Effort
+  architect      deep    user_prefs          claude-opus-4-7         high
+  implementer    medium  profile_default     claude-sonnet-4-6       (none)
+  formatter      fast    workspace_prefs     opencode/big-pickle     (none)
+  legacy-step    —       frontmatter_override sonnet                  (none)
   ```
+- Print warnings immediately after the table, one per line, prefixed `⚠️ {step_id}: {warning}`.
 - Persist `metadata.resolved_models`, `metadata.preference_files_consulted`, `metadata.model_tiers_version_at_run` to state file.
 
 <invariant>
 Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_models` exists AND `metadata.runtime_tier` matches the new `runtime_tier` AND profile `model_tiers_version` unchanged: skip re-resolution. ELSE re-resolve and log a "models re-resolved on resume" entry to `metadata.resolution_events`.
+</invariant>
+
+<invariant>
+RESOLVE MUST be called once per agent — never per pipeline. The orchestrator MUST NOT summarize multiple agents into a single resolver call or infer one agent's `source` from another's. Inconsistent Source values across agents in the same pipeline are evidence of skipped iterations.
 </invariant>
 
 ### PHASE 0.45 — Model Migration Check
