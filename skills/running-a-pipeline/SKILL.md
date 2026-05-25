@@ -76,6 +76,8 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 ### PHASE 0.4 — Model Resolution
 
+**Full Path (Skill tool available):**
+
 - Load `sk-model-resolver` via the `Skill` tool.
 - `LOAD_PREFS(workspace_root)` → user + workspace preference objects.
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
@@ -96,6 +98,20 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
   ```
 - Print warnings immediately after the table, one per line, prefixed `⚠️ {step_id}: {warning}`.
 - Persist `metadata.resolved_models`, `metadata.preference_files_consulted`, `metadata.model_tiers_version_at_run` to state file.
+
+**If INLINE-DETECT() was used (skill tool unavailable):**
+- Skip `sk-model-resolver` load — tool not available in this environment.
+- For each node in `topology.json` (iterate every node, same rule as full path):
+  - Read `model_tier` from `topology.json` node entry (file is always local).
+  - Resolve model: `resolved.model = platform_profile.model_tiers[node.model_tier].model`
+  - Set `resolved.source = "profile_default"` (inline path cannot check preference files).
+  - Set `resolved.warnings = []`.
+  - Cache `resolved` to `state.metadata.resolved_models[step_id]`.
+- Emit the resolution table in the identical format as the full path. Source column: `profile_default` for every row.
+- Emit one aggregate advisory line: `"⚠️ [inline-resolution] User/workspace preference files not consulted. Re-run from a platform with Skill-tool support to apply preference overrides."`
+- Persist `metadata.resolved_models` and `metadata.model_tiers_version_at_run` to state file.
+
+<HARD-GATE>The resolution table MUST be emitted even in inline mode. NEVER skip the table or the state-file persistence step regardless of which path was taken. A missing table is a phase-skip defect.</HARD-GATE>
 
 <invariant>
 Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_models` exists AND `metadata.runtime_tier` matches the new `runtime_tier` AND profile `model_tiers_version` unchanged: skip re-resolution. ELSE re-resolve and log a "models re-resolved on resume" entry to `metadata.resolution_events`.
