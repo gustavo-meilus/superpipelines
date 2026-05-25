@@ -12,7 +12,7 @@ The Pipeline Auditor provides a rigorous, read-only verification layer. It class
 </overview>
 
 <glossary>
-  <term name="Compliance Matrix">A 22-criterion checklist covering layout, frontmatter, topology, and runtime safety.</term>
+  <term name="Compliance Matrix">A 28-criterion checklist covering layout, frontmatter, topology, runtime safety, and resolver consolidation (PR-01..PR-05, PR-07).</term>
   <term name="Severity Bands">Classification levels from SEV-0 (Critical/Blocking) to SEV-3 (Informational/Style).</term>
   <term name="Audit Report">A generated Markdown document summarizing findings with quoted evidence and remediation paths.</term>
 </glossary>
@@ -41,7 +41,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - **SCOPE-WIDE**: Iterate through all scope roots and registered pipelines.
 
 ### 2. AUDIT
-- **Compliance Matrix**: Execute the 22-criterion check in `references/compliance-matrix.md` (criteria 1–22, including 10a and new criterion 22 PORTABILITY CHECK — SEV-1).
+- **Compliance Matrix**: Execute the 28-criterion check in `references/compliance-matrix.md` (criteria 1–22 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07 per ADR-0001 and ADR-0002).
 - **Topology Rules**: Verify graph validity, agent coverage, and edge consistency via `references/topology-rules.md`.
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 

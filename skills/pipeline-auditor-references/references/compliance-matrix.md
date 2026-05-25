@@ -1,6 +1,6 @@
 # Compliance Matrix — Auditor Reference
 
-22-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
+28-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
 Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 
 ## Table of contents
@@ -9,6 +9,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–22)
+5. Resolver consolidation (criteria PR-01..PR-05, PR-07)
 
 ---
 
@@ -59,10 +60,34 @@ Note: Tier 1c (Antigravity) and Tier 1d (Codex) both resolve `workspace` to `.ag
 
 ---
 
+## 5. Resolver consolidation
+
+These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and ADR-0002 (capability independence). Each detection rule cites the specific algorithm branch or architectural decision that justifies it. Fixture examples live in `references/fixtures/pr-0*.md`.
+
+| ID | Criterion | SEV | Detection |
+|---|---|---|---|
+| PR-01 | Every `skills/sk-platform-dispatch/profiles/tier_*.json` has a `"$schema": "./profile.schema.json"` field | SEV-2 | `grep -rL '"\\$schema"' skills/sk-platform-dispatch/profiles/tier_*.json` returns any file. A profile without `$schema` cannot be auto-validated by editors and may silently drift from the contract. |
+| PR-02 | `sk-model-resolver/SKILL.md` body does NOT restate algorithm steps | SEV-2 | `grep -n "Step [0-9]\\+:" skills/sk-model-resolver/SKILL.md` returns any match. Body must contain only: public API list, invariants, Red Flags, and a normative pointer to `references/resolution-algorithm.md`. Restating steps creates a second source of truth that drifts (ADR-0001). |
+| PR-03 | Both resolution adapters cite `sk-model-resolver/references/resolution-algorithm.md` | SEV-2 | (a) `grep -n "resolution-algorithm" skills/sk-model-resolver/SKILL.md` must return ≥1 match in the skill body (not just a `references:` frontmatter list). (b) `grep -n "resolution-algorithm" skills/running-a-pipeline/SKILL.md` must return ≥1 match inside the Phase 0.4 block. Missing in either = violation. |
+| PR-04 | Inline adapter (Phase 0.4) attempts `LOAD_PREFS` independently of the Skill-tool probe | SEV-1 | Scan `running-a-pipeline/SKILL.md` Phase 0.4 inline block: must contain a `LOAD_PREFS` call (or file-read attempt for pref files) that fires regardless of `INLINE-DETECT()` outcome. An inline block that hardcodes empty prefs or omits `LOAD_PREFS` entirely violates ADR-0002 (capability independence: pref-file read is independent of skill-tool availability). |
+| PR-05 | Phase 0.4 calls `RENDER_RESOLUTION_TABLE(resolved[])` rather than hand-crafting the table | SEV-2 | Scan `running-a-pipeline/SKILL.md` Phase 0.4: must contain a `RENDER_RESOLUTION_TABLE` call. Presence of a hardcoded markdown table (` | model | tier |` or similar header) without a `RENDER_RESOLUTION_TABLE` call = violation. Format authority belongs to the resolver (ADR-0001 §Consequences). |
+| PR-07 | `sk-model-resolver/SKILL.md` declares `RENDER_RESOLUTION_TABLE(resolved[]) → string` as a public API operation | SEV-2 | `grep -n "RENDER_RESOLUTION_TABLE" skills/sk-model-resolver/SKILL.md` must return ≥1 match in the public API section. Missing = the resolver's interface contract is incomplete; Phase 0.4 would be calling an undeclared operation. |
+
+### Resolver remediation
+
+- PR-01: Add `"$schema": "./profile.schema.json"` as the first key in the profile JSON.
+- PR-02: Delete algorithm steps from `sk-model-resolver/SKILL.md`; replace with a single normative pointer line: `Algorithm: see references/resolution-algorithm.md (normative).`
+- PR-03: Add an explicit citation line in the violating adapter body: `# Algorithm: skills/sk-model-resolver/references/resolution-algorithm.md (normative source)`.
+- PR-04: Add a `LOAD_PREFS(workspace_root)` call in the inline adapter block, with graceful degradation to empty prefs only when file-read fails. Do not gate it on Skill-tool availability.
+- PR-05: Replace the hand-crafted table with `RENDER_RESOLUTION_TABLE(resolved[])` and print the result verbatim.
+- PR-07: Add `RENDER_RESOLUTION_TABLE(resolved[]) → string` to the public API list in `sk-model-resolver/SKILL.md`.
+
+---
+
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–22 (including 10a) in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07 in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.
