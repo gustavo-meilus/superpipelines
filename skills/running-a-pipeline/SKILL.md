@@ -170,6 +170,10 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 - "The previous run was escalated, but I'll restart it anyway." → **STOP**. Read the state first to avoid repeating the failure.
 - "There is no registry, I'll search for artifacts manually." → **STOP**. Direct the user to create a managed pipeline.
 - "I'll delete the temp directory to keep the workspace clean." → **STOP**. Deletion on non-completion destroys all recovery findings.
+- "v1-legacy agents still work, so migration is optional." → **STOP**. Phase 0.45 HARD-GATE: migration is mandatory once v1 candidates are classified. The only valid skip is `plugin_version >= 2.0.0`.
+- "I'll translate the resolver source into something more readable." → **STOP**. Phase 0.4 HARD-GATE: emit `resolved.source` verbatim. The enum value is the contract.
+- "The resolver warnings are noise, I'll drop them from the table." → **STOP**. Phase 0.4 HARD-GATE: every `resolved.warnings` entry is printed verbatim before the next phase.
+- "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
 
 ## Rationalization Table
 
@@ -179,6 +183,10 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 | "I'll resume the escalated run." | Escalation signals a boundary the model cannot cross. Resuming without review wastes tokens. |
 | "Registry-only lookup is slow." | Searching without a registry is non-deterministic and risks path leakage. |
 | "The entry skill is just a wrapper." | The entry skill is the source of truth for step ordering and review gating. |
+| "Agents still function with model: sonnet, migration is non-urgent." | Phase 0.45's existence is the urgency signal. v1 schema breaks resolver provenance for the rest of the run. |
+| "The source label is more useful as prose than as an enum." | The Source column is a contract with `sk-model-resolver`. Auditors and downstream tools key off the enum. |
+| "Warnings are duplicated in state metadata, no need to print them." | State metadata is not user-facing during the run. Phase 0.4 table is the only synchronous warning surface. |
+| "Collecting topic up-front shortens the perceived wait." | Phase ordering exists to prevent input commitment on un-migrated / un-validated state. UX optimization is the wrong axis. |
 </rationalization_table>
 
 ## Reference Files
