@@ -129,10 +129,15 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
   - IF `plugin_version` absent OR semver `< 2.0.0`: classify as **v1-legacy candidate** (stale schema).
   - ELSE (`plugin_version >= 2.0.0`): classify as **v2 intentional escape hatch**. Skip migration; auditor surfaces as MT-03 SEV-3 informational only.
 - IF any v1-legacy candidates found:
-  - <HARD-GATE>MUST load `sk-model-migration` via the `Skill` tool and execute the migration protocol. NEVER classify migration as "optional", "deferred", "informational", or "user discretion". The presence of a v1-legacy candidate is unambiguous evidence of schema drift that breaks dispatch metadata, audit reporting, and tier resolution provenance. The only legitimate skip path is the `plugin_version >= 2.0.0` classifier above.</HARD-GATE>
-  - Pass the candidate list to `sk-model-migration`.
-  - The migration protocol (creates git checkpoint + rewrites frontmatter + commits + stamps `plugin_version` to current) is non-interactive past the dirty-tree confirmation; do not insert additional prompts.
-  - Re-run Phase 0.4 (resolution) against the migrated agents.
+  - **If skill tool available**:
+    <HARD-GATE>MUST load `sk-model-migration` via the Skill tool and execute the migration protocol. NEVER classify migration as "optional", "deferred", "informational", or "user discretion". The presence of a v1-legacy candidate is unambiguous evidence of schema drift that breaks dispatch metadata, audit reporting, and tier resolution provenance. The only legitimate skip path is the `plugin_version >= 2.0.0` classifier above.</HARD-GATE>
+    - Pass the candidate list to `sk-model-migration`.
+    - The migration protocol (creates git checkpoint + rewrites frontmatter + commits + stamps `plugin_version` to current) is non-interactive past the dirty-tree confirmation; do not insert additional prompts.
+    - Re-run Phase 0.4 (resolution) against the migrated agents.
+  - **ELSE — INLINE-DETECT() was used (skill tool unavailable)**:
+    <HARD-GATE>MUST emit the following and STOP — do NOT proceed to Phase 0.5 or any later phase:
+    `"❌ MIGRATION REQUIRED — CANNOT PROCEED: {N} v1-legacy agent(s) found in pipeline '{P}'. Migration requires sk-model-migration (Skill tool not available in this environment). Re-run /superpipelines:run-pipeline from Claude Code to complete migration before executing this pipeline on this platform."`
+    Do NOT rationalize continuing with un-migrated agents. The resolver source, warnings, and state-file resolved_models[step_id] cannot be trusted while v1 schema is present.</HARD-GATE>
 - ELSE: skip silently; proceed to next phase.
 
 <invariant>
