@@ -20,3 +20,15 @@ Non-blocking observations:
 - Phase 2 wording briefly conflated state-init with input-collect (said "Phase 2 requires entry-skill inputs"). Inputs are Phase 3. Minor.
 
 Result: OVERALL PASS. All 4 critical bugs from 2026-05-25 trace are closed. v2.0 resolver + migration system end-to-end verified on Tier 1 CC.
+
+## 2026-05-25 — Command delegator batch fix (plan 2026-05-25-command-delegators-batch)
+
+Fixed 4 remaining commands with inline-protocol hijack: new-pipeline (commit 9121932), new-step (commit 6648c25), update-step (commit 7e789d7), delete-step (commit 4dfb10f).
+
+Cache synced to `C:\Users\gmeil\.claude\plugins\cache\superpipelines-marketplace\superpipelines\2.0.0\commands\` (4/4 hash match).
+
+Sanity grep Task 6: 0 inline-phase matches across all command files. 6 delegator `Load Skill(superpipelines:...)` matches confirmed.
+
+User smoke test: PENDING — restart CC, run `/superpipelines:new-pipeline test-cmd-delegator-check` in a throwaway directory. Confirm first observable behavior is CC loading `superpipelines:creating-a-pipeline` skill and printing "PHASE 0: TIER DETECT" (not "### 1. PREFLIGHT"). Repeat for new-step, update-step, delete-step. Abort each at PHASE 0 prompt.
+
+Backlog item from project_v2_resolver_impl.md memory: CLOSED (pending user smoke test confirmation).
