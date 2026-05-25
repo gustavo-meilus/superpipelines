@@ -17,8 +17,10 @@ Pre-v2.0 pipelines baked concrete model IDs into agent frontmatter (`model: clau
 
 Loaded by `running-a-pipeline` Phase 0.45 when:
 ```
-ANY agent file under pipeline scope has `model:` AND NOT `model_tier:`
+ANY agent file under pipeline scope has `model:` AND NOT `model_tier:` AND (plugin_version absent OR plugin_version < 2.0.0)
 ```
+
+The `plugin_version` clause is mandatory. It distinguishes v1 legacy frontmatter (no stamp — stamping was introduced in v2.0) from v2 intentional escape hatch (`plugin_version >= 2.0.0`). The classification happens in Phase 0.45 before this skill is invoked; this skill receives the pre-filtered candidate list. NEVER migrate agents the caller did not classify as v1 legacy.
 
 ## Protocol
 
@@ -30,17 +32,18 @@ ANY agent file under pipeline scope has `model:` AND NOT `model_tier:`
        y â†’ `git stash push -m "pre-model-migration"`
        N â†’ abort, surface to user
 4. COMMIT current state: `git commit --allow-empty -m "checkpoint: pre-v2.0-model-migration"`
-5. FOR each agent file with `model:` and no `model_tier:`:
+5. FOR each agent file in the caller-supplied v1-legacy candidate list:
      a. Load `sk-model-resolver`; load source-tier profile from `metadata.source_tier`.
      b. tier = REVERSE_MAP(agent.model, source_profile)
      c. IF tier is null:
           Leave `model:` in place.
-          Add comment line above: `# TODO: confirm tier â€” REVERSE_MAP ambiguous`
+          Add comment line above: `# TODO: confirm tier — REVERSE_MAP ambiguous`
           Add `model_tier: medium` (safe default)
           Record in migration_report as "ambiguous".
         ELSE:
           Replace `model: <old>` with `model_tier: <tier>`.
           Record in migration_report as "exact" or "fuzzy".
+     d. Stamp `plugin_version: <current>` into agent frontmatter (read current from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`). Required so the migrated agent is no longer re-detected as v1-legacy on future runs.
 6. UPDATE `topology.json`:
      metadata.migrated_at = <iso8601_now>
      metadata.source_model_tiers_version = source_profile.model_tiers_version
@@ -62,6 +65,8 @@ ANY agent file under pipeline scope has `model:` AND NOT `model_tier:`
 - MUST update `topology.json` with `migrated_at` for audit trail.
 - MUST surface migration report to user before Phase 0.6.
 - ON ambiguous reverse-map, BOTH `model:` and `model_tier: medium` coexist; auditor flags this as SEV-3 info.
+- MUST stamp `plugin_version` on every migrated agent. Without the stamp, the agent re-triggers Phase 0.45 on the next run (infinite migration loop on dirty trees).
+- MUST NOT touch agents the caller did not classify as v1-legacy. Agents with `plugin_version >= 2.0.0` and explicit `model:` are intentional escape hatches — clobbering them violates user intent.
 </invariants>
 
 ## Red Flags â€” STOP

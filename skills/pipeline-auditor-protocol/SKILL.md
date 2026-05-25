@@ -61,7 +61,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 |---|---|---|---|
 | MT-01 | Hardcoded model ID in skill body | SEV-2 | `grep -E "claude-(sonnet\|opus\|haiku)-[0-9]\|gpt-5\.[0-9]\|gemini-3\." skills/**/SKILL.md skills/**/references/*.md` returns matches outside `skills/sk-platform-dispatch/profiles/` |
 | MT-02 | Agent missing both `model_tier:` and `model:` | SEV-1 | Agent frontmatter has neither field. Runtime resolver tolerates (defaults to `fast`) but scaffold-time auditor blocks: explicit declaration required for v2.0+ agents. |
-| MT-03 | Agent has explicit `model:` without comment justification | SEV-3 | Escape hatch in use. Surface to reviewer; do not block. |
+| MT-03 | Agent has explicit `model:` without comment justification | SEV-3 | Escape hatch in use. Surface to reviewer; do not block. Distinguish by `plugin_version`: if absent or `< 2.0.0` → v1 legacy (Phase 0.45 migrates automatically); if `>= 2.0.0` → intentional v2 escape hatch (advisory only). |
 | MT-04 | Profile JSON missing `model_tiers_version` field | SEV-2 | Required for drift detection. |
 | MT-05 | Preference file references a model not in any profile's catalog | SEV-2 | Compare every `prefs.platforms[*].tiers[*]` value against the union of all profiles' `model_tiers[*].model`. Mismatch likely typo or stale ID. |
 | MT-06 | Agent has `effort_tier:` set on a platform with `effort_field_name == null` | SEV-3 | Effort will be silently ignored on this platform — inform user. Detection requires knowing the source/runtime tier. |

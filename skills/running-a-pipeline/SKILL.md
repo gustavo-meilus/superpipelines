@@ -63,11 +63,19 @@ Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_mode
 ### PHASE 0.45 — Model Migration Check
 
 - Scan all agent files under the pipeline scope.
-- IF any agent has `model:` field AND no `model_tier:` field:
-  - Load `sk-model-migration` via `Skill` tool.
-  - Execute the migration protocol (creates git checkpoint + rewrites frontmatter + commits).
+- FOR each agent with `model:` field AND no `model_tier:` field:
+  - Read `plugin_version` from agent frontmatter.
+  - IF `plugin_version` absent OR semver `< 2.0.0`: classify as **v1-legacy candidate** (stale schema).
+  - ELSE (`plugin_version >= 2.0.0`): classify as **v2 intentional escape hatch**. Skip migration; auditor surfaces as MT-03 SEV-3 informational only.
+- IF any v1-legacy candidates found:
+  - Load `sk-model-migration` via `Skill` tool. Pass the candidate list.
+  - Execute the migration protocol (creates git checkpoint + rewrites frontmatter + commits + stamps `plugin_version` to current).
   - Re-run Phase 0.4 (resolution) against the migrated agents.
 - ELSE: skip; proceed to next phase.
+
+<invariant>
+The classifier MUST use `plugin_version` to distinguish v1 legacy from v2 intentional escape hatch. NEVER migrate agents that explicitly stamp `plugin_version >= 2.0.0` — those are user-authored escape hatches and migration would clobber intent. Conversely, NEVER skip agents missing `plugin_version` — stamping was introduced in v2.0, so absence is unambiguous v1 evidence.
+</invariant>
 
 ### PHASE 0.5: VERSION COMPATIBILITY ADVISORY
 - Read the pipeline's stamped `plugin_version` from its `registry.json` entry (or from `topology.json` if the registry entry predates version stamping).
