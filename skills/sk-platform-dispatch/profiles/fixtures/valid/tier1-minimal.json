@@ -1,5 +1,5 @@
 {
-  "$schema": "./profile.schema.json",
+  "$schema": "../profile.schema.json",
   "tier": "tier_1",
   "name": "Claude Code",
   "profile_version": "2.0.0",
@@ -16,7 +16,7 @@
     "model_field_format": "shorthand",
     "effort_field_name": null,
     "effort_field_applies_to_providers": null,
-    "subagent_env_override": "CLAUDE_CODE_SUBAGENT_MODEL",
+    "subagent_env_override": null,
     "subagent_inherit_target": "session",
     "provider_families": ["anthropic"]
   },
