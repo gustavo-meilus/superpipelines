@@ -40,7 +40,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - **Skill tool available**: Load `sk-platform-dispatch`, call `DETECT()` → full `platform_profile`. Cache in session context. Proceed normally.
 - **No skill tool available**: Emit the following advisory, then run INLINE-DETECT():
 
-  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phases 0.4 and 0.45 will use degraded inline algorithms — user/workspace preference files will NOT be consulted. If v1-legacy agents are found in Phase 0.45, migration CANNOT complete on this platform; re-run from Claude Code first.
+  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.4 will execute the resolution algorithm inline — preference files will be consulted if readable. If v1-legacy agents are found in Phase 0.45, migration CANNOT complete on this platform; re-run from Claude Code first.
 
   **INLINE-DETECT() heuristics** — first match wins:
   1. `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` readable → `tier_id = tier_1`
@@ -76,42 +76,51 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 ### PHASE 0.4 — Model Resolution
 
+> Algorithm: `skills/sk-model-resolver/references/resolution-algorithm.md` (normative source — both paths below are adapters of that spec).
+
 **Full Path (Skill tool available):**
 
 - Load `sk-model-resolver` via the `Skill` tool.
-- `LOAD_PREFS(workspace_root)` → user + workspace preference objects.
+- `LOAD_PREFS(workspace_root)` → `{ user, workspace }`.
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
+- `entries = []`
 - FOR each agent in `topology.json` steps (no exceptions — iterate every node):
   - Read frontmatter from the agent's `agent` path in topology.
-  - `resolved = RESOLVE(agent, platform_profile, prefs)`.
+  - `resolved = RESOLVE(agent_frontmatter, platform_profile, prefs)`.
   - Cache to `state.metadata.resolved_models[step_id]` via atomic write.
+  - Append `{ step_id, agent_name: agent.name, model_tier: agent.model_tier ?? "fast", resolved }` to `entries`.
   - Append every entry of `resolved.warnings` to the run advisory queue.
-- <HARD-GATE>The resolution table MUST use the literal `resolved.source` enum value (one of `frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit`) in the Source column. NEVER translate, paraphrase, abbreviate, or annotate the source value (e.g., `"agent frontmatter (model: sonnet)"` is wrong — emit `frontmatter_override`). The Model column MUST use `resolved.model` verbatim (e.g., if resolver returns `sonnet`, emit `sonnet`, not `claude-sonnet-4-6`). Display expansion belongs to `EMIT()`, not the orchestrator.</HARD-GATE>
-- <HARD-GATE>Every `resolved.warnings` entry MUST be printed verbatim under the table as a bullet list before proceeding to the next phase. Suppressing warnings (including the `frontmatter_override` advisory) hides the only signal the user has that resolution bypassed preferences.</HARD-GATE>
-- Emit user-facing resolution table with these exact columns:
-  ```
-  Step           Tier    Source              Model                   Effort
-  architect      deep    user_prefs          claude-opus-4-7         high
-  implementer    medium  profile_default     claude-sonnet-4-6       (none)
-  formatter      fast    workspace_prefs     opencode/big-pickle     (none)
-  legacy-step    —       frontmatter_override sonnet                  (none)
-  ```
-- Print warnings immediately after the table, one per line, prefixed `⚠️ {step_id}: {warning}`.
+- Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim.
 - Persist `metadata.resolved_models`, `metadata.preference_files_consulted`, `metadata.model_tiers_version_at_run` to state file.
 
-**If INLINE-DETECT() was used (skill tool unavailable):**
-- Skip `sk-model-resolver` load — tool not available in this environment.
-- For each node in `topology.json` (iterate every node, same rule as full path):
-  - Read `model_tier` from `topology.json` node entry (file is always local).
-  - Resolve model: `resolved.model = platform_profile.model_tiers[node.model_tier].model`
-  - Set `resolved.source = "profile_default"` (inline path cannot check preference files).
-  - Set `resolved.warnings = []`.
-  - Cache `resolved` to `state.metadata.resolved_models[step_id]`.
-- Emit the resolution table in the identical format as the full path. Source column: `profile_default` for every row.
-- Emit one aggregate advisory line: `"⚠️ [inline-resolution] User/workspace preference files not consulted. Re-run from a platform with Skill-tool support to apply preference overrides."`
+<HARD-GATE>Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim. Never substitute a hand-crafted table. `RENDER_RESOLUTION_TABLE` is the format authority (ADR-0001). Do NOT reformat, rename, or paraphrase the `source` enum, model string, or warning footnotes — those are contracts with `sk-model-resolver`.</HARD-GATE>
+
+**Inline Path (Skill tool unavailable — INLINE-DETECT() was used):**
+
+> Executing all algorithm branches inline. `LOAD_PREFS` is independent of Skill-tool availability (ADR-0002) — attempt file read; degrade gracefully only on failure.
+
+```
+LOAD_PREFS(workspace_root):
+  Attempt read: {workspace_root}/.superpipelines/model-preferences.json → workspace pref
+  Attempt read: ~/.superpipelines/model-preferences.json               → user pref
+  If either read fails (absent / unreadable): degrade that source to { platforms: {} }
+  prefs = { workspace: <result or empty>, user: <result or empty> }
+```
+
+- `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
+- `entries = []`
+- FOR each agent in `topology.json` steps (no exceptions — iterate every node):
+  - Read agent frontmatter from the agent file path recorded in topology.
+  - Execute `RESOLVE(agent_frontmatter, platform_profile, prefs)` — **full algorithm, all branches** (including Step 4 dynamic_subagents gate and Step 5 model_field_format:omit gate).
+  - Cache `resolved` to `state.metadata.resolved_models[step_id]` via atomic write.
+  - Append `{ step_id, agent_name: agent.name, model_tier: agent.model_tier ?? "fast", resolved }` to `entries`.
+  - Append every entry of `resolved.warnings` to run advisory queue.
+- Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim.
+- IF both `prefs.workspace.platforms` and `prefs.user.platforms` are empty (both reads failed or files absent):
+  - Emit: `"⚠️ [inline-resolution] Preference files not found or unreadable — resolutions fell to profile_default or host_inherit. Re-run from a platform with Skill-tool support to verify preferences."`
 - Persist `metadata.resolved_models` and `metadata.model_tiers_version_at_run` to state file.
 
-<HARD-GATE>The resolution table MUST be emitted even in inline mode. NEVER skip the table or the state-file persistence step regardless of which path was taken. A missing table is a phase-skip defect.</HARD-GATE>
+<HARD-GATE>Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim on both paths. NEVER skip the table or state-file persistence regardless of which path was taken. A missing table or missing `resolved_models` write is a phase-skip defect.</HARD-GATE>
 
 <invariant>
 Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_models` exists AND `metadata.runtime_tier` matches the new `runtime_tier` AND profile `model_tiers_version` unchanged: skip re-resolution. ELSE re-resolve and log a "models re-resolved on resume" entry to `metadata.resolution_events`.
@@ -232,8 +241,8 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 - "There is no registry, I'll search for artifacts manually." → **STOP**. Direct the user to create a managed pipeline.
 - "I'll delete the temp directory to keep the workspace clean." → **STOP**. Deletion on non-completion destroys all recovery findings.
 - "v1-legacy agents still work, so migration is optional." → **STOP**. Phase 0.45 HARD-GATE: migration is mandatory once v1 candidates are classified. The only valid skip is `plugin_version >= 2.0.0`.
-- "I'll translate the resolver source into something more readable." → **STOP**. Phase 0.4 HARD-GATE: emit `resolved.source` verbatim. The enum value is the contract.
-- "The resolver warnings are noise, I'll drop them from the table." → **STOP**. Phase 0.4 HARD-GATE: every `resolved.warnings` entry is printed verbatim before the next phase.
+- "I'll hand-craft the resolution table instead of calling RENDER_RESOLUTION_TABLE." → **STOP**. Phase 0.4 HARD-GATE: `RENDER_RESOLUTION_TABLE` is the format authority. Hand-crafted tables drift from the resolver contract.
+- "The inline path skips LOAD_PREFS because the Skill tool is absent." → **STOP**. ADR-0002: pref-file read is independent of Skill-tool availability. Always attempt LOAD_PREFS; degrade only on file-read failure.
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
 
 ## Rationalization Table
@@ -245,8 +254,8 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 | "Registry-only lookup is slow." | Searching without a registry is non-deterministic and risks path leakage. |
 | "The entry skill is just a wrapper." | The entry skill is the source of truth for step ordering and review gating. |
 | "Agents still function with model: sonnet, migration is non-urgent." | Phase 0.45's existence is the urgency signal. v1 schema breaks resolver provenance for the rest of the run. |
-| "The source label is more useful as prose than as an enum." | The Source column is a contract with `sk-model-resolver`. Auditors and downstream tools key off the enum. |
-| "Warnings are duplicated in state metadata, no need to print them." | State metadata is not user-facing during the run. Phase 0.4 table is the only synchronous warning surface. |
+| "I'll format the table myself — RENDER_RESOLUTION_TABLE is just a suggestion." | `RENDER_RESOLUTION_TABLE` is the format authority. Hand-crafted tables drift from the resolver contract and trigger auditor PR-05. |
+| "The inline path can't check prefs — the Skill tool is absent." | Pref-file read is independent of Skill-tool availability (ADR-0002). Always attempt LOAD_PREFS; skip only on file-read failure. |
 | "Collecting topic up-front shortens the perceived wait." | Phase ordering exists to prevent input commitment on un-migrated / un-validated state. UX optimization is the wrong axis. |
 </rationalization_table>
 
