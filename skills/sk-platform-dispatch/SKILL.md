@@ -40,6 +40,19 @@ READ(skills/sk-platform-dispatch/profiles/{tier_id}.json) → profile object
 
 Return the full profile object. Caller caches it in `pipeline-state.json` as `metadata.platform_profile` and sets `metadata.runtime_tier = profile.tier`.
 
+### Platform-specific skill-load tool names
+
+When calling skills from within a running-a-pipeline orchestration, use the correct tool name for the current platform:
+
+| Tier | Skill-load tool | Note |
+|---|---|---|
+| Tier 1 (Claude Code) | `Skill` | `Skill(superpipelines:sk-platform-dispatch)` |
+| Tier 1c (Antigravity CLI, plugin installed) | `activate_skill` | `activate_skill(sk-platform-dispatch)` |
+| Tier 1b (OpenCode) | `skill` (lowercase) | OC tool naming convention |
+| Tier 1d (Codex) / Tier 2 | N/A — no skill tool | Use `running-a-pipeline` INLINE-DETECT() fallback |
+
+**Antigravity CLI (Tier 1c) — installation requirement:** The superpipelines plugin must be installed in AGY's extension registry for `activate_skill` to resolve it. If superpipelines is only installed in Claude Code, `activate_skill` will fail to resolve the skill even though `skill_tool: true` in the profile. In that case, `running-a-pipeline` Phase 0.25 INLINE-DETECT() handles the fallback automatically. This is expected behavior for cross-platform handoff scenarios where not all platforms share a unified plugin registry.
+
 ### Profile capability fields (v2.0 additions)
 
 | Field | Purpose |
