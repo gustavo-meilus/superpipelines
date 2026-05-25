@@ -1,0 +1,43 @@
+{
+  "entries": [
+    {
+      "step_id": "1",
+      "agent_name": "spec-writer",
+      "model_tier": "deep",
+      "resolved": {
+        "model": "claude-opus-4-7",
+        "effort": null,
+        "effort_field_name": null,
+        "model_field_format": "shorthand",
+        "source": "user_prefs",
+        "warnings": []
+      }
+    },
+    {
+      "step_id": "2",
+      "agent_name": "spec-reviewer",
+      "model_tier": "fast",
+      "resolved": {
+        "model": "claude-haiku-4-5-20251001",
+        "effort": null,
+        "effort_field_name": null,
+        "model_field_format": "shorthand",
+        "source": "profile_default",
+        "warnings": []
+      }
+    },
+    {
+      "step_id": "3",
+      "agent_name": "implementer",
+      "model_tier": "medium",
+      "resolved": {
+        "model": null,
+        "effort": null,
+        "effort_field_name": null,
+        "model_field_format": "omit",
+        "source": "host_inherit",
+        "warnings": ["Dynamic-subagent platform — host orchestrator picks model"]
+      }
+    }
+  ]
+}

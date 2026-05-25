@@ -24,11 +24,14 @@ The resolver decouples agent-author intent from runtime model selection. Five re
 
 ```
 RESOLVE(agent_frontmatter, profile, prefs) → resolved
-LOAD_PREFS(workspace_root) → { workspace, user, merged }
+LOAD_PREFS(workspace_root) → { workspace, user }
 EMIT(resolved, target_format) → string
+RENDER_RESOLUTION_TABLE(entries[]) → string
 REVERSE_MAP(concrete_model, profile) → tier_id | null
 DETECT_CATALOG_DRIFT(prefs, profile) → { drifted: bool, message: string | null }
 ```
+
+Where each `entries[]` element is `{ step_id, agent_name, model_tier, resolved }`.
 
 ### resolved object schema
 
@@ -45,79 +48,9 @@ DETECT_CATALOG_DRIFT(prefs, profile) → { drifted: bool, message: string | null
 
 `model: null` means "omit the field; let the host pick" (Tier 2, dynamic-subagent platforms, or `inherit` tier).
 
-## RESOLVE Algorithm
+## Algorithm
 
-```
-1. IF agent.model is present (explicit string):
-     return {
-       model: agent.model,
-       effort: agent.effort_tier ?? null,
-       effort_field_name: profile.capabilities.effort_field_name,
-       model_field_format: profile.capabilities.model_field_format,
-       source: "frontmatter_override",
-       warnings: ["Explicit model override bypasses tier resolution"]
-     }
-
-2. tier   = agent.model_tier   ?? "fast"
-3. effort = agent.effort_tier  ?? null
-
-4. IF profile.capabilities.dynamic_subagents == true AND agent.role != "orchestrator":
-     return {
-       model: null,
-       effort: null,
-       effort_field_name: null,
-       model_field_format: profile.capabilities.model_field_format,
-       source: "host_inherit",
-       warnings: ["Dynamic-subagent platform — host orchestrator picks model"]
-     }
-
-5. IF tier == "inherit" OR profile.capabilities.model_field_format == "omit":
-     return {
-       model: null,
-       effort: null,
-       effort_field_name: null,
-       model_field_format: profile.capabilities.model_field_format,
-       source: "host_inherit",
-       warnings: [
-         "Model resolves to host "
-         + (profile.capabilities.subagent_inherit_target ?? "session")
-         + " — no per-step model emitted."
-       ]
-     }
-
-6. model, source =
-     IF prefs.workspace.platforms[profile.tier].tiers[tier] is defined:
-       (prefs.workspace.platforms[profile.tier].tiers[tier], "workspace_prefs")
-     ELSE IF prefs.user.platforms[profile.tier].tiers[tier] is defined:
-       (prefs.user.platforms[profile.tier].tiers[tier], "user_prefs")
-     ELSE:
-       (profile.model_tiers[tier].model, "profile_default")
-
-7. IF effort is null:
-     effort = (prefs.workspace.platforms[profile.tier].effort_default[tier]
-            ?? prefs.user.platforms[profile.tier].effort_default[tier]
-            ?? profile.model_tiers[tier].effort)
-
-8. IF profile.capabilities.effort_field_name == null:
-     effort = null
-
-8b. ELSE IF profile.capabilities.effort_field_applies_to_providers is set:
-      provider_prefix = model.split("/")[0]   // "anthropic" | "opencode" | "opencode-go" | etc.
-      IF provider_prefix NOT in profile.capabilities.effort_field_applies_to_providers:
-        effort = null
-
-9. IF effort is not null AND profile.capabilities.effort_emit_map is set:
-     effort = profile.capabilities.effort_emit_map[effort] ?? effort
-
-10. return {
-      model: model,
-      effort: effort,
-      effort_field_name: profile.capabilities.effort_field_name,
-      model_field_format: profile.capabilities.model_field_format,
-      source: source,
-      warnings: []
-    }
-```
+Normative source: **`references/resolution-algorithm.md`** — all six operations (RESOLVE, LOAD_PREFS, EMIT, RENDER_RESOLUTION_TABLE, REVERSE_MAP, DETECT_CATALOG_DRIFT) are specified there. Both the skill adapter (this file) and the inline adapter (`running-a-pipeline` Phase 0.4) execute the same algorithm. Do not restate steps here.
 
 ## Preference File Schema
 
@@ -153,86 +86,6 @@ DETECT_CATALOG_DRIFT(prefs, profile) → { drifted: bool, message: string | null
 - `model_tiers_version_acked` mirrors `profile.model_tiers_version` at write-time; drift detector compares to current.
 - `effort_default` is optional; per-tier effort override.
 
-## LOAD_PREFS Algorithm
-
-```
-LOAD_PREFS(workspace_root):
-  user_path      = expand("~/.superpipelines/model-preferences.json")
-  workspace_path = workspace_root + "/.superpipelines/model-preferences.json"
-
-  user      = file_exists(user_path)      ? read_json(user_path)      : { platforms: {} }
-  workspace = file_exists(workspace_path) ? read_json(workspace_path) : { platforms: {} }
-
-  return { user: user, workspace: workspace }
-```
-
-No merge step — RESOLVE consults workspace first, falls through to user.
-
-## EMIT Algorithm
-
-```
-EMIT(resolved, target_format):
-  format = target_format ?? resolved.model_field_format
-
-  IF resolved.model is null OR format == "omit":
-    return ""
-
-  SWITCH format:
-    "shorthand":
-      return "model: " + resolved.model
-    "provider_prefixed":
-      return "model: " + resolved.model
-    "toml_split":
-      out = "model = \"" + resolved.model + "\""
-      IF resolved.effort is not null AND resolved.effort_field_name is not null:
-        out += "\n" + resolved.effort_field_name + " = \"" + resolved.effort + "\""
-      return out
-    DEFAULT:
-      return "model: " + resolved.model
-```
-
-## REVERSE_MAP Algorithm (for migration)
-
-```
-REVERSE_MAP(concrete_model, profile):
-  // exact match against profile.model_tiers[*].model
-  FOR tier IN ["triage","fast","medium","deep"]:
-    IF profile.model_tiers[tier].model == concrete_model:
-      return tier
-
-  // family fuzzy
-  m = lowercase(concrete_model)
-  IF m matches /opus|gpt-5\.5|kimi-k2\.6|glm-5\.1|gemini-3\.5-pro/:
-    return "deep"
-  IF m matches /sonnet|gpt-5\.4(?!-mini|-nano)|qwen3\.6|minimax-m2\.7/:
-    return "medium"
-  IF m matches /haiku|gpt-5\.4-mini|gpt-5\.4-nano|deepseek-v4-flash|gemini-3\.5-flash/:
-    return "fast"
-  IF m matches /-nano|big-pickle|free|haiku-3/:
-    return "triage"
-
-  return null   // ambiguous — caller emits "# TODO: confirm tier" comment
-```
-
-## DETECT_CATALOG_DRIFT Algorithm
-
-```
-DETECT_CATALOG_DRIFT(prefs, profile):
-  IF prefs.user.platforms[profile.tier] is undefined:
-    return { drifted: false, message: null }   // no prefs yet — wizard handles
-
-  acked   = prefs.user.platforms[profile.tier].model_tiers_version_acked
-  current = profile.model_tiers_version
-
-  IF acked != current:
-    return {
-      drifted: true,
-      message: "Platform model catalog updated since you last set preferences "
-             + "(was: " + acked + ", now: " + current + "). "
-             + "Run /superpipelines:change-models to review."
-    }
-  return { drifted: false, message: null }
-```
 
 <invariants>
 - Resolver NEVER writes to disk. All preference writes flow through `change-models`.
@@ -252,7 +105,7 @@ DETECT_CATALOG_DRIFT(prefs, profile):
 
 ## Reference Files
 
-- `references/resolution-algorithm.md` — Edge-case table + worked examples.
+- `references/resolution-algorithm.md` — **Normative algorithm spec** (RESOLVE, LOAD_PREFS, EMIT, RENDER_RESOLUTION_TABLE, REVERSE_MAP, DETECT_CATALOG_DRIFT) + worked examples.
 - `references/emit-formats.md` — Per-platform serialization specs with byte-for-byte examples.
 - `fixtures/` — Input/expected fixture pairs for each branch of the algorithm.
 - `sk-platform-dispatch/profiles/{tier}.json` — Profile defaults, single source of truth.
