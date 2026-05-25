@@ -132,6 +132,9 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 - **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `.claude-plugin/plugin.json` at init), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
 
 ### PHASE 3: ENTRY SKILL DISPATCH
+
+<HARD-GATE>Entry-skill inputs (e.g., `$TOPIC`, `$LANGUAGE`, free-form prompts that the entry skill declares in its body) MUST NOT be collected before Phase 3. The orchestrator MUST complete Phases 0, 0.25, 0.4, 0.45, 0.5, 0.6, 1, and 2 in that order before reading any entry-skill `## 1. Initialization`-style requirements. Premature input collection (e.g., asking for a topic between 0.25 and 0.4) is a phase-ordering violation — it commits the user to inputs on un-migrated, un-resolved, or portability-defective state. The only inputs collected pre-Phase-3 are (a) pipeline selection (Phase 0) and (b) confirmations explicitly required by Phases 0.5/0.6 advisories.</HARD-GATE>
+
 - Invoke the pipeline's entry skill (`run-{P}`).
 - **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.runtime_tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
 - **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
@@ -160,6 +163,7 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 - ALWAYS perform Phase 0.25 tier detection exactly once per fresh run; on resume, re-detect and apply Cross-Tier Resume Protocol if tier changed.
 - ALWAYS perform Phase 0.6 portability validation when `runtime_tier != source_tier`; never silently proceed with unvalidated cross-tier paths.
 - `metadata.source_tier` is immutable after Phase 2 init. Never overwrite it, even on cross-tier resume.
+- Phase ordering is total: 0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 1 → 2 → 3 → 4. Entry-skill payload assembly (including user-input prompts declared in the entry skill body) happens exclusively inside Phase 3. Pre-collecting Phase 3 inputs during Phase 0 selection is a known rationalization ("the user is already here, batch the prompts") that violates the ordering contract.
 </invariants>
 
 ## Red Flags — STOP
