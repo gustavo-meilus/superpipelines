@@ -29,6 +29,12 @@ Cache synced to `C:\Users\gmeil\.claude\plugins\cache\superpipelines-marketplace
 
 Sanity grep Task 6: 0 inline-phase matches across all command files. 6 delegator `Load Skill(superpipelines:...)` matches confirmed.
 
-User smoke test: PENDING — restart CC, run `/superpipelines:new-pipeline test-cmd-delegator-check` in a throwaway directory. Confirm first observable behavior is CC loading `superpipelines:creating-a-pipeline` skill and printing "PHASE 0: TIER DETECT" (not "### 1. PREFLIGHT"). Repeat for new-step, update-step, delete-step. Abort each at PHASE 0 prompt.
+User smoke test: PASS — ran all 4 commands in ai-rpi workspace (throwaway pipeline `test-cmd-delegator-check`).
+- new-pipeline: PHASE 0 TIER DETECT first (no `### 1. PREFLIGHT`). Full Phase 0→0b→1→2→3→4→5→6 sequence observed. Pipeline scaffolded.
+- new-step: PHASE 0 PIPELINE SELECTION first. Planner node added via atomic staging (edit-20260525114310). Audit loop gated; human approval before promotion.
+- update-step: PHASE 0 first. reviewer model_tier deep→medium. topology.json + agent both updated atomically.
+- delete-step: PHASE 0 first. reviewer node deleted; through-gap classified; output-formatter rewired to executor; files deleted cleanly.
 
-Backlog item from project_v2_resolver_impl.md memory: CLOSED (pending user smoke test confirmation).
+Architecture invariants verified post-smoke: model_tier: only (no model:), plugin_version: "2.0.0" on all artifacts, state path template correct, reviewer-agent + protocol deleted, registry nodes list consistent with topology.
+
+Backlog item from project_v2_resolver_impl.md memory: CLOSED.
