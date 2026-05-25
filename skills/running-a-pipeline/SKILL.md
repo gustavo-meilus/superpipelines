@@ -181,7 +181,10 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 
 ### PHASE 1: RESUME CHECK
 - Check for existing run directories in `{ROOT}/superpipelines/temp/{P}/`.
-- **Logic**: If runs exist, prompt the user to start new or resume.
+- **Valid run directory criteria**: name matches `{P}-{YYYYMMDD-HHMMSS}` AND contains `pipeline-state.json`.
+  - Directories whose names begin with `edit-` are atomic-staging artifacts from `adding-a-pipeline-step` / `deleting-a-pipeline-step` mutations — **EXCLUDE** them from the resume list.
+  - Directories without `pipeline-state.json` are incomplete or foreign — **EXCLUDE** them.
+- **Logic**: If valid runs exist, prompt the user to start new or resume.
 - <HARD-GATE>NEVER auto-resume an `escalated` or `failed` run. Surface the state path and require explicit user review first.</HARD-GATE>
 
 ### PHASE 2: STATE INITIALIZATION
