@@ -9,6 +9,8 @@
     "parallel_subagents": true,
     "task_primitive": false,
     "skill_tool": true,
+    "skill_tool_name": "activate_skill",
+    "skill_tool_requires_extension_installed": true,
     "worktrees": false,
     "reviewer_isolation": "convention",
     "dispatch_mechanism": "model_driven",
@@ -29,7 +31,8 @@
   ],
   "extensions": {
     "default_orchestrator_model": "gemini-3.5-flash",
-    "subagent_model_control": "orchestrator-only"
+    "subagent_model_control": "orchestrator-only",
+    "installation_note": "skill_tool is only available when the superpipelines AGY extension is installed in AGY's extension registry. Without it, running-a-pipeline Phase 0.25 falls back to INLINE-DETECT()."
   },
   "model_tiers": {
     "triage": { "model": "gemini-3.5-flash", "effort": "low" },
