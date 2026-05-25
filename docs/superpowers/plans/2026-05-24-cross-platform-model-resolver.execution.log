@@ -1,2 +1,22 @@
 Auditor pass: 2026-05-24 — 0 SEV-0, 0 SEV-1. MT-01 SEV-2 hits intentional (deprecated catalog w/ banner, illustrative example tables in running-a-pipeline + emit-formats, sk-dynamic-routing CC-only catalog, sk-model-migration fixture, sk-claude-code-conventions Tier 1 reference table).
 First-run wizard smoke test: 2026-05-24 — PASS. v2.0 protocol activated correctly (PHASE 0 detection + PHASE 1 6-mode A-F menu). HARD-GATE respected after commands/change-models.md was fixed to delegate to skill (commit 44e314d).
+
+## 2026-05-25 — HARD-GATE smoke test (post-hardening plan 2026-05-25-running-a-pipeline-hardgates)
+
+Fixture: ai-articles `linkedin-article-creator` pipeline, 5 v1-legacy lac-* agents (model: sonnet, no model_tier:, no plugin_version).
+
+Prerequisite: `commands/run-pipeline.md` rewritten as thin delegator (commit 5bf6ee4) — same systemic bug as change-models. Earlier attempt without this fix repeated the v1 hijack (topic prompt before Phase 0.4).
+
+Five HARD-GATE checks (per plan §Task 8):
+- Phase 0.45 fired migration: PASS — 5 agents migrated (model: sonnet → model_tier: medium, plugin_version: "2.0.0" stamped), topology.json `metadata.migrated_at` added, 2 commits in ai-articles repo (checkpoint + auto-migrate)
+- Phase 0.4 emitted `frontmatter_override` verbatim: PASS — Source column shows literal enum value, no paraphrase
+- Phase 0.4 surfaced warnings: PASS — 5 verbatim warnings printed under table before next phase
+- Phase 0.5 did not reference agent state: PASS — only mentioned pipeline topology.json version
+- Topic prompt arrived in Phase 3 only: PASS — phase order observed 0 → 0.25 → 0.4 → 0.45 → 0.4-re → 0.5 → 0.6 → 1 → 2 → 3 → topic
+
+Non-blocking observations:
+- Model loaded `change-models` skill instead of `sk-model-migration` direct. Migration logic still executed correctly inline. Routing nit: Phase 0.45 trigger language could be tightened to load `sk-model-migration` specifically.
+- ai-articles was not a git repo at smoke-test time; migration's `git commit --allow-empty` produced `[master (root-commit)]`. Edge case — sk-model-migration assumes existing repo. Consider adding pre-flight `git rev-parse --git-dir` check.
+- Phase 2 wording briefly conflated state-init with input-collect (said "Phase 2 requires entry-skill inputs"). Inputs are Phase 3. Minor.
+
+Result: OVERALL PASS. All 4 critical bugs from 2026-05-25 trace are closed. v2.0 resolver + migration system end-to-end verified on Tier 1 CC.
