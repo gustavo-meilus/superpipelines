@@ -26,9 +26,46 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 - Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
-- Load `sk-platform-dispatch` via the `Skill` tool.
-- Call `DETECT()` → receive `platform_profile` object.
-- <HARD-GATE>NEVER perform tier detection more than once per run outside of resume. On resume: re-run DETECT(), compare to `metadata.source_tier`, apply the Cross-Tier Resume Protocol from `sk-platform-dispatch` if tier changed.</HARD-GATE>
+
+**Step 1 — Skill-tool probe.** Identify the correct skill-loading tool:
+
+| Tool present | Action |
+|---|---|
+| `Skill` tool (Claude Code / Tier 1) | `Skill(superpipelines:sk-platform-dispatch)` → `DETECT()` |
+| `activate_skill` tool (Antigravity when plugin installed) | `activate_skill(sk-platform-dispatch)` → `DETECT()` |
+| Neither / plugin not installed in this environment | Run INLINE-DETECT() — emit advisory first |
+
+**Step 2 — Load or inline-detect:**
+
+- **Skill tool available**: Load `sk-platform-dispatch`, call `DETECT()` → full `platform_profile`. Cache in session context. Proceed normally.
+- **No skill tool available**: Emit the following advisory, then run INLINE-DETECT():
+
+  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phases 0.4 and 0.45 will use degraded inline algorithms — user/workspace preference files will NOT be consulted. If v1-legacy agents are found in Phase 0.45, migration CANNOT complete on this platform; re-run from Claude Code first.
+
+  **INLINE-DETECT() heuristics** — first match wins:
+  1. `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` readable → `tier_id = tier_1`
+  2. `OPENCODE_CONFIG_DIR` env var set → `tier_id = tier_1b`
+  3. `agy` on PATH OR `.agents/skills/` present in workspace → `tier_id = tier_1c`
+  4. `.codex-plugin/plugin.json` readable OR TOML agent files under `<workspace>/.agents/` → `tier_id = tier_1d`
+  5. None matched → `tier_id = tier_2`
+
+  Read `platform_profile` from the embedded snapshot below using `tier_id`:
+
+  ```json
+  {
+    "tier_1":  {"tier":"tier_1",  "capabilities":{"dispatch_mechanism":"native_task","skill_tool":true,"task_primitive":true,"dynamic_subagents":false},"model_tiers":{"triage":{"model":"claude-haiku-4-5-20251001"},"fast":{"model":"claude-haiku-4-5-20251001"},"medium":{"model":"claude-sonnet-4-6"},"deep":{"model":"claude-opus-4-7"}},"degradation_warnings":[]},
+    "tier_1b": {"tier":"tier_1b","capabilities":{"dispatch_mechanism":"native_subagent","skill_tool":true,"task_primitive":false,"dynamic_subagents":false},"model_tiers":{"triage":{"model":"opencode/big-pickle"},"fast":{"model":"opencode-go/deepseek-v4-flash"},"medium":{"model":"opencode-go/qwen3.6-plus"},"deep":{"model":"opencode-go/kimi-k2.6"}},"degradation_warnings":["Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."]},
+    "tier_1c": {"tier":"tier_1c","capabilities":{"dispatch_mechanism":"model_driven","skill_tool":true,"skill_tool_name":"activate_skill","task_primitive":false,"dynamic_subagents":true,"model_field_format":"omit"},"model_tiers":{"triage":{"model":"gemini-3.5-flash"},"fast":{"model":"gemini-3.5-flash"},"medium":{"model":"gemini-3.5-pro"},"deep":{"model":"gemini-3.5-pro"}},"degradation_warnings":["Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."]},
+    "tier_1d": {"tier":"tier_1d","capabilities":{"dispatch_mechanism":"model_driven","skill_tool":true,"task_primitive":false,"dynamic_subagents":false},"model_tiers":{"triage":{"model":"gpt-5.4-mini"},"fast":{"model":"gpt-5.4-mini"},"medium":{"model":"gpt-5.4"},"deep":{"model":"gpt-5.5"}},"degradation_warnings":[]},
+    "tier_2":  {"tier":"tier_2", "capabilities":{"dispatch_mechanism":"inline","skill_tool":true,"task_primitive":false,"dynamic_subagents":false},"model_tiers":{"triage":{"model":"inherit"},"fast":{"model":"inherit"},"medium":{"model":"inherit"},"deep":{"model":"inherit"}},"degradation_warnings":["Reviewer isolation is convention-only; reviews are advisory, not structurally enforced.","Parallel fan-out (Pattern 2) degrades to sequential.","Iterative pattern (Pattern 3) cycle limit still enforced inline.","Model selection is owned by the host IDE; per-step model assignment is not emitted."]}
+  }
+  ```
+
+  > **Note:** Inline snapshots are maintenance copies only. When the skill tool is available, always prefer the loaded profile — it reflects the authoritative `profiles/{tier_id}.json`.
+
+<HARD-GATE>`platform_profile` MUST be non-null after Phase 0.25. INLINE-DETECT() defaults to `tier_2` if no heuristic matches — it NEVER returns null. Emitting the advisory is mandatory when using the inline path. NEVER proceed to Phase 0.4 without a resolved platform_profile.</HARD-GATE>
+
+- <HARD-GATE>NEVER perform tier detection more than once per run outside of resume. On resume: re-run DETECT() (or INLINE-DETECT()), compare to `metadata.source_tier`, apply the Cross-Tier Resume Protocol from `sk-platform-dispatch` if tier changed.</HARD-GATE>
 - **Fresh run**: Cache `platform_profile` in session context now. During Phase 2 state init, write to state file: `metadata.source_tier = platform_profile.tier`, `metadata.runtime_tier = platform_profile.tier`, `metadata.platform_profile = platform_profile`.
 - **Resume run**: Apply Cross-Tier Resume Protocol (defined in `sk-platform-dispatch` § Cross-Tier Resume Protocol). If `runtime_tier` changed: update `metadata.runtime_tier`, `metadata.platform_profile`, append to `metadata.tier_changes`, emit cross-tier advisory.
 - **Branch by `platform_profile.capabilities.dispatch_mechanism`** for Phase 3:
