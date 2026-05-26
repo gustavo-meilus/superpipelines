@@ -67,11 +67,11 @@ const PLATFORMS = [
     name: 'Claude Code',
     tier: '1',
     detect: () => which('claude'),
-    install: ({ dryRun, version }) => {
-      const pin = version ? ` --version v${version}` : '';
+    install: () => {
       return [
         `claude plugin marketplace add ${MARKETPLACE}`,
-        `claude plugin install superpipelines@superpipelines${pin}`,
+        // CC does not support --version pinning on plugin install.
+        `claude plugin install superpipelines@superpipelines-marketplace`,
       ];
     },
     uninstallCmd: 'claude plugin remove superpipelines',
@@ -81,20 +81,15 @@ const PLATFORMS = [
     name: 'Codex App/CLI',
     tier: '1d',
     detect: () => which('codex') || dirExists(path.join(os.homedir(), '.codex')),
-    // Q9 fix 2: Codex install previously stopped after marketplace registration. Either
-    // run a verified non-interactive install command (when available) OR exit with an
-    // explicit "manual step in /plugins" notice — never silently exit "success" with
-    // the plugin not installed.
-    install: ({ dryRun, version }) => {
-      const pin = version ? ` --version v${version}` : '';
+    install: () => {
       return [
         `codex plugin marketplace add ${REPO}`,
-        // Best-effort non-interactive install. If Codex doesn't recognize the subcommand,
-        // runAll will report the failure and the post-install summary surfaces the manual step.
-        `codex plugin install superpipelines@superpipelines${pin}`,
+        // Codex uses `plugin add` (not `plugin install`); marketplace name is derived
+        // from the repo slug with a "-marketplace" suffix by the Codex CLI.
+        `codex plugin add superpipelines@superpipelines-marketplace`,
       ];
     },
-    postInstallNote: 'If `codex plugin install` failed: open Codex, run `/plugins`, and complete installation manually.',
+    postInstallNote: 'If `codex plugin add` failed: open Codex, run `/plugins`, and complete installation manually.',
     uninstallCmd: 'codex plugin remove superpipelines',
   },
   {
@@ -131,9 +126,8 @@ const PLATFORMS = [
     name: 'Antigravity CLI 2.0',
     tier: '1c',
     detect: () => which('agy'),
-    install: ({ version }) => {
-      const pin = version ? ` --version v${version}` : '';
-      return [`agy plugin install superpipelines@superpipelines${pin}`];
+    install: () => {
+      return [`agy plugin install superpipelines@superpipelines`];
     },
     postInstallNote: 'If upgrading from a Gemini CLI extension, run: agy plugin import gemini',
     uninstallCmd: 'agy plugin remove superpipelines',
