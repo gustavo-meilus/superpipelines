@@ -1,0 +1,19 @@
+{
+  "agent": {
+    "name": "any-step",
+    "model_tier": "deep"
+  },
+  "profile": {
+    "tier": "tier_1c",
+    "capabilities": {
+      "dynamic_subagents": true,
+      "model_field_format": "omit",
+      "effort_field_name": null,
+      "subagent_inherit_target": "orchestrator"
+    },
+    "model_tiers": {
+      "deep": { "model": "gemini-3.5-pro", "effort": "high" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}

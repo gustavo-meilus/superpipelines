@@ -1,0 +1,9 @@
+{
+  "model": null,
+  "effort": null,
+  "effort_field_name": null,
+  "model_field_format": null,
+  "source": "blocked",
+  "reason": "v1_legacy_schema_must_be_migrated",
+  "warnings": ["v1-legacy agent frontmatter (model: present, plugin_version < 2.0.0). Phase 0.4 migration MUST run before resolution. Do NOT treat this as a frontmatter override."]
+}

@@ -17,6 +17,90 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.0.0 — Multi-Platform (2026-05-26)
+
+### Architecture & Governance
+
+- **Multi-Platform Targets** — Single repo supports Claude Code (Tier 1), OpenCode (Tier 1b), Antigravity CLI 2.0 (Tier 1c aspirational), Codex App/CLI (Tier 1d), and Cursor/Windsurf/Cline (Tier 2).
+- **5-Tier Execution Model** — New `TIER_MODEL: 5-TIER` invariant in `CLAUDE.md`.
+- **Tier-Aware Write/Review Isolation** — `WRITE_REVIEW_ISOLATION: TRUE` invariant replaced by `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`. On Tier 2 the orchestrator runs both writer and reviewer protocols with full tools; reviews are advisory. Surfaced at run start and run end.
+- **Skill Primacy** — `SKILL_PRIMACY: TRUE` invariant. Intelligence lives in `SKILL.md`; platform manifests are discovery-only.
+- **Manual Parity Testing** — `PARITY_TESTING: MANUAL_PHASE1` invariant. Per-platform validation is manual.
+- **Project consolidated to a single repo.** OpenCode (Tier 1b) remains a supported platform in the resolver; this repo does not ship a packaged OpenCode installer.
+
+### Added — Parity Test Pipeline Suite
+
+A 10-pipeline cross-tier validation suite verifying v2.0.0 scaffold correctness on all supported platforms:
+
+| Pipeline | Tier | Platform | Pattern | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| parity-test-a | 1 | Claude Code | Sequential (2-step) | Scaffolded |
+| parity-test-b | 1 | Claude Code | Sequential + reviewer isolation (3-step) | Scaffolded |
+| parity-test-c | 1c | Antigravity CLI 2.0 | Sequential (2-step) | Scaffolded |
+| parity-test-d | 1c | Antigravity CLI 2.0 | Sequential + reviewer isolation (3-step) | Scaffolded |
+| parity-test-e | 1d | Codex App/CLI | Sequential (2-step) | Scaffolded + run verified |
+| parity-test-f | 1d | Codex App/CLI | Sequential + reviewer isolation (3-step) | Scaffolded + run verified |
+| parity-test-g | 2 | Cursor | Sequential (2-step) | Scaffolded |
+| parity-test-h | 2 | Cursor | Sequential + reviewer isolation (3-step) | Scaffolded |
+| parity-test-i | 1b | OpenCode | Sequential (2-step) | Scaffolded |
+| parity-test-j | 1b | OpenCode | Sequential + reviewer isolation (3-step) | Scaffolded |
+
+Each pipeline includes: SDD artifacts (`spec.md`, `plan.md`, `tasks.md`), `topology.json`, run launcher, zero-body agent stubs (or tier-equivalent), companion protocol skills, and a scope-local registry entry. CC, OC, AGY, Codex, and Cursor scopes all receive their own scope-root-local registry.
+
+### Fixed
+
+- **tier_1b `effort_emit_map` missing** — `skills/sk-platform-dispatch/profiles/tier_1b.json` lacked the `effort_emit_map` field. Without it, `sk-model-resolver` could not translate abstract effort tiers (`low`/`medium`/`high`) into the concrete `reasoningEffort` string values required by the OpenCode runtime. Identity mapping `{ "low": "low", "medium": "medium", "high": "high" }` added. (`tier_1d.json` already had `{ "low": "minimal", "medium": "medium", "high": "high" }`.)
+- **OC parity agents missing `reasoningEffort` field** — All 5 OpenCode parity agents (`inspector`, `formatter` in parity-test-i; `analyzer`, `reviewer`, `reporter` in parity-test-j) were missing the `reasoningEffort: low` frontmatter field required by the tier_1b profile when the provider is `opencode` or `opencode-go`.
+- **Codex entry skills missing terminal status emit** — `run-parity-test-e` and `run-parity-test-f` were missing the explicit "Emit terminal status" step in their final phases. Added as step 4 to the Phase 3 / Phase 4 finalization sections.
+
+### Added — Multi-Platform Targets
+
+- **Codex App/CLI (Tier 1d)** — `.codex-plugin/plugin.json` manifest. Native parallel subagents, model-driven dispatch, up to 6 concurrent threads, TOML agent files.
+- **Cursor / Windsurf / Cline (Tier 2)** — `.cursor-plugin/plugin.json` manifest + `hooks/hooks-cursor.json` stub. Single-agent inline execution via `sk-platform-dispatch`.
+- **Antigravity CLI 2.0 (Tier 1c aspirational)** — `gemini-extension.json` manifest. Tier 1c if Dynamic Subagent dispatch is exposed to skills; falls back to Tier 2 otherwise.
+- **Universal context files** — `AGENTS.md` (any AGENTS.md-aware tool) and `GEMINI.md` (Antigravity CLI 2.0).
+- **Universal installer** — `bin/install.js` Node.js entrypoint with platform auto-detection; `install.sh` POSIX wrapper; `install.ps1` PowerShell wrapper. Flags: `--all`, `--only`, `--dry-run`, `--list`, `--uninstall`, `--non-interactive`, `--with-init`.
+- **`sk-platform-dispatch` skill** — Tier detection + Tier 2 single-agent inline dispatch loop + per-tier scope-root resolution + Tier 2 degradation surfacing.
+- **Per-tier scope roots in `sk-pipeline-paths`** — `PORTABILITY_REWRITE` enables CC-scaffolded pipelines to run on Tier 2 by rewriting `.claude/` paths to `.superpipelines/` at read/write time.
+
+### Added — OC → CC Backports
+
+- **Model preference per step** in `creating-a-pipeline` Phase 2. Deep tier → `claude-opus-4-7`; fast tier → `claude-sonnet-4-6`. Embedded in generated agent `model:` frontmatter by the architect.
+- **`{P}.md` Run Launcher artifact** in `creating-a-pipeline` Phase 6. Launcher document referenced by registry and runner. Note: CC does NOT auto-register `{P}.md` as a slash command — `/superpipelines:{P}` direct invocation is OpenCode-only in v2.0.0.
+- **Phase 0.5 version-compatibility advisory** in `running-a-pipeline` — non-blocking warning on major-version mismatch.
+- **Mandatory `plugin_version`** in `pipeline-state.json` schema, stamped at run init.
+
+### Changed
+
+- `CLAUDE.md` Architecture Invariants block fully revised — see Architecture & Governance above.
+- `CLAUDE.md` Project Version reconciled to `v2.0.0` (was `v1.2.0`, out of sync with plugin manifest at `v1.0.6`).
+- `running-a-pipeline` gained Phase 0.25 (tier detect & dispatch load) and Phase 0.5 (version-compatibility advisory).
+- `pipeline-architect-protocol` now requires generated entry skills to dispatch every step via `sk-platform-dispatch` DISPATCH rather than direct `Task(subagent_type=...)` calls. Existing entry skills predating v2.0.0 continue to work on Tier 1; tier portability requires regenerating with the new architect.
+- `pipeline-runner-references/references/dispatch-protocols.md` documents Tier 2 single-agent inline dispatch.
+- All five plugin manifests (`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` plugin entry, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`) versioned at `2.0.0`.
+
+### Deprecated
+
+- **Gemini CLI** as a distribution target — runtime retired June 18, 2026. Migrate to Antigravity CLI 2.0 via `agy plugin import gemini`.
+
+### Known Limitations (Phase 1)
+
+- `--uninstall` flag in `bin/install.js` is a stub in v2.0.0 — prints a per-platform pointer message; full uninstall logic deferred to v2.1.
+- `--with-init` flag in `bin/install.js` is reserved (no-op) in v2.0.0.
+- Tier 1c (Antigravity Dynamic Subagents) is aspirational — falls back to Tier 2 unless the dispatch primitive is verified exposed to skills.
+- Tier 1d (Codex) per-agent isolation via TOML `sandbox_mode = "read-only"` is documented as structural in `tier_1d.json`. The release-process parity gate (`.claude/skills/release.md` Step 5c) requires this be verified via a one-shot integration test before each release tag: confirm that a reviewer agent with `sandbox_mode = "read-only"` is blocked from writing to the workspace. If the test fails on a future Codex version, downgrade the profile's `reviewer_isolation` to `"convention"` and amend the invariant text.
+- **F-AGY-01 — hooks.json dual incompatibility with Antigravity CLI:** `agy plugin validate` reports "hooks: skipped (not found)". Root cause is two-layered: (1) `hooks/hooks.json` references `${CLAUDE_PLUGIN_ROOT}` — a CC-specific environment variable; AGY injects `${extensionPath}` (Gemini CLI lineage) and does not recognize `${CLAUDE_PLUGIN_ROOT}`, causing the hook command to be unresolvable. (2) The `session-start` script emits a CC-specific `hookSpecificOutput.hookEventName` payload format that AGY does not consume. Fix requires an AGY-specific hook file (`hooks/hooks-antigravity.json`) using the correct env var and a companion AGY-format `session-start-agy` script. Blocked pending confirmation of the exact AGY env var name from official docs (antigravity.google/docs currently returns JS-rendered blank pages). Tracking: F-AGY-01.
+- **F-COD-03 — Codex `workspace-write` sandbox unavailable on Windows 11 Home:** Writer TOML agents use `sandbox_mode = "workspace-write"`. This mode requires Windows Sandbox (Hyper-V virtualization), which is unavailable on Windows 11 Home. Parity runs on this platform used `--sandbox danger-full-access`. No TOML change required — this is a host-machine capability gap, not a plugin defect. Tracking: F-COD-03.
+- **F-CC-02 — `effort_tier` silently ignored on Tier 1 (CC):** `effort_field_name: null` in `tier_1.json` means `effort_tier` frontmatter on CC agents is accepted but produces no runtime effect. Non-blocking: CC agents rely on `model_tier` for capacity selection. Tracking: F-CC-02.
+- Codex plugin-install command syntax (`codex plugin add ...`) in the installer is unverified against a stable Codex release; patch in v2.0.1 if the verified command differs.
+- No automated cross-platform parity gate. Per-platform validation is manual.
+- True parallel execution on Tier 2 degrades to sequential — Cursor/Windsurf/Cline have no subagent primitive.
+
+### Non-Goals (Phase 1)
+
+- True parallel execution on Tier 2.
+- Automated cross-platform parity tests.
+
 ## 1.0.6 — Lean Agents & Zero-Body Architecture (2026-05-20)
 
 ### Architecture & Governance

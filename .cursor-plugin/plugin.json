@@ -1,0 +1,23 @@
+{
+  "name": "superpipelines",
+  "version": "2.0.0",
+  "description": "Design and run multi-agent AI pipelines on Cursor, Windsurf, and Cline (Tier 2: single-agent inline execution; reviewer isolation is convention-only).",
+  "author": {
+    "name": "Gustavo Meilus",
+    "url": "https://github.com/gustavo-meilus"
+  },
+  "homepage": "https://github.com/gustavo-meilus/superpipelines",
+  "repository": "https://github.com/gustavo-meilus/superpipelines",
+  "license": "MIT",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks-cursor.json",
+  "keywords": [
+    "ai-pipelines",
+    "skills",
+    "spec-driven-development",
+    "cursor",
+    "windsurf",
+    "cline"
+  ]
+}

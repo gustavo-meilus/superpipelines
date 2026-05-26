@@ -1,0 +1,40 @@
+{
+  "$schema": "./profile.schema.json",
+  "tier": "tier_1b",
+  "name": "OpenCode",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "structural",
+    "dispatch_mechanism": "native_subagent",
+    "dynamic_subagents": false,
+    "model_field_format": "provider_prefixed",
+    "effort_field_name": "reasoningEffort",
+    "effort_field_applies_to_providers": ["opencode", "opencode-go"],
+    "effort_emit_map": { "low": "low", "medium": "medium", "high": "high" },
+    "subagent_env_override": null,
+    "subagent_inherit_target": "primary",
+    "provider_families": ["anthropic", "opencode-go", "opencode"]
+  },
+  "scope_root": {
+    "workspace": ".opencode",
+    "user": "~/.opencode"
+  },
+  "degradation_warnings": [
+    "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
+  ],
+  "extensions": {
+    "version_manifest_path": "opencode-plugin.json"
+  },
+  "model_tiers": {
+    "triage": { "model": "opencode/big-pickle",           "effort": "low",    "free_tier": true,  "quota_class": "free-unlimited" },
+    "fast":   { "model": "opencode-go/deepseek-v4-flash", "effort": "medium", "free_tier": false, "quota_class": "go-high" },
+    "medium": { "model": "opencode-go/qwen3.6-plus",      "effort": "medium", "free_tier": false, "quota_class": "go-medium" },
+    "deep":   { "model": "opencode-go/kimi-k2.6",         "effort": "high",   "free_tier": false, "quota_class": "go-low" }
+  }
+}

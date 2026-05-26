@@ -1,0 +1,57 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-d",
+  "name": "parity-test-d",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1c",
+  "entry_skill": "run-parity-test-d",
+  "metadata": {
+    "goal": "Read a directory of source files and produce a code health report listing files with high complexity, missing docstrings, or long functions, written to output/ as a markdown report",
+    "output": "{ROOT}/output/parity-test-d-health-report.md",
+    "orchestrator_tier": "fast",
+    "model_field_format": "omit",
+    "model_intent_scaffold_tier": {
+      "scanner": "fast",
+      "reporter": "fast"
+    },
+    "degradation_warnings": [
+      "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
+    ],
+    "platform_note": "All step agents use model_tier: inherit. The orchestrator_tier (fast) resolves to the fast-tier model per the tier_1c profile (see skills/sk-platform-dispatch/profiles/tier_1c.json). Per-step intent is recorded in model_intent_scaffold_tier for cross-tier portability."
+  },
+  "steps": [
+    {
+      "step_id": "scanner",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-d/scanner.md",
+      "protocol_skill": "skills/superpipelines/parity-test-d/scanner-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-d/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-d/{runId}/scanner-metrics.json"
+      ],
+      "depends_on": [],
+      "description": "Reads source files in the target directory, extracts per-file metrics for complexity, missing docstrings, and long functions, writes metrics to temp state."
+    },
+    {
+      "step_id": "reporter",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-d/reporter.md",
+      "protocol_skill": "skills/superpipelines/parity-test-d/reporter-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-d/{runId}/scanner-metrics.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-d-health-report.md"
+      ],
+      "depends_on": ["scanner"],
+      "description": "Reads scanner metrics, renders a structured markdown code health report, writes the final output file."
+    }
+  ]
+}

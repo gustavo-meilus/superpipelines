@@ -12,7 +12,7 @@ If dispatched as a subagent to execute a specific task, skip this skill. Subagen
 </SUBAGENT-STOP>
 
 <overview>
-Superpipelines is a framework for designing and running multi-agent workflows across three deployment scopes (Local, Project, User). It enforces rigorous architectural standards, including non-negotiable write/review isolation, model selection constraints, and audit-driven mutations to ensure stability in production AI environments.
+Superpipelines is a framework for designing and running multi-agent workflows across three deployment scopes (Local, Project, User) and five execution tiers — Tier 1 (Claude Code), Tier 1b (OpenCode), Tier 1c (Antigravity, aspirational), Tier 1d (Codex), and Tier 2 (Cursor/Windsurf/Cline). It enforces rigorous architectural standards, including tier-aware write/review isolation, dynamic model selection, audit-driven mutations, and portability-aware path resolution to ensure stability in production AI environments.
 </overview>
 
 <EXTREMELY-IMPORTANT>
@@ -29,7 +29,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | `/new-step` or "Add capability" | `adding-a-pipeline-step` | Topology mutation. |
 | `/update-step` or "Modify agent" | `updating-a-pipeline-step` | Contract-aware update. |
 | `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
-| `/audit-pipeline` | `pipeline-auditor` | Security/topology review. |
+| `/audit-steps` | `pipeline-auditor` | Security/topology review. |
 | `/change-models` or "Change models" | `change-models` | Interactive model reassignment. |
 | Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
 | Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
@@ -40,8 +40,9 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 
 <invariants>
 - **`SUB_AGENT_SPAWNING: FALSE`**: Subagents must not spawn children; orchestration is restricted to the top-level parent.
-- **`WRITE_REVIEW_ISOLATION: TRUE`**: The agent that writes code never reviews it. Stage 1 (Compliance) gates Stage 2 (Quality).
-- **`MODEL_SELECTION: SONNET_ONLY`**: All agents default to `model: sonnet` unless the user explicitly opts into another model.
+- **`WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`**: The agent that writes code never reviews it. Stage 1 (Compliance) gates Stage 2 (Quality). Structurally enforced on Tier 1/1b/1d; convention-only with explicit advisory surfacing on Tier 2.
+- **`MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET`**: Pipeline execution and utility agents default to `platform_profile.model_tiers.fast`. Planning, architecture, and review agents may opt into `platform_profile.model_tiers.deep` via per-step model preference (Phase 2 of `creating-a-pipeline`). Concrete model IDs per platform live in `skills/sk-platform-dispatch/profiles/{tier_id}.json` — never restated in skill bodies (per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`).
+- **`MULTI_PLATFORM: TRUE`**: superpipelines targets CC (Tier 1) + OC (Tier 1b) + Antigravity CLI 2.0 (Tier 1c, aspirational) + Codex (Tier 1d) + Cursor/Windsurf/Cline (Tier 2). Gemini CLI is retired June 18, 2026. Step orchestration routes through `sk-platform-dispatch`.
 - **`STATE_PERSISTENCE`**: All state must reside in `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`.
 - **`ATOMIC_MUTATION`**: Topology changes must be staged in `edit-{ts}/` before promotion.
 - **`PLUGIN_VERSION_STAMPING`**: Every pipeline artifact (`topology.json`, `registry.json` entries, `pipeline-state.json`, agent frontmatter) must include a `plugin_version` field set to the current superpipelines package version. This field is updated on every mutation (create, add-step, update-step, delete-step) and enables future retro-compatibility checks.

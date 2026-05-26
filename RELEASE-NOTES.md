@@ -6,6 +6,115 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.6 architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, the 20-criterion compliance matrix, and the Lean Agents zero-body architecture.
 </overview>
 
+## v2.0.0 — Multi-Platform Release (2026-05-26)
+
+### Highlights
+
+Superpipelines runs on **five execution tiers** spanning Claude Code, OpenCode, Codex, Cursor, Windsurf, Cline, and Antigravity CLI 2.0. Project consolidated to a single repo; OpenCode (Tier 1b) remains a supported platform in the resolver but is not shipped with a packaged installer in this distribution.
+
+### Multi-platform execution model
+
+| Tier | Platform | Subagent primitive |
+|------|----------|--------------------|
+| 1 | Claude Code | Skill-callable `Task()` |
+| 1b | OpenCode | `mode: subagent` agents |
+| 1c | Antigravity CLI 2.0 | Dynamic Subagents (aspirational) |
+| 1d | Codex App/CLI | Native model-driven subagents (up to 6 concurrent) |
+| 2 | Cursor / Windsurf / Cline | Single-agent inline via `sk-platform-dispatch` |
+
+### Universal installer
+
+```bash
+# macOS / Linux / WSL
+curl -fsSL https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.ps1 | iex
+
+# Pick one platform
+node bin/install.js --only claude-code
+```
+
+Auto-detects every supported platform. Use `--list` to see detection results, `--dry-run` to preview commands, `--all` to install for every detected platform.
+
+### OpenCode-originated improvements (backported to CC)
+
+- **Per-step model preference** in the pipeline creation flow. Deep tier → `claude-opus-4-7`; fast tier → `claude-sonnet-4-6`.
+- **Run Launcher artifact** `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (launcher document; on CC this is a discovery file, not a slash command — `/superpipelines:{P}` direct invocation remains OpenCode-only in v2.0.0).
+- **Version-compatibility advisory** at run start.
+- **`plugin_version` stamping** in `pipeline-state.json`.
+
+### Write/Review isolation — degradation made explicit
+
+The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
+
+- **Tier 1 (CC)** — structural, enforced via agent `tools:` frontmatter.
+- **Tier 1b (OC)** — structural, enforced via `permission: { edit: deny }`.
+- **Tier 1d (Codex)** — structural via TOML `sandbox_mode = "read-only"` on the reviewer agent. Release-process parity gate verifies the write-deny behavior before each release tag.
+- **Tier 2 (Cursor/Windsurf/Cline)** — convention-only. Reviews are advisory. The orchestrator surfaces this degradation at run start (stderr advisory) and run end (state-file footer + entry-skill summary).
+
+### Breaking changes
+
+- `WRITE_REVIEW_ISOLATION: TRUE` invariant removed. Replaced by tier-aware `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`. Tooling that hard-asserted the boolean form must update.
+- New `metadata.tier` and `plugin_version` fields required at state init. Pre-v2.0.0 runs without these fields surface informational notes at resume; do not block.
+- Generated entry skills now route through `sk-platform-dispatch` DISPATCH instead of direct `Task()`. Policy:
+  - **Existing pre-v2.0.0 entry skills:** automatically regenerated on first run after v2.0.0 upgrade by Phase 0.4 (migration). The pre-v2 entry skill is archived to `<scope-root>/superpipelines/pipelines/{P}/entry-skill.pre-v2-backup.md` for audit. Direct `Task()` calls in pre-v2 entry skills do not consume `state.metadata.resolved_models[step_id]`; regeneration is required for the per-step model-tier system to take effect. (Q13: retraction of earlier "no forced regeneration" claim — that promise produced silent intent erasure on every upgrade scenario.)
+  - **Cross-tier portability (running a CC-scaffolded pipeline on Tier 1b/1c/1d/2):** REQUIRES regenerating the entry skill with the v2.0.0 architect — raw `Task()` calls do not dispatch correctly on non-CC tiers.
+  - **New pipelines (v2.0.0+):** architect emits DISPATCH-routed entry skills by default; no action needed.
+- `CLAUDE.md` Project Version jumps from `v1.2.0` (stale) to `v2.0.0`. Plugin manifest version (`1.0.6` → `2.0.0`) is now the source of truth.
+
+### Parity test suite
+
+A 10-pipeline cross-tier validation suite ships with v2.0.0. Each pipeline is scaffolded in its own scope root and verifies the full SDD artifact chain (agents, skills, topology, registry, spec/plan/tasks):
+
+| Pipeline | Tier | Platform | Codex run confirmed |
+| :--- | :--- | :--- | :--- |
+| parity-test-a | 1 | Claude Code | — |
+| parity-test-b | 1 | Claude Code | — |
+| parity-test-c | 1c | Antigravity CLI 2.0 | — |
+| parity-test-d | 1c | Antigravity CLI 2.0 | — |
+| parity-test-e | 1d | Codex App/CLI | ✅ |
+| parity-test-f | 1d | Codex App/CLI | ✅ |
+| parity-test-g | 2 | Cursor | — |
+| parity-test-h | 2 | Cursor | — |
+| parity-test-i | 1b | OpenCode | — |
+| parity-test-j | 1b | OpenCode | — |
+
+### Known limitations
+
+- `--uninstall` flag stub (full uninstall deferred to v2.1).
+- `--with-init` flag reserved (no-op).
+- Tier 1c (Antigravity Dynamic Subagents) aspirational — falls back to Tier 2 unless dispatch primitive verified.
+- Tier 1d (Codex) `sandbox_mode` per-agent isolation is structural; the release-process parity gate verifies write-deny behavior before each tag (Q8 reconciliation).
+- **F-AGY-01** — `agy plugin validate` reports "hooks: skipped (not found)". Dual incompatibility: `${CLAUDE_PLUGIN_ROOT}` in `hooks.json` is CC-only (AGY uses `${extensionPath}`); `hookSpecificOutput` payload format is CC-only. Fix requires AGY-specific hook files; blocked pending official AGY docs being accessible.
+- **F-COD-03** — Codex `workspace-write` sandbox requires Hyper-V (unavailable on Windows 11 Home). Parity runs on Home SKU require `--sandbox danger-full-access`. No code change needed; host capability gap.
+- **F-CC-02** — `effort_tier` on CC agents is silently ignored (`effort_field_name: null` in tier_1.json). Non-blocking; CC uses `model_tier` for capacity selection only.
+- Codex installer command syntax unverified against a stable release.
+- No automated cross-platform parity gate. Per-platform validation is manual.
+- Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.
+
+### Deprecations
+
+- **Gemini CLI** as a distribution target. Runtime retires June 18, 2026. Migrate to Antigravity CLI 2.0 via `agy plugin import gemini`.
+
+### Upgrade path
+
+Existing Claude Code users:
+
+```bash
+claude plugin update superpipelines
+```
+
+Or re-run the installer to pull v2.0.0 plus any newly detected platforms:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install.sh | bash
+```
+
+### Full changelog
+
+See `CHANGELOG.md`.
+
 ## v1.0.6 — Lean Agents & Zero-Body Architecture (2026-05-20)
 
 This release introduces the Lean Agents pattern: agent files become pure frontmatter configuration envelopes, and all operational protocol moves into companion `{agent-name}-protocol` skills. Every framework agent is now a zero-body stub, enforcing a clean contract between configuration and behavior.

@@ -1,0 +1,57 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-c",
+  "name": "parity-test-c",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1c",
+  "entry_skill": "run-parity-test-c",
+  "metadata": {
+    "goal": "Analyze a text document and produce a structured markdown summary",
+    "output": "{ROOT}/output/parity-test-c-summary.md",
+    "orchestrator_tier": "medium",
+    "model_field_format": "omit",
+    "model_intent_scaffold_tier": {
+      "analyzer": "medium",
+      "summarizer": "medium"
+    },
+    "degradation_warnings": [
+      "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
+    ],
+    "platform_note": "All step agents use model_tier: inherit. The orchestrator_tier (medium) maps to gemini-3.5-pro per the tier_1c profile. Per-step intent is recorded in model_intent_scaffold_tier for cross-tier portability."
+  },
+  "steps": [
+    {
+      "step_id": "analyzer",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-c/analyzer.md",
+      "protocol_skill": "skills/superpipelines/parity-test-c/analyzer-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-c/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-c/{runId}/analyzer-findings.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input text document, extracts key themes and structural metadata, writes findings to temp state."
+    },
+    {
+      "step_id": "summarizer",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-c/summarizer.md",
+      "protocol_skill": "skills/superpipelines/parity-test-c/summarizer-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-c/{runId}/analyzer-findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-c-summary.md"
+      ],
+      "depends_on": ["analyzer"],
+      "description": "Reads analyzer findings, renders a structured markdown summary, writes the final output file."
+    }
+  ]
+}

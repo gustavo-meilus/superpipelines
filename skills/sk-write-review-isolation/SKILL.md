@@ -10,7 +10,7 @@ user-invocable: false
 > Enforces a non-negotiable separation between the agent authoring code and the agent reviewing it. Trigger when dispatching reviewers, authoring multi-stage pipelines, or implementing any task requiring formal verification against a specification.
 
 <overview>
-`WRITE_REVIEW_ISOLATION: TRUE` is a fundamental invariant of the Superpipelines architecture. By separating the writer from the reviewer and splitting the review process into Stage 1 (Spec Compliance) and Stage 2 (Code Quality), we prevent context bleed, detect over-build early, and ensure that only verified code is promoted.
+`WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2` is a fundamental invariant of the Superpipelines architecture. By separating the writer from the reviewer and splitting the review process into Stage 1 (Spec Compliance) and Stage 2 (Code Quality), we prevent context bleed, detect over-build early, and ensure that only verified code is promoted. On Tier 1 (CC), Tier 1b (OC), and Tier 1d (Codex) the separation is enforced structurally via per-agent permission boundaries. On Tier 2 (Cursor/Windsurf/Cline) the same protocol runs as a convention — the orchestrator MUST surface this degradation at run start and run end so reviews are treated as advisory rather than structurally guaranteed.
 </overview>
 
 <glossary>

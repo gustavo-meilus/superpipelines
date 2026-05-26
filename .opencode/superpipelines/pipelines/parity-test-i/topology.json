@@ -1,0 +1,54 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-i",
+  "name": "parity-test-i",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1b",
+  "entry_skill": "run-parity-test-i",
+  "metadata": {
+    "goal": "Read a JSON file and produce a human-readable summary of its top-level keys and value types, written to output/ as a text file",
+    "output": "{ROOT}/output/parity-test-i-summary.txt",
+    "model_field_format": "provider_prefixed",
+    "platform_note": "Tier 1b (OpenCode v1.15.10): native subagent dispatch; agent files with YAML frontmatter + body protocol ≤150 lines; no companion protocol skills; no Task() primitive; sequential only (parallel_subagents: false). model: opencode/big-pickle in each agent frontmatter.",
+    "degradation_warnings": [
+      "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "inspector",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-i/inspector.md",
+      "protocol_skill": null,
+      "model_tier": "triage",
+      "model": "opencode/big-pickle",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-i/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-i/{runId}/key-type-data.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input JSON file, extracts each top-level key and the type of its value, writes key-type-data.json to the temp directory. Runs as a native subagent on OpenCode."
+    },
+    {
+      "step_id": "formatter",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-i/formatter.md",
+      "protocol_skill": null,
+      "model_tier": "triage",
+      "model": "opencode/big-pickle",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-i/{runId}/key-type-data.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-i-summary.txt"
+      ],
+      "depends_on": ["inspector"],
+      "description": "Reads key-type-data.json from the temp directory, formats a human-readable summary listing each top-level key and its value type, writes parity-test-i-summary.txt to output/. Runs as a native subagent on OpenCode."
+    }
+  ]
+}

@@ -1,150 +1,172 @@
 ---
 name: change-models
-description: Use when the user wants to quickly and interactively change the LLM models assigned to pipeline step agents. Applies changes to agent frontmatter. Invoke via /superpipelines:change-models.
+description: Use when the user wants to set, change, or audit model preferences for pipeline agents — interactive 6-mode workflow covering global/workspace preferences, per-agent overrides, first-run setup, and catalog refresh. Invoke via /superpipelines:change-models.
 user-invocable: true
 ---
 
-# Change Models — Interactive Model Reassignment
+# Change Models — Interactive Multi-Platform Model Preference Management
 
-> Enables quick, interactive model reassignment across pipeline agents within a selected pipeline. Applies changes to agent YAML frontmatter files.
+> Provides six modes (A–F) for managing the resolver's preference layers, per-agent overrides, and platform-catalog drift reconciliation. Scans all five scope roots (`.claude/`, `.opencode/`, `.agents/`, `.superpipelines/`). Confirm-before-write everywhere.
 
 <overview>
-The Change Models workflow provides a streamlined interface for swapping LLM models across a pipeline's agents. It supports three interaction modes — bulk application, individual selection, and natural language instruction — and enforces a confirm-before-write protocol to prevent unintended changes.
+v2.0 change-models edits user/workspace preference files and per-agent frontmatter (`model_tier:` or escape-hatch `model:`). It never edits profile JSONs (those are the source of truth, plugin-owned). The first-run wizard (Mode E) configures all four tiers for a platform with subscription-state detection. Mode F reconciles preferences with an updated profile catalog.
 </overview>
 
 <glossary>
-  <term name="Model Catalog">A unified list of available LLM models sourced from local configuration or a static fallback.</term>
-  <term name="Agent Frontmatter">YAML header in agent `.md` files containing metadata like `name`, `model`, `maxTurns`, etc.</term>
-  <term name="Fuzzy Match">A name-matching algorithm that normalizes and compares model names to resolve natural language references.</term>
+  <term name="User-global prefs">~/.superpipelines/model-preferences.json — defaults across all workspaces.</term>
+  <term name="Workspace prefs">&lt;workspace&gt;/.superpipelines/model-preferences.json — overrides per project.</term>
+  <term name="Escape hatch">Adding `model: <concrete>` to an agent file bypasses tier resolution; flagged SEV-3 by auditor.</term>
+  <term name="Catalog drift">Profile `model_tiers_version` advances; user's `model_tiers_version_acked` is stale.</term>
 </glossary>
 
-## Workflow Phases
+## Workflow
 
 <protocol>
 
-### $ARGUMENTS FAST-PATH
+### PHASE 0 — Scope Detection
 
-When `$ARGUMENTS` is provided (e.g., `all to claude-3-5-sonnet`), the command enters a fast-path that minimizes interactivity:
+- Load `sk-platform-dispatch` → `DETECT()` → `platform_profile`.
+- Enumerate scope roots that exist in the workspace:
+  - `<workspace>/.claude/`, `<workspace>/.opencode/`, `<workspace>/.agents/`, `<workspace>/.superpipelines/`
+- For each existing root, scan `<root>/superpipelines/registry.json` for pipelines.
+- If no pipelines anywhere AND no preference files: only Mode E (first-run wizard) is offered.
+- Present platform context: "Active platform: <profile.name> (<profile.tier>). Pipelines found in: <root list>."
 
-- **Phases 0–2**: Automatically scoped:
-  - Pipeline: Defaults to "All pipelines" unless the instruction names a specific pipeline.
-  - Agent selection: Auto-selected based on the `<target>` in the instruction:
-    - `all` → all agents in the scoped pipeline(s)
-    - Numeric ranges (e.g., `steps 1-3`) → agents by their Phase 2 table index
-    - Named agents (e.g., `my-pipeline/generator`) → exact name match
-- **Phase 3**: Skip mode selection. Parse `$ARGUMENTS` as Mode C instruction. Fuzzy-match model names against the catalog assembled in Phase 1. Present the confirmation table.
-- **Phases 4–5**: Proceed normally with application, verification, and summary.
+### PHASE 1 — Mode Selection
 
-The fast-path still gates on user confirmation of the change table before any writes occur.
+Present six modes:
 
-### PHASE 0: PIPELINE SELECTION
+| Mode | Action |
+|---|---|
+| **A** — User-global prefs | Edit `~/.superpipelines/model-preferences.json`; bump `model_tiers_version_acked` |
+| **B** — Workspace prefs | Edit `<workspace>/.superpipelines/model-preferences.json` |
+| **C** — Per-agent `model_tier:` override | Edit agent frontmatter |
+| **D** — Per-agent explicit `model:` (escape hatch, advanced) | Edit agent frontmatter; surfaces SEV-3 audit warning |
+| **E** — First-run wizard | Interactive 4-tier setup with subscription detection |
+| **F** — Catalog refresh | Reconcile prefs with new profile `model_tiers_version` |
+| **G** (Q6) — Orchestrator-tier override | Set the orchestrator-only model tier on platforms where per-step assignment is meaningless (`dynamic_subagents: true` or `model_field_format: "omit"`). Writes to user or workspace prefs at `platforms[tier].orchestrator_tier`. |
 
-- Read the project's local registry at `<workspace>/.claude/superpipelines/registry.json`. If the file does not exist or contains zero pipelines, report this to the user and abort gracefully.
-- If the registry contains multiple pipelines, present them as a numbered list and ask the user to select which pipeline to change models for.
-- Include an "All pipelines" option to scope the change to every pipeline in the project.
-- Store the selected pipeline name(s) for use in subsequent phases.
-- If only one pipeline exists, auto-select it and inform the user.
-- **Fast-path**: When `$ARGUMENTS` is provided, skip interactive pipeline selection. Default to "All pipelines" unless the instruction names a specific pipeline.
+**Q6 mode availability rule:** Modes C and D (per-agent overrides) are **hidden** when the active `platform_profile` has `dynamic_subagents: true` (Tier 1c) OR `model_field_format: "omit"` (Tier 2) — per-agent overrides have no runtime effect on those platforms. The mode selection menu surfaces Mode G in their place. Mode G is hidden on per-step-capable tiers (1, 1b, 1d) where the standard A/B/C/D suffice.
 
-### PHASE 1: MODEL DISCOVERY
+`$ARGUMENTS` fast-paths bypass Mode selection:
+- `/superpipelines:change-models all deep to <model>` → Mode C, target=all, tier=deep
+- `/superpipelines:change-models reset tier_1` → Mode A, full re-wizard for tier_1
+- `/superpipelines:change-models drift` → Mode F
 
-- **Static Fallback**: Load the curated catalog in `references/model-catalog.md`.
-- **Custom Provider Discovery**: If available, read user's Claude Code configuration to identify any configured models.
-- Assemble the catalog for later use. Do NOT present it yet — it will be shown in Phase 3 when the user needs to pick a model.
+**HARD-GATE**: empty `$ARGUMENTS` → present all six modes. NEVER fabricate intent.
 
-### PHASE 2: AGENT SELECTION
+### PHASE 2 — Agent Selection (Modes C, D only)
 
-- **Agent Scan**: Scan only the selected pipeline's agent files:
-  - `<workspace>/.claude/agents/superpipelines/<pipeline>/**/*.md`
-  - If "All pipelines" was selected, scan `<workspace>/.claude/agents/superpipelines/**/*.md`
-- Read each agent file's YAML frontmatter to extract the current `model` field (if any).
-- **Display Table**: Present a numbered table:
+- Scan all agent files under chosen scope roots:
+  - `<root>/agents/superpipelines/**/*.md` (CC, OC)
+  - `<root>/agents/superpipelines/**/*.toml` (Codex)
+- For each agent, read frontmatter and compute `resolved = RESOLVE(agent, profile, prefs)`.
+- Display table:
   ```
-  #   Agent                              Current Model              Source
-  1   my-pipeline/generator               claude-sonnet-4-6           frontmatter
-  2   my-pipeline/reviewer                claude-haiku-4-5            frontmatter
+  #   Agent                        Tier    Resolved model               Source
+  1   my-pipeline/architect        deep    <profile.model_tiers.deep>   user_prefs
+  2   my-pipeline/coder            medium  <profile.model_tiers.medium> profile_default
+  3   my-pipeline/formatter        fast    <profile.model_tiers.fast>   workspace_prefs
   ```
-- If no agent files are found for the selected pipeline(s), report this to the user and abort gracefully.
-- **Selection Options**:
-  - Select individual agents by number (e.g., `1,3,5`)
-  - Select a range (e.g., `1-3`)
-  - Select all agents (`all`)
+- Selection: `1,3`, `1-3`, `all`, or named agent.
 
-### PHASE 3: CHANGE MODE
+### PHASE 3 — Apply
 
-**HARD-GATE**: When `$ARGUMENTS` is empty or not provided, you MUST present the three modes (A, B, C) to the user. NEVER fabricate, infer, or assume `$ARGUMENTS`. The absence of arguments means the user has not specified their intent — ask them what they want.
+**Modes A/B**: Read existing prefs file (or initialize). For each tier, write the chosen model. Write `model_tiers_version_acked = profile.model_tiers_version`. **Stamp `platforms[profile.tier].name = profile.name`** so the JSON is self-describing (display-only sibling of `tiers`; resolver ignores it). Atomic write (temp file + rename).
 
-Present three interaction modes:
+**Mode C**: For each selected agent, edit frontmatter `model_tier:` field (add if absent). Preserve all other fields and ordering.
 
-#### Mode A — Apply to All
-- Re-present the model catalog.
-- Select a single model from the catalog.
-- That model will be assigned to all agents selected in Phase 2.
+**Mode D**: Add `model:` field after `name:` (or update if present). Emit warning: "Escape hatch — auditor will flag SEV-3."
 
-#### Mode B — Select Individually
-- For each selected agent, re-present the model catalog and let the user pick individually.
-- Allow the user to press Enter to skip an agent (keep current model).
+**Mode E (first-run wizard)** — see § Mode E Wizard Detail below.
 
-#### Mode C — Natural Language Instruction
-- The `$ARGUMENTS` from the command (or a free-text input) are parsed as a model change instruction.
-- **Instruction Format**: `<target> to <model-name>` where `<target>` can be:
-  - Agent numbers (by table index): `steps 1-3`
-  - Agent names: `my-pipeline/generator`
-  - `all` — all selected agents
-- **Fuzzy Matching**: Normalize the model name input (lowercase, strip spaces and special characters) and compare against catalog.
-- Present a **confirmation table** before applying.
-
-### PHASE 4: APPLICATION
-
-- For each agent in the confirmation table:
-  1. Read the agent `.md` file.
-  2. Parse the YAML frontmatter.
-  3. If `model` field exists: update its value.
-  4. If `model` field does not exist: add `model: <new-value>` after the `name` field (or as the second line of frontmatter if no `name`).
-  5. Write the updated file using the Edit tool.
-- **Atomicity**: Stage all changes mentally; apply them one by one. If any write fails, report the failure and continue with the remaining agents.
-- **Invariant**: Only the `model` field in the frontmatter is modified. No other frontmatter fields or body content is altered.
-
-### PHASE 5: VERIFICATION & SUMMARY
-
-- Re-read all modified agent files.
-- Parse the frontmatter and confirm the `model` field matches the assigned value.
-- Present a final summary table:
+**Mode F (catalog refresh)**:
+- Load `sk-model-resolver`.
+- For active platform, compute diff:
   ```
-  Agent                        Previous Model              New Model              Status
-  my-pipeline/generator         claude-sonnet-4-6          claude-haiku-4-5       ✅ Applied
+  acked = prefs.user.platforms[tier].model_tiers_version_acked
+  current = profile.model_tiers_version
+  diff: for each tier in [triage,fast,medium,deep], compare prefs.tiers[tier] vs profile.model_tiers[tier].model
   ```
+- Present diff table; prompt accept / edit / cancel.
+- On accept: bump `model_tiers_version_acked = current`. No tier value rewrites unless user explicitly opts in.
+
+### PHASE 4 — Verification
+
+- Re-load `sk-model-resolver`.
+- For each affected agent (Modes C/D) OR for a representative agent per pipeline (Modes A/B):
+  - Compute `resolved = RESOLVE(...)` against the new prefs.
+- Display before/after table.
+- Confirm "All changes applied successfully" with file paths edited.
+
 </protocol>
 
+## Mode E Wizard Detail
+
+```
+══════════════════════════════════════════════════════════════
+  Superpipelines Model Preference Setup — Platform: <name>
+══════════════════════════════════════════════════════════════
+
+Subscription detection (OC example):
+  Read ~/.opencode/auth.json:
+    Go subscription:    active ✓ / inactive ✗
+    Zen access:         ✓ / ✗
+    Anthropic API key:  set / not set
+
+Adapts "Suggested alts" list based on detection:
+  - Go active → Go models suggested first
+  - Go inactive → Zen + direct-API suggested
+  - Anthropic key set → anthropic/* alts included
+
+For each tier in [triage, fast, medium, deep]:
+  Show:
+    - Profile default
+    - 2-3 suggested alts with cost/quota annotations
+    - Prompt for choice (enter=accept default)
+
+Optional effort_default prompt (one per tier).
+
+Save to:
+  (1) ~/.superpipelines/model-preferences.json  [user-global]
+  (2) <workspace>/.superpipelines/model-preferences.json  [workspace-only]
+  (3) Both
+
+Atomic write. Bump model_tiers_version_acked to current profile version.
+```
+
+### Subscription detection helpers (per platform)
+
+| Platform | Detection source |
+|---|---|
+| OC (tier_1b) | `~/.opencode/auth.json` — keys: `opencode_go.active`, `opencode_zen.enabled`, `anthropic.key_set` |
+| CC (tier_1) | `~/.claude/auth.json` or `ANTHROPIC_API_KEY` env — paid plan vs free |
+| Codex (tier_1d) | `~/.codex/auth.json` — `openai.subscription_tier` |
+| Antigravity (tier_1c) | `~/.antigravity/config.json` — `gemini.subscription` |
+| Tier 2 | N/A — host IDE controls model; wizard skipped |
+
+If detection file does not exist: prompt user to specify subscription state manually with multiple-choice.
+
 <invariants>
-- NEVER modify an agent file without user confirmation of the change table.
-- NEVER remove existing frontmatter fields; only add or update the `model` field.
-- ALWAYS fall back to the static catalog (`references/model-catalog.md`) on network or discovery failures.
-- ALWAYS preserve the exact format and ordering of existing frontmatter fields when editing.
-- NEVER modify the `plugin_version` field during model changes.
+- NEVER modify a profile JSON. Profiles are plugin-owned source of truth.
+- NEVER modify an agent file without showing the user the before/after frontmatter and obtaining explicit confirmation.
+- ALWAYS bump `model_tiers_version_acked` when writing prefs (Modes A/B/E/F).
+- ALWAYS stamp `platforms[profile.tier].name = profile.name` when writing prefs. Canonical key stays `tier_1` / `tier_1b` / etc.; `name` is a display-only sibling.
+- ALWAYS preserve frontmatter field ordering when editing agent files.
+- NEVER remove or alter frontmatter fields other than the targeted field (`model_tier:`, `effort_tier:`, `model:`).
+- NEVER auto-migrate v1 agents in this skill — `sk-model-migration` owns that path (called from `running-a-pipeline` Phase 0.45).
 </invariants>
 
-## Fuzzy Matching Algorithm
+## Red Flags — STOP
 
-<matching_protocol>
-### Step 1: Normalize
-- Lowercase the input.
-- Remove all spaces, hyphens, underscores, dots, and special characters.
-- Example: "Claude 3.5 Sonnet" → "claude35sonnet"
-
-### Step 2: Exact Match
-- Compare normalized input against normalized model IDs and display names in the catalog.
-- If exact match found, return it immediately.
-
-### Step 3: Prefix Match
-- Check if the normalized input is a prefix of any catalog entry.
-- Return all prefix matches.
-
-### Step 4: Disambiguation
-- If multiple candidates remain, present them grouped by provider and ask the user to select.
-</matching_protocol>
+- "I'll skip the confirmation table because the diff is small." → **STOP**. Confirm-before-write is non-negotiable.
+- "I'll edit the profile JSON to add a custom model." → **STOP**. Profiles are plugin-owned. Custom models go into preference files.
+- "I'll merge multiple pipelines' agents into one selection prompt without showing scope roots." → **STOP**. Multi-platform scope display is mandatory to avoid editing the wrong file.
+- "Empty `$ARGUMENTS` — I'll pick Mode E by default." → **STOP**. Empty args → present all six modes.
 
 ## Reference Files
-- `references/model-catalog.md` — Static fallback model catalog for offline use.
-- `sk-pipeline-paths/SKILL.md` — Scope and path resolution for registries and agents.
-- `sk-4d-method/SKILL.md` — Brief deconstruction for natural language instructions.
+
+- `references/model-catalog.md` — Deprecated in v2.0; resolver uses profile JSONs as catalog source.
+- `sk-model-resolver/SKILL.md` — Resolution algorithm.
+- `sk-platform-dispatch/profiles/{tier}.json` — Model catalog source of truth.
+- `sk-pipeline-paths/SKILL.md` — Scope-root resolution.

@@ -1,0 +1,54 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-g",
+  "name": "parity-test-g",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_2",
+  "entry_skill": "run-parity-test-g",
+  "metadata": {
+    "goal": "Read a markdown file and produce a word frequency report listing the 20 most common words, excluding stopwords, written to output/ as a text file",
+    "output": "{ROOT}/output/parity-test-g-word-freq.txt",
+    "model_field_format": "omit",
+    "platform_note": "Tier 2 (Cursor/Windsurf/Cline): no agent files; all steps execute inline in the entry skill's session. dispatch_mechanism is inline. model is inherit — host IDE owns model selection. No Task() primitive. Reviewer isolation is convention-only.",
+    "degradation_warnings": [
+      "Reviewer isolation impossible on this platform: writer and reviewer are the same agent in the same context. Review steps execute the reviewer protocol but cannot provide assumption-blindness defense or context-bleed isolation. Treat review output as a self-check, not verification.",
+      "Parallel fan-out (Pattern 2) requires worktrees and is unavailable on this platform (worktrees: false).",
+      "Model selection is owned by the host IDE; per-step model assignment is not emitted."
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "tokenizer",
+      "order": 1,
+      "agent": null,
+      "protocol_skill": "skills/superpipelines/parity-test-g/tokenizer-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-g/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-g/{runId}/frequency-counts.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input markdown file, tokenizes the text, counts word frequencies (excluding common English stopwords), writes frequency-counts.json to the temp directory. Executes inline in the entry skill's session."
+    },
+    {
+      "step_id": "reporter",
+      "order": 2,
+      "agent": null,
+      "protocol_skill": "skills/superpipelines/parity-test-g/reporter-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-g/{runId}/frequency-counts.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-g-word-freq.txt"
+      ],
+      "depends_on": ["tokenizer"],
+      "description": "Reads frequency-counts.json from the temp directory, selects the top-20 words by frequency, formats and writes the word frequency report to output/parity-test-g-word-freq.txt. Executes inline in the entry skill's session."
+    }
+  ]
+}

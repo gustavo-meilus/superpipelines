@@ -1,0 +1,50 @@
+{
+  "schema_version": "2.0.0",
+  "scope": "local",
+  "scope_root": ".opencode",
+  "pipelines": [
+    {
+      "name": "parity-test-i",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1b",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-i/run-parity-test-i/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-i/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-i/parity-test-i.md",
+      "agents": [
+        "agents/superpipelines/parity-test-i/inspector.md",
+        "agents/superpipelines/parity-test-i/formatter.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-i/run-parity-test-i/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a JSON file and produce a human-readable summary of its top-level keys and value types, written to output/ as a text file"
+    },
+    {
+      "name": "parity-test-j",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1b",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-j/run-parity-test-j/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-j/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-j/parity-test-j.md",
+      "agents": [
+        "agents/superpipelines/parity-test-j/analyzer.md",
+        "agents/superpipelines/parity-test-j/reviewer.md",
+        "agents/superpipelines/parity-test-j/reporter.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-j/run-parity-test-j/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a CSV file and produce a data quality report listing columns with nulls, outliers, and type inconsistencies, written to output/ as a markdown file"
+    }
+  ]
+}

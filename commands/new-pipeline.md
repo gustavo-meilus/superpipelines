@@ -1,39 +1,21 @@
 ---
 description: Design and scaffold a new named multi-agent pipeline with git preflight, scope selection, pre-gate audit, and entry-skill generation
-argument-hint: [brief description of the pipeline]
+argument-hint: "[brief description of the pipeline]"
 ---
 
-# New Pipeline — Command Reference
+# New Pipeline — Command Entry
 
-> Designs and scaffolds a new named multi-agent pipeline. Includes git preflight, scope selection, execution pattern selection, and mandatory pre-gate audits.
-
-<args>
-- **$ARGUMENTS**: Brief description of the intended pipeline.
-</args>
+Invoke the `creating-a-pipeline` skill. The skill owns the full protocol (PHASE 0 tier detect → PHASE 0b git preflight → PHASE 1 scope & identity → PHASE 2 brief refinement 4D → PHASE 3 pattern selection → PHASE 4 design & audit loop → PHASE 5 human approval → PHASE 6 finalization).
 
 <protocol>
-### 1. PREFLIGHT
-- **Git Check**: Verify workspace for `.git`. If absent, prompt user to initialize or proceed with restricted isolation.
-- **Scope Selection**: Select between `local`, `project`, or `user` scopes.
-- **Uniqueness**: Resolve a lowercase-hyphen name and verify it against the `registry.json` of the chosen scope.
-- **Context Injection**: Check for the presence of a root `PIPELINE-CONTEXT.md`. If missing, suggest or run `/superpipelines:init-deep` to generate hierarchical context maps before proceeding.
-
-### 2. DESIGN
-- **4D Analysis**: Run the 4D Method on the brief to select an execution pattern (1–5).
-- **Architect Dispatch**: Invoke `pipeline-architect` in PIPELINE mode to produce spec, plan, tasks, topology, agents, and internal skills.
-
-### 3. VERIFICATION
-- **Pre-gate Audit**: Execute `pipeline-auditor` in DELTA mode on the generated bundle.
-- SEV-0 and SEV-1 findings must be resolved before reaching the human gate.
-
-### 4. DELIVERY
-- **Human Gate**: Present the specification and task list for approval or revision.
-- **Scaffold Generation**: Write the entry skill with appropriate model-invocation settings.
-- **Registry Update**: Append the new pipeline record to the canonical registry file.
+1. Load `Skill(superpipelines:creating-a-pipeline)`.
+2. Pass `$ARGUMENTS` verbatim (brief description of the pipeline).
+3. Follow the skill's protocol exactly. Do NOT improvise an alternative flow, do NOT collapse phases, do NOT skip git preflight or the pre-gate audit.
 </protocol>
 
 <invariants>
-- NEVER skip git preflight, scope selection, or the pre-gate audit.
-- NEVER proceed to scaffold generation without explicit approval at the human gate.
-- Resolve all paths via `sk-pipeline-paths` to ensure scope awareness.
+- The skill is the single source of truth for the workflow. This command file is a thin entry point.
+- HARD-GATE: every phase 0 → 0b → 1 → 2 → 3 → 4 → 5 → 6 MUST run in that order. The command file MUST NOT embed any phase logic that would override or shortcut the skill.
+- HARD-GATE: scope selection, git preflight, and pre-gate audit are owned by the skill. NEVER skip them from this command file.
+- NEVER proceed to scaffold generation without explicit human approval in PHASE 5 (enforced by the skill).
 </invariants>

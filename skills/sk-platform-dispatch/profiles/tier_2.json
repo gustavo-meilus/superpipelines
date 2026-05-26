@@ -1,0 +1,43 @@
+{
+  "$schema": "./profile.schema.json",
+  "tier": "tier_2",
+  "name": "Cursor / Windsurf / Cline",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
+  "capabilities": {
+    "subagents": false,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "convention",
+    "dispatch_mechanism": "inline",
+    "dynamic_subagents": false,
+    "model_field_format": "omit",
+    "effort_field_name": null,
+    "effort_field_applies_to_providers": null,
+    "subagent_env_override": null,
+    "subagent_inherit_target": "session",
+    "provider_families": []
+  },
+  "scope_root": {
+    "workspace": ".superpipelines",
+    "user": "~/.superpipelines"
+  },
+  "degradation_warnings": [
+    "Reviewer isolation impossible on this platform: writer and reviewer are the same agent in the same context. Review steps execute the reviewer protocol but cannot provide assumption-blindness defense or context-bleed isolation. Treat review output as a self-check, not verification. For verified review, run from Claude Code, OpenCode, or Codex.",
+    "Parallel fan-out (Pattern 2) requires worktrees and is unavailable on this platform (worktrees: false).",
+    "Iterative pattern (Pattern 3) requires worktrees and is unavailable on this platform (worktrees: false). Inline iteration without writer isolation produces multi-writer state contamination across cycles.",
+    "Model selection is owned by the host IDE; per-step model assignment is not emitted."
+  ],
+  "extensions": {
+    "version_manifest_path": ".cursor-plugin/plugin.json",
+    "skill_tool_note": "Cursor, Windsurf, and Cline load skill content via file read or prompt injection, not a native Skill() primitive. The skill_tool capability flag is treated as equivalent for routing purposes in this profile."
+  },
+  "model_tiers": {
+    "triage": { "model": "inherit", "effort": null },
+    "fast":   { "model": "inherit", "effort": null },
+    "medium": { "model": "inherit", "effort": null },
+    "deep":   { "model": "inherit", "effort": null }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-h",
+  "name": "parity-test-h",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_2",
+  "entry_skill": "run-parity-test-h",
+  "metadata": {
+    "goal": "Read a YAML config file and produce a validation report — checking for required fields, type mismatches, and deprecated keys — written to output/ as a markdown file",
+    "output": "{ROOT}/output/parity-test-h-validation-report.md",
+    "model_field_format": "omit",
+    "platform_note": "Tier 2 (Cursor/Windsurf/Cline): no agent files; all steps execute inline in the entry skill's session. dispatch_mechanism is inline. model is inherit — host IDE owns model selection. No Task() primitive. Reviewer isolation is convention-only.",
+    "degradation_warnings": [
+      "Reviewer isolation impossible on this platform: writer and reviewer are the same agent in the same context. Review steps execute the reviewer protocol but cannot provide assumption-blindness defense or context-bleed isolation. Treat review output as a self-check, not verification.",
+      "Parallel fan-out (Pattern 2) requires worktrees and is unavailable on this platform (worktrees: false).",
+      "Model selection is owned by the host IDE; per-step model assignment is not emitted."
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "validator",
+      "order": 1,
+      "agent": null,
+      "protocol_skill": "skills/superpipelines/parity-test-h/validator-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-h/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-h/{runId}/validator-findings.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input YAML config file, parses it, checks for required fields, type mismatches, and deprecated keys, writes validator-findings.json to the temp directory. Executes inline in the entry skill's session."
+    },
+    {
+      "step_id": "reviewer",
+      "order": 2,
+      "agent": null,
+      "protocol_skill": "skills/superpipelines/parity-test-h/reviewer-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-h/{runId}/validator-findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-h/{runId}/reviewed-findings.json"
+      ],
+      "depends_on": ["validator"],
+      "description": "Reviews validator-findings.json for false positives by re-deriving findings from the raw YAML input (convention-only isolation, C19 self-skepticism preamble). Writes reviewed-findings.json to the temp directory. Executes inline in the entry skill's session."
+    },
+    {
+      "step_id": "reporter",
+      "order": 3,
+      "agent": null,
+      "protocol_skill": "skills/superpipelines/parity-test-h/reporter-protocol/SKILL.md",
+      "model_tier": "inherit",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-h/{runId}/reviewed-findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-h-validation-report.md"
+      ],
+      "depends_on": ["reviewer"],
+      "description": "Reads reviewed-findings.json from the temp directory, formats a structured markdown validation report with sections for required-field violations, type mismatches, deprecated keys, and dismissed findings, writes parity-test-h-validation-report.md to output/. Executes inline in the entry skill's session."
+    }
+  ]
+}

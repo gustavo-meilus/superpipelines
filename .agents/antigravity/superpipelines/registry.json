@@ -1,0 +1,53 @@
+{
+  "schema_version": "2.0.0",
+  "scope": "local",
+  "scope_root": ".agents/antigravity",
+  "pipelines": [
+    {
+      "name": "parity-test-c",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1c",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-c/run-parity-test-c/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-c/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-c/parity-test-c.md",
+      "agents": [
+        "agents/superpipelines/parity-test-c/analyzer.md",
+        "agents/superpipelines/parity-test-c/summarizer.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-c/run-parity-test-c/SKILL.md",
+        "skills/superpipelines/parity-test-c/analyzer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-c/summarizer-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Analyze a text document and produce a structured markdown summary"
+    },
+    {
+      "name": "parity-test-d",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1c",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-d/run-parity-test-d/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-d/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-d/parity-test-d.md",
+      "agents": [
+        "agents/superpipelines/parity-test-d/scanner.md",
+        "agents/superpipelines/parity-test-d/reporter.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-d/run-parity-test-d/SKILL.md",
+        "skills/superpipelines/parity-test-d/scanner-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-d/reporter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a directory of source files and produce a code health report listing files with high complexity, missing docstrings, or long functions, written to output/ as a markdown report"
+    }
+  ]
+}

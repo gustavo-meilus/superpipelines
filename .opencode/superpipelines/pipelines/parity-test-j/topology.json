@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-j",
+  "name": "parity-test-j",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1b",
+  "entry_skill": "run-parity-test-j",
+  "metadata": {
+    "goal": "Read a CSV file and produce a data quality report — listing columns with nulls, outliers, and type inconsistencies — written to output/ as a markdown file",
+    "output": "{ROOT}/output/parity-test-j-report.md",
+    "model_field_format": "provider_prefixed",
+    "platform_note": "Tier 1b (OpenCode v1.15.10): native subagent dispatch; agent files with YAML frontmatter + body protocol ≤150 lines; no companion protocol skills; no Task() primitive; sequential only (parallel_subagents: false). model: opencode/big-pickle in each agent frontmatter. Reviewer structural isolation: permissionMode: plan + disallowedTools: Write, Edit, Bash.",
+    "degradation_warnings": [
+      "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
+    ]
+  },
+  "steps": [
+    {
+      "step_id": "analyzer",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-j/analyzer.md",
+      "protocol_skill": null,
+      "model_tier": "triage",
+      "model": "opencode/big-pickle",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-j/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-j/{runId}/findings.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input CSV file, computes per-column quality metrics (null counts, IQR-based outlier detection, type inconsistency detection), writes findings.json to the temp directory. Runs as a native subagent on OpenCode."
+    },
+    {
+      "step_id": "reviewer",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-j/reviewer.md",
+      "protocol_skill": null,
+      "model_tier": "triage",
+      "model": "opencode/big-pickle",
+      "reviewer_isolation": "structural",
+      "reviewer_isolation_mechanism": "permissionMode: plan + disallowedTools: Write, Edit, Bash",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-j/{runId}/findings.json"
+      ],
+      "outputs": [],
+      "depends_on": ["analyzer"],
+      "description": "Reads findings.json from the temp directory, validates completeness and correctness of the analyzer's findings (structural review, read-only). Verdict is communicated via terminal output text — captured in pipeline-state.json by the entry skill. CANNOT write files or execute shell commands. Runs as a native subagent on OpenCode."
+    },
+    {
+      "step_id": "reporter",
+      "order": 3,
+      "agent": "agents/superpipelines/parity-test-j/reporter.md",
+      "protocol_skill": null,
+      "model_tier": "triage",
+      "model": "opencode/big-pickle",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-j/{runId}/findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-j-report.md"
+      ],
+      "depends_on": ["reviewer"],
+      "description": "Reads findings.json and reviewer verdict (passed via dispatch context) from the temp directory, renders the final markdown data quality report, writes parity-test-j-report.md to output/. Only dispatched if reviewer verdict is approved or approved_with_concerns. Runs as a native subagent on OpenCode."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "$comment": "Cursor-specific hooks for Superpipelines. Cursor's hook event model differs from Claude Code; this file declares no active hooks pending Cursor hook-API stabilization. Skills handle session-start context via Cursor's rules/AGENTS.md loading instead.",
+  "version": "1.0",
+  "hooks": {}
+}

@@ -1,4 +1,8 @@
-# Model Catalog — Static Fallback
+# Model Catalog — DEPRECATED (v2.0)
+
+> **Deprecated as of v2.0.** Model catalog is now sourced from `skills/sk-platform-dispatch/profiles/{tier}.json` (`model_tiers` blocks) as the single source of truth. This file remains as a fallback for legacy alias lookups during the v1→v2 migration window and will be removed in v2.1.
+
+# Model Catalog — Static Fallback (legacy)
 
 > Curated list of Claude models. Used as a fallback when live discovery fails. Custom provider models (OpenCode Go, OpenCode Zen, Bedrock, custom gateways, etc.) are discovered dynamically from user configuration at runtime. Last updated: 2026-05-11.
 

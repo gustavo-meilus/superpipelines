@@ -1,13 +1,13 @@
 ---
 name: release
-description: Use when preparing and publishing a new versioned release of superpipelines — bumps versions across all manifests, prepends CHANGELOG.md, overwrites RELEASE-NOTES.md with the latest entry, commits, tags, pushes to main, and creates the GitHub release. Requires being on main with a clean working tree.
+description: Use when preparing and publishing a new versioned release of superpipelines — bumps versions across all manifests (package.json, .claude-plugin/, .codex-plugin/, .cursor-plugin/, gemini-extension.json, marketplace.json plugin entry), prepends CHANGELOG.md, overwrites RELEASE-NOTES.md with the latest entry, commits, tags, pushes to main, and creates the GitHub release. Requires being on main with a clean working tree.
 user-invocable: true
 ---
 
 # Superpipelines Release Process
 
 <overview>
-Eight-step release workflow for the superpipelines Claude Code plugin. Covers version discovery, user-gated version selection, commit categorization, multi-file version bumping, changelog authoring, staged user approval, git tagging, and GitHub release publication.
+Eight-step release workflow for the superpipelines multi-platform plugin (CC + Codex + Cursor/Windsurf/Cline + Antigravity). Covers version discovery, user-gated version selection, commit categorization, multi-file version bumping (across all per-platform manifests), changelog authoring, staged user approval, git tagging, and GitHub release publication.
 </overview>
 
 <constraints>
@@ -26,8 +26,8 @@ Eight-step release workflow for the superpipelines Claude Code plugin. Covers ve
 git branch --show-current          # must output "main"; abort if not
 git status --porcelain             # must be empty; abort if dirty
 git fetch origin main --tags       # sync remote tags
-git describe --tags --abbrev=0     # find the most recent tag, e.g. v1.0.5
-git log v1.0.5..HEAD --oneline     # list all commits since last release
+git describe --tags --abbrev=0     # find the most recent tag, e.g. v2.0.0
+git log v2.0.0..HEAD --oneline     # list all commits since last release
 ```
 
 If the current branch is not `main`, stop and instruct the user to merge their work to `main` first.
@@ -68,7 +68,7 @@ Draft the human-readable release title: a short (≤60 chars) phrase capturing t
 
 ## Step 4 — Bump Version in All Manifests
 
-Update exactly these three files. No others.
+Update exactly these **twelve** files. No others. (Q11: expanded from six to twelve to cover the per-tier profile_version coupling and the CLAUDE.md Project Version field — v1.0.6 shipped with the Project Version drifted at v1.2.0 because the release skill didn't track it. Never again.)
 
 ### 4a. `package.json`
 
@@ -99,6 +99,59 @@ Change only `plugins[0].version` — NOT the root `"version"` field (that is the
   }
 ]
 ```
+
+### 4d. `.codex-plugin/plugin.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+### 4e. `.cursor-plugin/plugin.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+### 4f. `gemini-extension.json`
+
+Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+> **TODO (post-2026-06-18):** Gemini CLI retires June 18, 2026. After retirement, delete `gemini-extension.json` from the repo and remove this Step 4f entry. Verify with `agy plugin import gemini` migration path before deletion.
+
+### 4g. `skills/sk-platform-dispatch/profiles/tier_1.json`, `tier_1b.json`, `tier_1c.json`, `tier_1d.json`, `tier_2.json`
+
+(Q11) Update the `"profile_version"` field on each of the 5 profile JSONs. profile_version is coupled to plugin_version per the v2.0.0 architecture decision.
+
+```json
+"profile_version": "{NEW_VERSION}",
+```
+
+### 4h. `CLAUDE.md` Project Version
+
+(Q11) Update the `Project Version` line near the bottom of `CLAUDE.md`:
+
+```markdown
+- **Project Version**: v{NEW_VERSION}
+```
+
+### 4i. `model_tiers_version` decision prompt
+
+(Q11) Ask the user explicitly:
+
+> "Did this release update any model IDs in `profiles/tier_*.json`? (Yes / No)"
+
+If Yes: bump the `"model_tiers_version"` field on all 5 profile JSONs to today's date (`YYYY-MM-DD`). This is the catalog version used by `DETECT_CATALOG_DRIFT` to emit advisories when user preferences fall behind the shipped catalog. If skipped, the drift detector never fires after a model-catalog refresh.
+
+```json
+"model_tiers_version": "{TODAY_YYYY_MM_DD}",
+```
+
+If No: leave `model_tiers_version` unchanged on every profile.
 
 ---
 
@@ -175,20 +228,65 @@ Files to be modified:
   package.json                                  {prev} → {NEW_VERSION}
   .claude-plugin/plugin.json                    {prev} → {NEW_VERSION}
   .claude-plugin/marketplace.json               {prev} → {NEW_VERSION}
+  .codex-plugin/plugin.json                     {prev} → {NEW_VERSION}
+  .cursor-plugin/plugin.json                    {prev} → {NEW_VERSION}
+  gemini-extension.json                         {prev} → {NEW_VERSION}
+  skills/sk-platform-dispatch/profiles/tier_1.json    profile_version {prev} → {NEW_VERSION}
+  skills/sk-platform-dispatch/profiles/tier_1b.json   profile_version {prev} → {NEW_VERSION}
+  skills/sk-platform-dispatch/profiles/tier_1c.json   profile_version {prev} → {NEW_VERSION}
+  skills/sk-platform-dispatch/profiles/tier_1d.json   profile_version {prev} → {NEW_VERSION}
+  skills/sk-platform-dispatch/profiles/tier_2.json    profile_version {prev} → {NEW_VERSION}
+  CLAUDE.md                                     Project Version line → v{NEW_VERSION}
   CHANGELOG.md                                  (prepend entry)
   RELEASE-NOTES.md                              (overwrite with latest + history)
 
+If model catalog refreshed (Step 4i Yes):
+  model_tiers_version on all 5 profiles → {TODAY_YYYY_MM_DD}
+
 Git operations:
-  commit: "release: v{NEW_VERSION} — {Release Title}"
+  commit: "release: v{NEW_VERSION} — {Release Title}" + Step 5c parity matrix in body
   tag:    v{NEW_VERSION}
   push:   origin main + tag
 
-Proceed? (yes / show diff / modify)
+Proceed? (yes / show diff / modify / skip parity gate)
 ```
 
 **If the user says "show diff":** Run `git diff` and display it, then re-present the gate.
 **If the user says "modify":** Accept their requested changes, update files, then re-present the gate.
-**Only proceed to Step 6 on an explicit "yes".**
+**Only proceed to Step 5c on an explicit "yes".**
+
+---
+
+## Step 5c — Parity-Test Gate (Q11)
+
+The `PARITY_TESTING: MANUAL_PHASE1` invariant requires per-tier validation before release. This gate enforces an explicit per-tier confirmation, logged into the release commit message for audit.
+
+Prompt the user for each tier that has changes in this release:
+
+```
+For each tier you have changed (or that this release affects), confirm parity status:
+  Tier 1   (Claude Code)              : [PASS / SKIP / N/A]
+  Tier 1b  (OpenCode)                 : [PASS / SKIP / N/A]
+  Tier 1c  (Antigravity CLI 2.0)      : [PASS / SKIP / N/A]
+  Tier 1d  (Codex App/CLI)            : [PASS / SKIP / N/A]
+  Tier 2   (Cursor / Windsurf / Cline): [PASS / SKIP / N/A]
+```
+
+Rules:
+- `PASS` requires that the user scaffolded and ran a representative pipeline on that tier in the last 24 hours and observed correct behavior.
+- `SKIP` is acceptable only when the change is documented to not affect that tier (e.g., a CC-only bugfix may SKIP 1b/1c/1d/2). The user must briefly state why.
+- `N/A` is acceptable only when the tier is unavailable to the releaser (e.g., no Antigravity install). The user must state which platform is unavailable.
+
+**Q8 Tier 1d sandbox-isolation verification.** For each Tier 1d `PASS`, additionally confirm:
+- Create a Codex reviewer agent TOML with `sandbox_mode = "read-only"`.
+- Dispatch the reviewer with a prompt that asks it to write a file.
+- Observe: the write attempt is denied by Codex's sandbox.
+
+If the write is NOT denied: the `tier_1d.json` `reviewer_isolation: "structural"` claim is false. Downgrade the profile to `"convention"`, add a degradation_warning, and amend the `STRUCTURAL_ON_TIER1_1B_1D` invariant in `CLAUDE.md` to `STRUCTURAL_ON_TIER1_1B; CONVENTION_ELSEWHERE` BEFORE releasing.
+
+Capture the responses verbatim. They will be embedded in the release commit message in Step 6.
+
+**Cannot proceed to Step 6 without a response (PASS / SKIP / N/A + reason) for every tier.**
 
 ---
 
@@ -198,10 +296,29 @@ Proceed? (yes / show diff / modify)
 git add package.json \
         .claude-plugin/plugin.json \
         .claude-plugin/marketplace.json \
+        .codex-plugin/plugin.json \
+        .cursor-plugin/plugin.json \
+        gemini-extension.json \
+        skills/sk-platform-dispatch/profiles/tier_1.json \
+        skills/sk-platform-dispatch/profiles/tier_1b.json \
+        skills/sk-platform-dispatch/profiles/tier_1c.json \
+        skills/sk-platform-dispatch/profiles/tier_1d.json \
+        skills/sk-platform-dispatch/profiles/tier_2.json \
+        CLAUDE.md \
         CHANGELOG.md \
         RELEASE-NOTES.md
 
-git commit -m "release: v{NEW_VERSION} — {Release Title}"
+git commit -m "$(cat <<'EOF'
+release: v{NEW_VERSION} — {Release Title}
+
+Parity (PARITY_TESTING: MANUAL_PHASE1, Q11 gate):
+  Tier 1:  {PASS|SKIP|N/A} {reason if SKIP/N/A}
+  Tier 1b: {PASS|SKIP|N/A} {reason if SKIP/N/A}
+  Tier 1c: {PASS|SKIP|N/A} {reason if SKIP/N/A}
+  Tier 1d: {PASS|SKIP|N/A} {reason if SKIP/N/A}
+  Tier 2:  {PASS|SKIP|N/A} {reason if SKIP/N/A}
+EOF
+)"
 ```
 
 Verify the commit appears in `git log --oneline -1`.

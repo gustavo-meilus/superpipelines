@@ -45,6 +45,31 @@ The Pipeline Architect treats every component as a discrete software system with
 - **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
 - **Constraint**: Agent files are zero-body (frontmatter only). Preload `sk-*` method skills and the companion `{agent-name}-protocol` skill. All protocol goes into the companion skill.
+- **Multi-Platform Entry Skill Constraint (v2.0.0+)**: Generated entry skills (`skills/superpipelines/{P}/run-{P}/SKILL.md`) MUST dispatch every step via `sk-platform-dispatch` DISPATCH, not via direct `Task(subagent_type=...)` calls. The entry-skill body must load `sk-platform-dispatch` in its first phase, branch on cached `metadata.runtime_tier`, and call DISPATCH for every step in topology order. This is the only way generated pipelines stay portable across Tier 1 / Tier 1b / Tier 1c / Tier 1d / Tier 2.
+- **Generated Entry Skill Template**: For each step in `topology.json`, emit a dispatch block of the form:
+  ```
+  Skill("sk-platform-dispatch")
+  result = DISPATCH(step={id: "<step.id>", agent: "<step.agent>", protocol_skill: "<step.agent>-protocol", output_paths: [...]}, inputs=<resolved>)
+  if result.status != "DONE": handle per status protocol
+  ```
+  **Entry skill frontmatter MUST include** (C4 compliance):
+  ```
+  user-invocable: true
+  disable-model-invocation: true
+  plugin_version: "<current_version>"
+  ```
+  `user-invocable: true` lets users invoke the pipeline. `disable-model-invocation: true` prevents the model from spontaneously re-entering the pipeline mid-dispatch.
+
+  **Entry skill MUST include a Phase 5.x cleanup contract** (C20 compliance):
+  - Write `status: "completed"` to `{ROOT}/superpipelines/temp/{P}/{runId}/pipeline-state.json` (UTF-8, no BOM) on success.
+  - Delete `{ROOT}/superpipelines/temp/{P}/{runId}/` on DONE.
+  - Preserve temp dir and log path on BLOCKED/FAILED/ESCALATED.
+
+  **Entry skill paths MUST use `{ROOT}`** (C22 compliance): every file path in the entry skill and in protocol skills must reference `{ROOT}` resolved via `sk-pipeline-paths`, never a literal `.claude/`, `.opencode/`, `.agents/`, or `.superpipelines/` directory name. Hard-coding the scope-root directory name breaks portability to non-CC tiers.
+
+  Do NOT emit raw `Task(subagent_type=...)` invocations in entry skills for **top-level step dispatch**. Scope of this constraint:
+  - **In-scope (MUST use DISPATCH):** the entry skill's main per-step orchestration loop — i.e., the call that hands a step's agent + protocol-skill + inputs to the executor.
+  - **Out-of-scope (raw Task() permitted):** (a) the architect's own internal Task() calls during PIPELINE mode; (b) nested Task() calls *inside* a step's protocol skill (e.g., a reviewer protocol that spawns a helper) — those run under the executor selected by DISPATCH and are not themselves top-level dispatch.
 
 ### 3. DEVELOP
 
@@ -60,10 +85,11 @@ Every new agent MUST follow the Lean Agent pattern: the agent file is frontmatte
 See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates" for exact templates.
 
 **Frontmatter rules:**
-- Default to `model: sonnet`.
+- Write `model_tier:` (one of `triage | fast | medium | deep | inherit`) and optional `effort_tier:` (`low | medium | high`). NEVER write a concrete `model:` field — that is resolved at runtime by `sk-model-resolver`. Defaults: planning/architecture/review steps → `deep`; coding/execution → `medium`; utility/formatting → `fast`; routers/classifiers → `triage`.
 - Set `permissionMode: plan` for reviewers and architects.
 - Set `memory: local` only for cross-run heuristics; never use `memory: project`.
 - Set `user-invocable: false` for internal step skills.
+- **Reviewer-agent isolation recipe (all tiers)**: When generating a reviewer agent, the architect MUST consult `platform_profile.extensions.reviewer_isolation_recipe` (a free-form string carried by each tier profile under `skills/sk-platform-dispatch/profiles/`). If present, the architect applies the recipe verbatim to the generated agent frontmatter. If absent or empty, the tier's structural isolation source is whichever native mechanism the profile already encodes (CC: agent `tools:` allowlist; OC: `permission: { edit: deny }`; Tier 2: convention-only — surface degradation). NEVER duplicate per-tier recipe text in this skill body — the profile JSON is the single source of truth so new tiers (e.g. future Kiro Tier 1e) drop in as profile data without skill edits.
 
 **Build** files via `Write` (new) or `Edit` (update), resolving all paths via `sk-pipeline-paths`.
 
@@ -79,6 +105,10 @@ See `references/sdd-artifacts.md` § "Lean agent stub + protocol skill templates
 - Absolute paths are forbidden; resolve all paths via scope-aware variables or `${CLAUDE_PLUGIN_ROOT}`.
 - `permissionMode: bypassPermissions` requires an inline justification comment in the companion `{agent-name}-protocol` skill.
 - `memory: project` is strictly forbidden in all agent frontmatter.
+- Generated entry skills MUST route every step through `sk-platform-dispatch` DISPATCH. Direct `Task(subagent_type=...)` invocations in entry-skill bodies are forbidden as of v2.0.0; they break Tier 1b/1c/1d/2 execution and violate `MULTI_PLATFORM: TRUE`.
+- Entry skill MUST have `disable-model-invocation: true` AND `user-invocable: true` (C4). `disable-model-invocation: false` lets the model spontaneously re-enter the pipeline — auditor flags as SEV-2.
+- Entry skill MUST include a cleanup contract (C20): write `status: "completed"` to state on DONE; delete `temp/{P}/{runId}/` on DONE; preserve on BLOCKED/FAILED/ESCALATED.
+- NEVER hardcode `.claude/`, `.opencode/`, `.agents/`, `.superpipelines/` in entry skill or protocol skill paths (C22 portability). Always use `{ROOT}` resolved via `sk-pipeline-paths`.
 </invariants>
 
 ## Reference Files
