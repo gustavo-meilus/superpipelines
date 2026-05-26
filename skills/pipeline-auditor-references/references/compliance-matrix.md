@@ -9,7 +9,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–22)
-5. Resolver consolidation (criteria PR-01..PR-05, PR-07)
+5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08)
 
 ---
 
@@ -72,6 +72,7 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 | PR-04 | Inline adapter (Phase 0.4) attempts `LOAD_PREFS` independently of the Skill-tool probe | SEV-1 | Extract the Phase 0.4 *Inline Path* block by header anchors and count `LOAD_PREFS(` invocations (with opening paren — invocation syntax, not the bare identifier): `sed -n '/\\*\\*Inline Path/,/<HARD-GATE>/p' skills/running-a-pipeline/SKILL.md \| grep -c "LOAD_PREFS("`. Result `0` = SEV-1 violation: the inline adapter never invokes LOAD_PREFS, silently dropping user/workspace preferences on Tier 1c and Tier 2 hosts (ADR-0002 capability-independence violation). Bare `LOAD_PREFS` mentions elsewhere in the file (public API summaries, Red Flag prose) do NOT satisfy this criterion. **Discriminating-power baselines:** `fixtures/discriminating-power/pr-04/` — pre-baseline returns 0 (false-negative trap for whole-file grep), post-baseline returns ≥1. Any regex edit that breaks either assertion has lost enforcement power on a SEV-1 criterion. |
 | PR-05 | Phase 0.4 calls `RENDER_RESOLUTION_TABLE(resolved[])` rather than hand-crafting the table | SEV-2 | Scan `running-a-pipeline/SKILL.md` Phase 0.4: must contain a `RENDER_RESOLUTION_TABLE` call. Presence of a hardcoded markdown table (` | model | tier |` or similar header) without a `RENDER_RESOLUTION_TABLE` call = violation. Format authority belongs to the resolver (ADR-0001 §Consequences). |
 | PR-07 | `sk-model-resolver/SKILL.md` declares `RENDER_RESOLUTION_TABLE(resolved[]) → string` as a public API operation | SEV-2 | `grep -n "RENDER_RESOLUTION_TABLE" skills/sk-model-resolver/SKILL.md` must return ≥1 match in the public API section. Missing = the resolver's interface contract is incomplete; Phase 0.4 would be calling an undeclared operation. |
+| PR-08 | `sk-model-resolver/references/resolution-algorithm.md` references only agent-frontmatter fields declared in `agent-frontmatter-schema.md` | SEV-2 | Detect **consultation** of `agent.<field>` (comparison or assignment use), not bare prose mention. Concrete v2.0.0 rule: `grep -nE "agent\\.role[[:space:]]*(==\|!=\|<\|>)" skills/sk-model-resolver/references/resolution-algorithm.md` MUST return 0 — `role` is the only known phantom field (no `role:` key in the canonical schema). Any match = SEV-2 violation: the algorithm consults a field that does not exist, producing accidentally-correct outputs that mask their own root-cause. Bare prose mentions in rationale comments (e.g., `` `agent.role` here would be... ``) do NOT trip the regex because they lack a comparison operator. **Discriminating-power baselines:** `fixtures/discriminating-power/pr-08/` — pre-baseline (`agent.role != "orchestrator"` clause present) returns ≥1, post-baseline (clause removed; rationale prose retained) returns 0. |
 
 ### Resolver remediation
 
@@ -81,13 +82,14 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 - PR-04: Add a `LOAD_PREFS(workspace_root)` invocation (with parens) inside the Phase 0.4 *Inline Path* block, with graceful degradation to empty prefs only when file-read fails. Do not gate on Skill-tool availability. Bare-name mentions outside the inline block do not satisfy this criterion.
 - PR-05: Replace the hand-crafted table with `RENDER_RESOLUTION_TABLE(resolved[])` and print the result verbatim.
 - PR-07: Add `RENDER_RESOLUTION_TABLE(resolved[]) → string` to the public API list in `sk-model-resolver/SKILL.md`.
+- PR-08: Remove the `agent.role` clause from the algorithm. On dynamic-subagent platforms the orchestrator is the entry skill (caller), not a topology node (callee) — `agent.role` is never set on a topology agent. Either drop the role check (Step 4 becomes unconditional on `dynamic_subagents`) or add `role:` to `agent-frontmatter-schema.md` first; the algorithm MUST NOT reference undeclared fields.
 
 ---
 
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07, PR-08 in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

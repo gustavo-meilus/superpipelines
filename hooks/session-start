@@ -8,6 +8,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Q16: Remove any degraded-state marker left by a previous failed Windows run.
+# A successful SessionStart clears the marker so the next user invocation
+# doesn't emit a stale "hook degraded" advisory.
+rm -f "${PLUGIN_ROOT}/.session-hook-degraded" 2>/dev/null || true
+
 using_superpipelines_content=$(cat "${PLUGIN_ROOT}/skills/using-superpipelines/SKILL.md" 2>&1 || echo "Error reading using-superpipelines skill")
 
 # Single-pass JSON string escape (orders of magnitude faster than character loops).

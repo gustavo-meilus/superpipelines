@@ -27,6 +27,7 @@
   },
   "degradation_warnings": [],
   "extensions": {
+    "version_manifest_path": ".codex-plugin/plugin.json",
     "max_concurrent_subagents": 6,
     "reviewer_isolation_recipe": "Set sandbox_mode = \"read-only\" in the reviewer agent TOML to achieve structural write-deny. sandbox_mode = \"workspace-write\" is the writer default.",
     "skill_tool_note": "Codex discovers SKILL.md via `.agents/skills` (cross-tool open path) and `$HOME/.agents/skills`. Skill content preloads at session start; no runtime Skill() primitive callable from another skill."

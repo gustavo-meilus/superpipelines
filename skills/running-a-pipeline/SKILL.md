@@ -21,33 +21,48 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 <protocol>
 ### PHASE 0: DISCOVERY & SELECTION
+- **Q16 degraded-state preflight** — IF the marker file `${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded` exists, emit:
+  > ⚠️ SessionStart hook degraded (Git Bash not found on the previous session start). Auto-loading of `using-superpipelines` routing context was skipped. The plugin still works, but routing decisions may be less precise. To restore: install Git for Windows (Git Bash), then restart this session. To dismiss this advisory for the current session only: `del "%CLAUDE_PLUGIN_ROOT%\.session-hook-degraded"` (Windows) or `rm "${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded"` (Unix).
+  
+  Do not delete the marker automatically — it is cleared by the next successful SessionStart hook.
 - Resolve all scope roots via `sk-pipeline-paths`.
 - Read and merge `registry.json` files from `local`, `project`, and `user` scopes.
 - Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
 
-**Step 1 — Skill-tool probe.** Identify the correct skill-loading tool:
+**Step 1 — Skill-tool probe.** Identify the correct skill-loading tool. The probe distinguishes **three** observable conditions, not two (Q16): tool present and load succeeds, tool present and lookup fails, tool absent.
 
 | Tool present | Action |
 |---|---|
 | `Skill` tool (Claude Code / Tier 1) | `Skill(superpipelines:sk-platform-dispatch)` → `DETECT()` |
 | `activate_skill` tool (Antigravity when plugin installed) | `activate_skill(sk-platform-dispatch)` → `DETECT()` |
+| Tool present, lookup fails (e.g., AGY without superpipelines installed in its registry) | Catch `SkillNotFound` / `LookupError`; emit "plugin not registered in this env" advisory; fall through to INLINE-DETECT() |
 | Neither / plugin not installed in this environment | Run INLINE-DETECT() — emit advisory first |
 
 **Step 2 — Load or inline-detect:**
 
-- **Skill tool available**: Load `sk-platform-dispatch`, call `DETECT()` → full `platform_profile`. Cache in session context. Proceed normally.
+- **Skill tool available**: Wrap the load call in try/catch:
+  ```
+  try:
+    profile = Skill(superpipelines:sk-platform-dispatch).DETECT()  // or activate_skill(...)
+  catch SkillNotFound | LookupError:
+    emit advisory: "⚠️ Skill loader present but sk-platform-dispatch unresolved — superpipelines plugin may not be registered in this environment. Falling back to INLINE-DETECT()."
+    profile = INLINE-DETECT()
+  ```
+  On success: cache `platform_profile` in session context. Proceed normally.
 - **No skill tool available**: Emit the following advisory, then run INLINE-DETECT():
 
-  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.4 will execute the resolution algorithm inline — preference files will be consulted if readable. If v1-legacy agents are found in Phase 0.45, migration CANNOT complete on this platform; re-run from Claude Code first.
+  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.4 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
 
-  **INLINE-DETECT() heuristics** — first match wins:
-  1. `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` readable → `tier_id = tier_1`
-  2. `OPENCODE_CONFIG_DIR` env var set → `tier_id = tier_1b`
-  3. `agy` on PATH OR `.agents/skills/` present in workspace → `tier_id = tier_1c`
-  4. `.codex-plugin/plugin.json` readable OR TOML agent files under `<workspace>/.agents/` → `tier_id = tier_1d`
-  5. None matched → `tier_id = tier_2`
+  **INLINE-DETECT() heuristics** — first match wins. Each heuristic requires a **runtime-capability signal** (env var or binary on PATH), never a workspace filesystem artifact alone — filesystem artifacts indicate the plugin's presence, not the host's identity.
+
+  0. `SUPERPIPELINES_FORCE_TIER` env var set to a known tier id → use that tier (escape hatch; takes precedence over all heuristics).
+  1. `CLAUDE_CODE` env var set → `tier_id = tier_1`. (Q2: dropped the `.claude-plugin/plugin.json readable` fallback — filesystem presence does not imply CC runtime capability.)
+  2. `OPENCODE_CONFIG_DIR` env var set → `tier_id = tier_1b`.
+  3. `agy` binary on PATH → `tier_id = tier_1c`. (Q2: dropped the `.agents/skills/` workspace-shape fallback — that directory is colonized by both Tier 1c and Tier 1d.)
+  4. `codex` binary on PATH OR `.codex-plugin/plugin.json` readable → `tier_id = tier_1d`. (Q2: the manifest fallback is retained here because Codex installs ship the manifest alongside the binary; redundant signal is acceptable when both point to the same platform.)
+  5. None matched → `tier_id = tier_2` (safe default; sequential inline execution always works).
 
   Read `platform_profile` from the embedded snapshot below using `tier_id`:
 
@@ -81,7 +96,7 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 **Full Path (Skill tool available):**
 
 - Load `sk-model-resolver` via the `Skill` tool.
-- `LOAD_PREFS(workspace_root)` → `{ user, workspace }`.
+- `LOAD_PREFS(workspace_root)` → `{ user, workspace, hashes }`. Stamp `hashes` to `metadata.preference_files_consulted` at the persist step below; resume reads it back to detect pref-file drift (see Q1 invariant after this block).
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
 - `entries = []`
 - FOR each agent in `topology.json` steps (no exceptions — iterate every node):
@@ -101,10 +116,17 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 ```
 LOAD_PREFS(workspace_root):
-  Attempt read: {workspace_root}/.superpipelines/model-preferences.json → workspace pref
-  Attempt read: ~/.superpipelines/model-preferences.json               → user pref
-  If either read fails (absent / unreadable): degrade that source to { platforms: {} }
-  prefs = { workspace: <result or empty>, user: <result or empty> }
+  user_path      = expand("~/.superpipelines/model-preferences.json")
+  workspace_path = {workspace_root}/.superpipelines/model-preferences.json
+  Attempt read: workspace_path → workspace pref (degrade to { platforms: {} } on failure)
+  Attempt read: user_path      → user pref      (degrade to { platforms: {} } on failure)
+  hashes = {
+    user_path:       user_path,
+    user_hash:       "sha256:" + sha256_hex(read_bytes(user_path))      OR null if read failed,
+    workspace_path:  workspace_path,
+    workspace_hash:  "sha256:" + sha256_hex(read_bytes(workspace_path)) OR null if read failed
+  }
+  prefs = { workspace: <result or empty>, user: <result or empty>, hashes: hashes }
 ```
 
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
@@ -118,12 +140,20 @@ LOAD_PREFS(workspace_root):
 - Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim.
 - IF both `prefs.workspace.platforms` and `prefs.user.platforms` are empty (both reads failed or files absent):
   - Emit: `"⚠️ [inline-resolution] Preference files not found or unreadable — resolutions fell to profile_default or host_inherit. Re-run from a platform with Skill-tool support to verify preferences."`
-- Persist `metadata.resolved_models` and `metadata.model_tiers_version_at_run` to state file.
+- Persist `metadata.resolved_models`, `metadata.preference_files_consulted` (from `prefs.hashes`), and `metadata.model_tiers_version_at_run` to state file.
 
 <HARD-GATE>Print `RENDER_RESOLUTION_TABLE(entries[])` verbatim on both paths. NEVER skip the table or state-file persistence regardless of which path was taken. A missing table or missing `resolved_models` write is a phase-skip defect.</HARD-GATE>
 
 <invariant>
 Phase 0.4 runs exactly once per fresh run. On resume, IF `metadata.resolved_models` exists AND `metadata.runtime_tier` matches the new `runtime_tier` AND profile `model_tiers_version` unchanged: skip re-resolution. ELSE re-resolve and log a "models re-resolved on resume" entry to `metadata.resolution_events`.
+</invariant>
+
+<invariant>
+**Pref-file drift advisory on resume (Q1).** Independent of the re-resolution decision above, on every resume the orchestrator MUST recompute pref-file hashes by calling `LOAD_PREFS(workspace_root)` and comparing the returned `hashes` to `metadata.preference_files_consulted`. IF `user_hash` or `workspace_hash` diverges from the stamped value: emit a non-blocking advisory:
+
+> ⚠️ Pref files changed since run start (user / workspace / both — name the divergent one). The stamped resolved models from `metadata.resolved_models` will be used. To pick up your edits, start a fresh run.
+
+The stamped models remain authoritative for the life of the run. NEVER re-resolve mid-run based on hash divergence — mid-run model swaps are a correctness regression (partial state contamination). The advisory is the user's signal to start a fresh run if they want the new prefs to take effect.
 </invariant>
 
 <invariant>
@@ -199,7 +229,7 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 ### PHASE 2: STATE INITIALIZATION
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
-- **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `.claude-plugin/plugin.json` at init), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
+- **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `<workspace>/{platform_profile.extensions.version_manifest_path}` at init — Q12 per-tier manifest, not hardcoded to CC's path), `scope_root_dir` (the directory NAME from `platform_profile.scope_root.workspace`, not an absolute path — Q12 portability), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 

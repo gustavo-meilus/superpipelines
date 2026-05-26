@@ -21,6 +21,10 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 <protocol>
 ### PHASE 0: TIER DETECT
+- **Q16 degraded-state preflight** — IF the marker file `${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded` exists, emit:
+  > ⚠️ SessionStart hook degraded (Git Bash not found on the previous session start). Auto-loading of `using-superpipelines` routing context was skipped. To restore: install Git for Windows (Git Bash), then restart this session.
+  
+  Do not delete the marker automatically — it is cleared by the next successful SessionStart hook.
 - Load `sk-platform-dispatch` via the `Skill` tool → call `DETECT()` → receive `platform_profile` object.
 - Cache `platform_profile` in session context (no state file exists yet during creation).
 - IF `platform_profile.degradation_warnings` is non-empty: emit each warning with "⚠️" prefix before proceeding.

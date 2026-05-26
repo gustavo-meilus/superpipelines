@@ -27,7 +27,9 @@
   "degradation_warnings": [
     "Parallel fan-out (Pattern 2) degrades to sequential on OpenCode."
   ],
-  "extensions": {},
+  "extensions": {
+    "version_manifest_path": "opencode-plugin.json"
+  },
   "model_tiers": {
     "triage": { "model": "opencode/big-pickle",           "effort": "low",    "free_tier": true,  "quota_class": "free-unlimited" },
     "fast":   { "model": "opencode-go/deepseek-v4-flash", "effort": "medium", "free_tier": false, "quota_class": "go-high" },

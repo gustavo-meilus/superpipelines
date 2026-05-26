@@ -24,12 +24,12 @@ Superpipelines runs across five runtime tiers (Tier 1 Claude Code, Tier 1b OpenC
 <protocol>
 DETECT() returns a platform profile object (not a raw tier string).
 
-Detection heuristics run in order — first match wins:
+Detection heuristics run in order — first match wins. **Override:** `SUPERPIPELINES_FORCE_TIER` env var, when set to a known tier id (`tier_1 | tier_1b | tier_1c | tier_1d | tier_2`), bypasses all heuristics. Use when detection picks the wrong tier in a multi-platform workspace.
 
-1. **Tier 1 (Claude Code):** `Task` tool present AND `subagent_type` parameter accepted. Secondary: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`.
+1. **Tier 1 (Claude Code):** `Task` tool present AND `subagent_type` parameter accepted. Secondary: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`. (Runtime capability is the primary signal; the secondary check is acceptable here because DETECT() runs in the live runtime where the Task primitive can be probed directly.)
 2. **Tier 1b (OpenCode):** `$OPENCODE_CONFIG_DIR` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
-3. **Tier 1c (Antigravity):** `agy` binary on PATH OR `.agents/skills/` workspace directory present.
-4. **Tier 1d (Codex):** `.codex-plugin/plugin.json` resolvable OR `codex` binary on PATH OR TOML agent files present under `<workspace>/.agents/` (the Tier 1d workspace scope-root per `tier_1d.json`).
+3. **Tier 1c (Antigravity):** `agy` binary on PATH. (Q2: dropped `.agents/skills/` workspace-shape fallback; that directory is colonized by both 1c and 1d.)
+4. **Tier 1d (Codex):** `codex` binary on PATH OR `.codex-plugin/plugin.json` resolvable. (Q2: dropped the TOML-agents-under-`.agents/` fallback for the same disambiguation reason as 1c.)
 5. **Tier 2 (fallback):** None of the above. Safe default — sequential inline execution always works.
 
 After resolving `tier_id`:

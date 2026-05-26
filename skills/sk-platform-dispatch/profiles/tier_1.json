@@ -25,7 +25,9 @@
     "user": "~/.claude"
   },
   "degradation_warnings": [],
-  "extensions": {},
+  "extensions": {
+    "version_manifest_path": ".claude-plugin/plugin.json"
+  },
   "model_tiers": {
     "triage": { "model": "claude-haiku-4-5-20251001", "effort": "low" },
     "fast":   { "model": "claude-haiku-4-5-20251001", "effort": "medium" },

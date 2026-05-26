@@ -31,9 +31,11 @@
     "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
   ],
   "extensions": {
+    "version_manifest_path": "gemini-extension.json",
     "default_orchestrator_model": "gemini-3.5-flash",
     "subagent_model_control": "orchestrator-only",
-    "installation_note": "skill_tool is only available when the superpipelines AGY extension is installed in AGY's extension registry. Without it, running-a-pipeline Phase 0.25 falls back to INLINE-DETECT()."
+    "installation_note": "skill_tool is only available when the superpipelines AGY extension is installed in AGY's extension registry. Without it, running-a-pipeline Phase 0.25 falls back to INLINE-DETECT().",
+    "version_manifest_path_note": "gemini-extension.json is retained as the version manifest until Gemini CLI retirement (2026-06-18). Post-retirement, replace with antigravity-native manifest path."
   },
   "model_tiers": {
     "triage": { "model": "gemini-3.5-flash", "effort": "low" },

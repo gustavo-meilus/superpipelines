@@ -31,6 +31,7 @@
     "Model selection is owned by the host IDE; per-step model assignment is not emitted."
   ],
   "extensions": {
+    "version_manifest_path": ".cursor-plugin/plugin.json",
     "skill_tool_note": "Cursor, Windsurf, and Cline load skill content via file read or prompt injection, not a native Skill() primitive. The skill_tool capability flag is treated as equivalent for routing purposes in this profile."
   },
   "model_tiers": {

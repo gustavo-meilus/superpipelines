@@ -34,7 +34,7 @@ RESOLVE(agent_frontmatter, profile, prefs) → resolved
 2. tier   = agent.model_tier   ?? "fast"
 3. effort = agent.effort_tier  ?? null
 
-4. IF profile.capabilities.dynamic_subagents == true AND agent.role != "orchestrator":
+4. IF profile.capabilities.dynamic_subagents == true:
      return {
        model: null,
        effort: null,
@@ -43,6 +43,10 @@ RESOLVE(agent_frontmatter, profile, prefs) → resolved
        source: "host_inherit",
        warnings: ["Dynamic-subagent platform — host orchestrator picks model"]
      }
+   // Rationale: no topology node is ever the orchestrator on a dynamic-subagent
+   // platform — the orchestrator is the entry skill (caller), not a callee agent.
+   // The agent frontmatter schema declares no `role` field; any reference to
+   // `agent.role` here would be a phantom-field check (see pipeline-auditor PR-08).
 
 5. IF tier == "inherit" OR profile.capabilities.model_field_format == "omit":
      return {
@@ -102,7 +106,7 @@ RESOLVE(agent_frontmatter, profile, prefs) → resolved
 ## LOAD_PREFS
 
 ```
-LOAD_PREFS(workspace_root) → { user, workspace }
+LOAD_PREFS(workspace_root) → { user, workspace, hashes }
 
   user_path      = expand("~/.superpipelines/model-preferences.json")
   workspace_path = workspace_root + "/.superpipelines/model-preferences.json"
@@ -110,10 +114,19 @@ LOAD_PREFS(workspace_root) → { user, workspace }
   user      = file_exists(user_path)      ? read_json(user_path)      : { platforms: {} }
   workspace = file_exists(workspace_path) ? read_json(workspace_path) : { platforms: {} }
 
-  return { user: user, workspace: workspace }
+  hashes = {
+    user_path:       user_path,
+    user_hash:       file_exists(user_path)      ? "sha256:" + sha256_hex(read_bytes(user_path))      : null,
+    workspace_path:  workspace_path,
+    workspace_hash:  file_exists(workspace_path) ? "sha256:" + sha256_hex(read_bytes(workspace_path)) : null
+  }
+
+  return { user: user, workspace: workspace, hashes: hashes }
 ```
 
 **Invariant:** No merge step. RESOLVE consults workspace first, falls through to user, preserving per-source provenance for the `source` field.
+
+**Hash contract (Q1):** `hashes` is stamped to `pipeline-state.json metadata.preference_files_consulted` at Phase 0.4. On resume, the orchestrator calls `LOAD_PREFS` again and compares the fresh `hashes` to the stamped value. Any divergence emits a non-blocking advisory ("Pref files changed since run start; stamped models will be used. To pick up changes, start a fresh run."). The stamped resolved_models remain authoritative — no mid-run re-resolution.
 
 ---
 

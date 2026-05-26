@@ -34,8 +34,12 @@ if %ERRORLEVEL% equ 0 (
     exit /b %ERRORLEVEL%
 )
 
-REM No bash found - exit silently rather than error
-REM (plugin still works, just without SessionStart context injection)
+REM No bash found - stamp a degraded-marker so the next user-invocation of
+REM a superpipelines workflow skill can surface an explicit advisory
+REM (plugin still works, but without SessionStart context injection;
+REM running-a-pipeline and creating-a-pipeline both check for this marker
+REM and emit a restoration advisory on first invocation per session).
+echo degraded > "%HOOK_DIR%..\.session-hook-degraded"
 exit /b 0
 CMDBLOCK
 

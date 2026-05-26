@@ -1,0 +1,21 @@
+{
+  "_comment": "Q14: discriminating fixture for Step 4. Input has agent.role='orchestrator'. Under the pre-Q14 spec, Step 4's 'agent.role != orchestrator' clause would NOT fire, falling through to Step 5/6 and returning a concrete model. Under the post-Q14 spec, Step 4 is unconditional on dynamic_subagents and returns host_inherit regardless of any spurious role field. The expected output asserts the post-Q14 behavior.",
+  "agent": {
+    "name": "any-step",
+    "model_tier": "deep",
+    "role": "orchestrator"
+  },
+  "profile": {
+    "tier": "tier_1c",
+    "capabilities": {
+      "dynamic_subagents": true,
+      "model_field_format": "omit",
+      "effort_field_name": null,
+      "subagent_inherit_target": "orchestrator"
+    },
+    "model_tiers": {
+      "deep": { "model": "gemini-3.5-pro", "effort": "high" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}
