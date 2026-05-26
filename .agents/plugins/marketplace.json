@@ -8,11 +8,11 @@
       "name": "superpipelines",
       "source": {
         "source": "local",
-        "path": "./"
+        "path": "./plugins/superpipelines"
       },
       "policy": {
         "installation": "AVAILABLE",
-        "authentication": "NONE"
+        "authentication": "ON_USE"
       },
       "category": "Development"
     }
