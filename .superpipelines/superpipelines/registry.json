@@ -1,0 +1,48 @@
+{
+  "schema_version": "2.0.0",
+  "scope": "local",
+  "scope_root": ".superpipelines",
+  "pipelines": [
+    {
+      "name": "parity-test-g",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_2",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-g/run-parity-test-g/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-g/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-g/parity-test-g.md",
+      "agents": [],
+      "skills": [
+        "skills/superpipelines/parity-test-g/run-parity-test-g/SKILL.md",
+        "skills/superpipelines/parity-test-g/tokenizer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-g/reporter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a markdown file and produce a word frequency report listing the 20 most common words, excluding stopwords, written to output/ as a text file"
+    },
+    {
+      "name": "parity-test-h",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_2",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-h/run-parity-test-h/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-h/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-h/parity-test-h.md",
+      "agents": [],
+      "skills": [
+        "skills/superpipelines/parity-test-h/run-parity-test-h/SKILL.md",
+        "skills/superpipelines/parity-test-h/validator-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-h/reviewer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-h/reporter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a YAML config file and produce a validation report — checking for required fields, type mismatches, and deprecated keys — written to output/ as a markdown file"
+    }
+  ]
+}

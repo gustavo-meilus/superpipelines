@@ -63,7 +63,7 @@ By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent canno
 | **1** | Claude Code | Native `Task()` | Structural (`tools:` restriction) |
 | **1b** | OpenCode | `mode: subagent` | Structural (`permission: { edit: deny }`) |
 | **1c** | Antigravity CLI 2.0 | Dynamic Subagents *(aspirational)* | Unverified |
-| **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` *(pending verification)* |
+| **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` (`read-only` structural; `workspace-write` requires Hyper-V) |
 | **2** | Cursor, Windsurf, Cline | Single-agent inline loop | Convention-only (advisory) |
 
 Pipelines scaffolded on Tier 1 (Claude Code) or Tier 1d (Codex) run on Tier 2 platforms without modification — `sk-platform-dispatch` rewrites paths at read/write time.
@@ -156,7 +156,23 @@ superpipelines/
 ├── install.sh / install.ps1  # POSIX + PowerShell installer wrappers
 ├── AGENTS.md                 # Universal context (any AGENTS.md-aware tool)
 ├── GEMINI.md                 # Antigravity-specific context
-└── CLAUDE.md                 # Claude Code project reference + invariants
+├── CLAUDE.md                 # Claude Code project reference + invariants
+│
+│   ── Scope-local pipeline artifacts (generated at install / pipeline-create time) ──
+│
+├── .claude/                  # Claude Code scope root (Tier 1)
+│   ├── agents/superpipelines/# Zero-body agent stubs per pipeline
+│   ├── skills/superpipelines/# Entry skills + companion protocol skills
+│   └── superpipelines/       # registry.json + pipelines/{P}/ (topology, SDD, launcher)
+├── .opencode/                # OpenCode scope root (Tier 1b)
+│   ├── agents/superpipelines/# Inline-body agents (≤150 lines)
+│   ├── skills/superpipelines/# Entry skills
+│   └── superpipelines/       # registry.json + pipelines/{P}/
+├── .agents/antigravity/      # Antigravity CLI scope root (Tier 1c)
+├── .agents/codex/            # Codex App/CLI scope root (Tier 1d)
+│   └── agents/superpipelines/# TOML agent files
+└── .superpipelines/          # Cursor / Windsurf / Cline scope root (Tier 2)
+    └── skills/superpipelines/# Protocol skills only (no agent files on Tier 2)
 ```
 <!-- </file_structure> -->
 

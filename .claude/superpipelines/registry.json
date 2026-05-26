@@ -1,0 +1,55 @@
+{
+  "schema_version": "2.0.0",
+  "scope": "local",
+  "scope_root": ".claude",
+  "pipelines": [
+    {
+      "name": "parity-test-a",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-a/run-parity-test-a/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-a/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-a/parity-test-a.md",
+      "agents": [
+        "agents/superpipelines/parity-test-a/reader.md",
+        "agents/superpipelines/parity-test-a/summarizer.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-a/run-parity-test-a/SKILL.md",
+        "skills/superpipelines/parity-test-a/reader-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-a/summarizer-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a YAML file and produce a flat key-value summary of its top-level entries, written to output/ as a text file"
+    },
+    {
+      "name": "parity-test-b",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-b/run-parity-test-b/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-b/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-b/parity-test-b.md",
+      "agents": [
+        "agents/superpipelines/parity-test-b/analyzer.md",
+        "agents/superpipelines/parity-test-b/reviewer.md",
+        "agents/superpipelines/parity-test-b/reporter.md"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-b/run-parity-test-b/SKILL.md",
+        "skills/superpipelines/parity-test-b/analyzer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-b/reviewer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-b/reporter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a JSON file and produce a data quality report listing null values and type inconsistencies per top-level key, with a read-only reviewer step validating findings before the final report is written"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+name = "extractor"
+description = "Use when the parity-test-e pipeline needs to read a changelog markdown file and extract per-version breaking changes and new features for the formatter step."
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+version = "1.0.0"
+plugin_version = "2.0.0"
+skills = ["extractor-protocol"]

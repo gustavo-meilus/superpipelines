@@ -4,3 +4,7 @@
 node_modules/
 inspo
 triage/
+.claude/settings.local.json
+.claude/worktrees/
+**/superpipelines/temp/
+**/output/

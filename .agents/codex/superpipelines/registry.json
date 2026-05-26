@@ -1,0 +1,56 @@
+{
+  "schema_version": "2.0.0",
+  "scope": "local",
+  "scope_root": ".agents/codex",
+  "pipelines": [
+    {
+      "name": "parity-test-e",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1d",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-e/run-parity-test-e/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-e/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-e/parity-test-e.md",
+      "agents": [
+        "agents/superpipelines/parity-test-e/extractor.toml",
+        "agents/superpipelines/parity-test-e/formatter.toml"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-e/run-parity-test-e/SKILL.md",
+        "skills/superpipelines/parity-test-e/extractor-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-e/formatter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a changelog markdown file and produce a concise release summary highlighting breaking changes and new features, written to output/ as a markdown file"
+    }
+  ,
+    {
+      "name": "parity-test-f",
+      "plugin_version": "2.0.0",
+      "source_tier": "tier_1d",
+      "pattern": "1",
+      "pattern_name": "Sequential",
+      "scope": "local",
+      "entry_skill": "skills/superpipelines/parity-test-f/run-parity-test-f/SKILL.md",
+      "topology_path": "superpipelines/pipelines/parity-test-f/topology.json",
+      "launcher": "superpipelines/pipelines/parity-test-f/parity-test-f.md",
+      "agents": [
+        "agents/superpipelines/parity-test-f/analyzer.toml",
+        "agents/superpipelines/parity-test-f/reviewer.toml",
+        "agents/superpipelines/parity-test-f/reporter.toml"
+      ],
+      "skills": [
+        "skills/superpipelines/parity-test-f/run-parity-test-f/SKILL.md",
+        "skills/superpipelines/parity-test-f/analyzer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-f/reviewer-protocol/SKILL.md",
+        "skills/superpipelines/parity-test-f/reporter-protocol/SKILL.md"
+      ],
+      "created_at": "2026-05-26T00:00:00Z",
+      "last_audit": "2026-05-26",
+      "goal": "Read a pull request diff file and produce a code review report checking for null checks, error handling, and naming issues, with a read-only reviewer step to validate findings before writing the final output"
+    }
+  ]
+}

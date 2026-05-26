@@ -1,0 +1,52 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-a",
+  "name": "parity-test-a",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1",
+  "entry_skill": "run-parity-test-a",
+  "metadata": {
+    "goal": "Read a YAML file and produce a flat key-value summary of its top-level entries, written to output/ as a text file",
+    "output": "{ROOT}/output/parity-test-a-summary.txt",
+    "model_field_format": "shorthand",
+    "degradation_warnings": [],
+    "platform_note": "Tier 1 (Claude Code): agents are zero-body YAML frontmatter files with companion protocol skills. dispatch_mechanism is native_task (Task() primitive). Worktree isolation available."
+  },
+  "steps": [
+    {
+      "step_id": "reader",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-a/reader.md",
+      "protocol_skill": "skills/superpipelines/parity-test-a/reader-protocol/SKILL.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-a/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-a/{runId}/key-value-data.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input YAML file, extracts each top-level key and its string-rendered value, writes structured JSON to the temp directory."
+    },
+    {
+      "step_id": "summarizer",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-a/summarizer.md",
+      "protocol_skill": "skills/superpipelines/parity-test-a/summarizer-protocol/SKILL.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-a/{runId}/key-value-data.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-a-summary.txt"
+      ],
+      "depends_on": ["reader"],
+      "description": "Reads key-value JSON from temp directory, renders a human-readable aligned summary table, writes the final text file to output/."
+    }
+  ]
+}

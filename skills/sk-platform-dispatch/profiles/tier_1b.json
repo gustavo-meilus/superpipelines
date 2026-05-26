@@ -16,6 +16,7 @@
     "model_field_format": "provider_prefixed",
     "effort_field_name": "reasoningEffort",
     "effort_field_applies_to_providers": ["opencode", "opencode-go"],
+    "effort_emit_map": { "low": "low", "medium": "medium", "high": "high" },
     "subagent_env_override": null,
     "subagent_inherit_target": "primary",
     "provider_families": ["anthropic", "opencode-go", "opencode"]

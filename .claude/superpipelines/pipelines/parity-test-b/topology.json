@@ -1,0 +1,70 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-b",
+  "name": "parity-test-b",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1",
+  "entry_skill": "run-parity-test-b",
+  "metadata": {
+    "goal": "Read a JSON file and produce a data quality report listing null values and type inconsistencies per top-level key, with a read-only reviewer step validating findings before the final report is written",
+    "output": "{ROOT}/output/parity-test-b-report.md",
+    "model_field_format": "shorthand",
+    "degradation_warnings": [],
+    "platform_note": "Tier 1 (Claude Code): agents are zero-body YAML frontmatter files with companion protocol skills. Reviewer isolation is structural via worktree + disallowedTools + permissionMode:plan."
+  },
+  "steps": [
+    {
+      "step_id": "analyzer",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-b/analyzer.md",
+      "protocol_skill": "skills/superpipelines/parity-test-b/analyzer-protocol/SKILL.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "isolation": "worktree",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-b/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-b/{runId}/findings.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the input JSON file, checks each top-level value for null and type inconsistency issues, writes structured findings JSON to the temp directory."
+    },
+    {
+      "step_id": "reviewer",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-b/reviewer.md",
+      "protocol_skill": "skills/superpipelines/parity-test-b/reviewer-protocol/SKILL.md",
+      "model_tier": "medium",
+      "effort_tier": "medium",
+      "isolation": "worktree",
+      "reviewer_isolation": "structural",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-b/{runId}/findings.json"
+      ],
+      "outputs": [],
+      "depends_on": ["analyzer"],
+      "description": "Reads analyzer findings, validates schema completeness and correctness. READ-ONLY: disallowedTools Write,Edit,Bash + permissionMode:plan enforces structural write-deny via CC host. Verdict via terminal output text."
+    },
+    {
+      "step_id": "reporter",
+      "order": 3,
+      "agent": "agents/superpipelines/parity-test-b/reporter.md",
+      "protocol_skill": "skills/superpipelines/parity-test-b/reporter-protocol/SKILL.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "isolation": "worktree",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-b/{runId}/findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-b-report.md"
+      ],
+      "depends_on": ["analyzer", "reviewer"],
+      "description": "Reads findings and reviewer verdict from context, renders the final markdown data quality report, writes the output file."
+    }
+  ]
+}

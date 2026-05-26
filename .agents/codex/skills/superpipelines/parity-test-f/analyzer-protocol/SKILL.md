@@ -1,0 +1,92 @@
+---
+name: analyzer-protocol
+description: Loaded by the analyzer agent to supply operating protocol and invariants for pull request diff analysis in the parity-test-f pipeline. Not user-invocable.
+disable-model-invocation: true
+user-invocable: false
+---
+
+# Analyzer — Operational Protocol
+
+<overview>
+The analyzer agent reads a pull request diff file, identifies common code issues across three categories (null checks, error handling, naming), and writes a structured findings JSON file to the pipeline temp directory. It is the first step of the parity-test-f Sequential pipeline (Pattern 1) on Tier 1d (Codex CLI). The quality bar is: findings must be machine-readable JSON that the reviewer and reporter can consume without ambiguity.
+</overview>
+
+## Protocol
+
+<protocol>
+
+### 1. DISCOVER
+
+1. Read inputs from the orchestrator dispatch context:
+   - `diff_path`: path to the pull request diff file to read.
+   - `findings_output_path`: path where `findings.json` must be written.
+   - `state_path`: path to `pipeline-state.json` for status updates.
+   - `run_id`: current run identifier.
+   - `root`: resolved scope root.
+2. Verify `diff_path` exists and is a readable file. If not: emit `NEEDS_CONTEXT` with message: "Diff file not found at `{diff_path}`. Provide a valid path and re-run."
+3. Read the file content. If the file is empty: emit `DONE_WITH_CONCERNS` with message: "Diff file at `{diff_path}` is empty. Findings file written with zero issues."
+
+### 2. PROCESS
+
+Analyze the diff content to identify issues in the following three categories:
+
+1. **Null checks**: Identify locations where a return value or variable could be null/undefined but is accessed without a guard. Look for patterns such as:
+   - Direct property access or method call on a value that may be null (e.g., `obj.prop` without null guard).
+   - Missing optional chaining or null coalescing where the value originates from a function that may return null.
+   - Record each finding as:
+     ```json
+     {"category": "null_check", "severity": "high", "location": "{file}:{line}", "description": "{detail}"}
+     ```
+
+2. **Error handling**: Identify locations where errors or rejected promises are not handled. Look for patterns such as:
+   - Promise chains without `.catch()`.
+   - `async` functions without `try/catch` around `await` calls that may throw.
+   - Callbacks that receive an error argument but do not check it.
+   - Record each finding as:
+     ```json
+     {"category": "error_handling", "severity": "medium", "location": "{file}:{line}", "description": "{detail}"}
+     ```
+
+3. **Naming**: Identify identifiers that are non-descriptive, misleading, or violate common conventions. Look for patterns such as:
+   - Single-letter variable names outside of short loops (e.g., `d`, `x`, `tmp`).
+   - Names that conflict with well-known conventions (e.g., `data` for a function, `list` for a scalar).
+   - Boolean variables or functions whose names do not begin with `is`, `has`, `can`, or `should`.
+   - Record each finding as:
+     ```json
+     {"category": "naming", "severity": "low", "location": "{file}:{line}", "description": "{detail}"}
+     ```
+
+If the diff contains no changed lines (`+` or `-` prefix) outside of the diff header: assemble a zero-issue findings object and emit `DONE_WITH_CONCERNS` with message: "Diff file at `{diff_path}` contains no changed lines. Findings file written with zero issues."
+
+Assemble the findings object:
+
+```json
+{
+  "diff_path": "{diff_path}",
+  "issue_count": 0,
+  "issues": []
+}
+```
+
+### 3. DELIVER
+
+1. Write `findings.json` to `findings_output_path` using the Write tool.
+2. Update `pipeline-state.json`:
+   - Set `phases[0].status` = `"completed"` (or `"completed_with_concerns"` if zero issues or empty diff).
+   - Set `phases[0].outputs` = `[findings_output_path]`.
+3. Emit terminal status:
+   - `DONE` — findings written successfully; at least one issue identified.
+   - `DONE_WITH_CONCERNS` — findings written but diff was empty or contained no changed lines, or no issues were found (note reason).
+   - `NEEDS_CONTEXT` — diff file not found or not accessible.
+   - `BLOCKED` — findings file could not be written (e.g., path not writable).
+
+</protocol>
+
+<invariants>
+- NEVER write findings to a path outside `{ROOT}/superpipelines/temp/parity-test-f/{runId}/`.
+- NEVER pass file contents to the orchestrator in the status message — pass only the findings file path.
+- NEVER hardcode platform paths — use only the `root` value supplied in the dispatch context.
+- ALWAYS validate that `findings_output_path` is writable before attempting write.
+- ALWAYS update `pipeline-state.json` after writing findings.
+- Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
+</invariants>

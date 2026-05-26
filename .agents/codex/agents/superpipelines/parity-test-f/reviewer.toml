@@ -1,0 +1,8 @@
+name = "reviewer"
+description = "Use when the parity-test-f pipeline needs to validate analyzer findings for completeness and correctness before the reporter produces the final output."
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+version = "1.0.0"
+plugin_version = "2.0.0"
+skills = ["reviewer-protocol"]

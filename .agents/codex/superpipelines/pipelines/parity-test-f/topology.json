@@ -1,0 +1,75 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.0.0",
+  "pipeline_id": "parity-test-f",
+  "name": "parity-test-f",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "source_tier": "tier_1d",
+  "entry_skill": "run-parity-test-f",
+  "metadata": {
+    "goal": "Read a pull request diff file and produce a code review report checking for null checks, error handling, and naming issues, with a read-only reviewer step to validate findings before writing the final output",
+    "output": "{ROOT}/output/parity-test-f-review-report.md",
+    "model_field_format": "toml_split",
+    "degradation_warnings": [],
+    "platform_note": "Tier 1d (Codex CLI): agents are TOML files with per-step model and model_reasoning_effort fields. dispatch_mechanism is model_driven. No Task() primitive. sandbox_mode controls reviewer isolation; reviewer.toml uses sandbox_mode = \"read-only\" for structural write-deny."
+  },
+  "steps": [
+    {
+      "step_id": "analyzer",
+      "order": 1,
+      "agent": "agents/superpipelines/parity-test-f/analyzer.toml",
+      "protocol_skill": "skills/superpipelines/parity-test-f/analyzer-protocol/SKILL.md",
+      "model_tier": "fast",
+      "model": "gpt-5.4-mini",
+      "model_reasoning_effort": "medium",
+      "sandbox_mode": "workspace-write",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the pull request diff file, identifies issues (null checks, error handling, naming), writes structured findings JSON to the temp directory."
+    },
+    {
+      "step_id": "reviewer",
+      "order": 2,
+      "agent": "agents/superpipelines/parity-test-f/reviewer.toml",
+      "protocol_skill": "skills/superpipelines/parity-test-f/reviewer-protocol/SKILL.md",
+      "model_tier": "deep",
+      "model": "gpt-5.5",
+      "model_reasoning_effort": "high",
+      "sandbox_mode": "read-only",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json"
+      ],
+      "outputs": [
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json"
+      ],
+      "depends_on": ["analyzer"],
+      "description": "Reads analyzer findings, validates completeness and correctness, writes a verdict JSON to the temp directory. READ-ONLY: sandbox_mode = \"read-only\" enforces structural write-deny via Codex host."
+    },
+    {
+      "step_id": "reporter",
+      "order": 3,
+      "agent": "agents/superpipelines/parity-test-f/reporter.toml",
+      "protocol_skill": "skills/superpipelines/parity-test-f/reporter-protocol/SKILL.md",
+      "model_tier": "fast",
+      "model": "gpt-5.4-mini",
+      "model_reasoning_effort": "medium",
+      "sandbox_mode": "workspace-write",
+      "inputs": [
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json",
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json"
+      ],
+      "outputs": [
+        "{ROOT}/output/parity-test-f-review-report.md"
+      ],
+      "depends_on": ["analyzer", "reviewer"],
+      "description": "Reads findings and verdict from temp directory, renders the final markdown code review report with issues and verdict sections, writes the output file."
+    }
+  ]
+}

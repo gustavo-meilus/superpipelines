@@ -63,12 +63,32 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
   - **New pipelines (v2.0.0+):** architect emits DISPATCH-routed entry skills by default; no action needed.
 - `CLAUDE.md` Project Version jumps from `v1.2.0` (stale) to `v2.0.0`. Plugin manifest version (`1.0.6` → `2.0.0`) is now the source of truth.
 
+### Parity test suite
+
+A 10-pipeline cross-tier validation suite ships with v2.0.0. Each pipeline is scaffolded in its own scope root and verifies the full SDD artifact chain (agents, skills, topology, registry, spec/plan/tasks):
+
+| Pipeline | Tier | Platform | Codex run confirmed |
+| :--- | :--- | :--- | :--- |
+| parity-test-a | 1 | Claude Code | — |
+| parity-test-b | 1 | Claude Code | — |
+| parity-test-c | 1c | Antigravity CLI 2.0 | — |
+| parity-test-d | 1c | Antigravity CLI 2.0 | — |
+| parity-test-e | 1d | Codex App/CLI | ✅ |
+| parity-test-f | 1d | Codex App/CLI | ✅ |
+| parity-test-g | 2 | Cursor | — |
+| parity-test-h | 2 | Cursor | — |
+| parity-test-i | 1b | OpenCode | — |
+| parity-test-j | 1b | OpenCode | — |
+
 ### Known limitations
 
 - `--uninstall` flag stub (full uninstall deferred to v2.1).
 - `--with-init` flag reserved (no-op).
 - Tier 1c (Antigravity Dynamic Subagents) aspirational — falls back to Tier 2 unless dispatch primitive verified.
 - Tier 1d (Codex) `sandbox_mode` per-agent isolation is structural; the release-process parity gate verifies write-deny behavior before each tag (Q8 reconciliation).
+- **F-AGY-01** — `agy plugin validate` reports "hooks: skipped (not found)". Dual incompatibility: `${CLAUDE_PLUGIN_ROOT}` in `hooks.json` is CC-only (AGY uses `${extensionPath}`); `hookSpecificOutput` payload format is CC-only. Fix requires AGY-specific hook files; blocked pending official AGY docs being accessible.
+- **F-COD-03** — Codex `workspace-write` sandbox requires Hyper-V (unavailable on Windows 11 Home). Parity runs on Home SKU require `--sandbox danger-full-access`. No code change needed; host capability gap.
+- **F-CC-02** — `effort_tier` on CC agents is silently ignored (`effort_field_name: null` in tier_1.json). Non-blocking; CC uses `model_tier` for capacity selection only.
 - Codex installer command syntax unverified against a stable release.
 - No automated cross-platform parity gate. Per-platform validation is manual.
 - Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.
