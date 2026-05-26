@@ -17,6 +17,20 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.0.1 — Install Fixes (2026-05-26)
+
+### Fixed
+
+- **`bin/install.js` — Codex subcommand**: `codex plugin install` → `codex plugin add` (the `install` subcommand does not exist in Codex CLI).
+- **`bin/install.js` — Claude Code marketplace name**: changed `@superpipelines` → `@superpipelines-marketplace` to match the registered marketplace ID.
+- **`bin/install.js` — `--version` flag removed**: `claude plugin install` rejects `--version` as an unknown option; `agy plugin install` silently ignores it. Removed from both.
+- **Codex marketplace index**: added `.agents/plugins/marketplace.json` — the index file the Codex CLI requires to resolve third-party marketplace plugins. Without it `codex plugin add` fails with "plugin not found".
+- **Codex plugin subdirectory**: added `plugins/superpipelines/.codex-plugin/plugin.json` — Codex resolves plugins from named subdirectories, not the marketplace root (`path: "./"` is unsupported).
+
+Closes #19.
+
+---
+
 ## 2.0.0 — Multi-Platform (2026-05-26)
 
 ### Architecture & Governance
