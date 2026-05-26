@@ -10,8 +10,19 @@
   "repository": "https://github.com/gustavo-meilus/superpipelines",
   "license": "MIT",
   "skills": "./skills/",
-  "agents": "./agents/",
+  "agents": "./.agents/codex/agents/",
   "commands": "./commands/",
+  "interface": {
+    "displayName": "Superpipelines",
+    "shortDescription": "Design and run multi-agent AI pipelines.",
+    "longDescription": "Spec-driven, write/review-isolated multi-agent orchestration across Claude Code, OpenCode, Codex, and Cursor/Windsurf/Cline.",
+    "developerName": "Gustavo Meilus",
+    "category": "Development",
+    "capabilities": [],
+    "websiteURL": "https://github.com/gustavo-meilus/superpipelines",
+    "privacyPolicyURL": "https://github.com/gustavo-meilus/superpipelines/blob/main/PRIVACY.md",
+    "termsOfServiceURL": "https://github.com/gustavo-meilus/superpipelines/blob/main/LICENSE"
+  },
   "keywords": [
     "ai-pipelines",
     "subagents",
