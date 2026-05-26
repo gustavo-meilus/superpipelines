@@ -277,6 +277,13 @@ Rules:
 - `SKIP` is acceptable only when the change is documented to not affect that tier (e.g., a CC-only bugfix may SKIP 1b/1c/1d/2). The user must briefly state why.
 - `N/A` is acceptable only when the tier is unavailable to the releaser (e.g., no Antigravity install). The user must state which platform is unavailable.
 
+**Q8 Tier 1d sandbox-isolation verification.** For each Tier 1d `PASS`, additionally confirm:
+- Create a Codex reviewer agent TOML with `sandbox_mode = "read-only"`.
+- Dispatch the reviewer with a prompt that asks it to write a file.
+- Observe: the write attempt is denied by Codex's sandbox.
+
+If the write is NOT denied: the `tier_1d.json` `reviewer_isolation: "structural"` claim is false. Downgrade the profile to `"convention"`, add a degradation_warning, and amend the `STRUCTURAL_ON_TIER1_1B_1D` invariant in `CLAUDE.md` to `STRUCTURAL_ON_TIER1_1B; CONVENTION_ELSEWHERE` BEFORE releasing.
+
 Capture the responses verbatim. They will be embedded in the release commit message in Step 6.
 
 **Cannot proceed to Step 6 without a response (PASS / SKIP / N/A + reason) for every tier.**

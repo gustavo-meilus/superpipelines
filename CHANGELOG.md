@@ -63,7 +63,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - `--uninstall` flag in `bin/install.js` is a stub in v2.0.0 — prints a per-platform pointer message; full uninstall logic deferred to v2.1.
 - `--with-init` flag in `bin/install.js` is reserved (no-op) in v2.0.0.
 - Tier 1c (Antigravity Dynamic Subagents) is aspirational — falls back to Tier 2 unless the dispatch primitive is verified exposed to skills.
-- Tier 1d (Codex) per-agent isolation via TOML `sandbox_mode` is pending verification; treated as convention-only until confirmed.
+- Tier 1d (Codex) per-agent isolation via TOML `sandbox_mode = "read-only"` is documented as structural in `tier_1d.json`. The release-process parity gate (`.claude/skills/release.md` Step 5c) requires this be verified via a one-shot integration test before each release tag: confirm that a reviewer agent with `sandbox_mode = "read-only"` is blocked from writing to the workspace. If the test fails on a future Codex version, downgrade the profile's `reviewer_isolation` to `"convention"` and amend the invariant text.
 - Codex plugin-install command syntax (`codex plugin add ...`) in the installer is unverified against a stable Codex release; patch in v2.0.1 if the verified command differs.
 - No automated cross-platform parity gate. Per-platform validation is manual.
 - True parallel execution on Tier 2 degrades to sequential — Cursor/Windsurf/Cline have no subagent primitive.

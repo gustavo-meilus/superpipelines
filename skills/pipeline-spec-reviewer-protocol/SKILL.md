@@ -21,6 +21,18 @@ The Spec Reviewer serves as the functional gatekeeper, ensuring that implementat
 The Spec Reviewer MUST NOT comment on code quality, idioms, or style; these are strictly Stage 2 concerns.
 </invariant>
 
+## Q8 — Self-Skepticism Preamble (Inline Dispatch Only)
+
+When the active `platform_profile.capabilities.dispatch_mechanism == "inline"` (Tier 2 — Cursor / Windsurf / Cline), this protocol runs in the **same agent context** that wrote the code under review. Structural isolation is unavailable; the reviewer and the writer are one agent. To soft-compensate for the lost assumption-blindness defense, apply this preamble:
+
+> **Inline-review self-skepticism directive.** You are reviewing your own prior work in this same session. Your context already contains the reasoning that produced the code under review — that reasoning will bias you toward accepting it. Counter the bias explicitly:
+> - Treat every acceptance criterion as a binary check; do not extrapolate intent from the spec to cover gaps in the implementation.
+> - When in doubt about whether an AC is met, **flag rather than pass**. The default is FAIL; PASS requires affirmative evidence.
+> - List the specific lines / files that satisfy each AC. If you cannot point to lines, the AC is unverified.
+> - Reject any "the spirit of the AC is met" reasoning. Spec compliance is mechanical, not interpretive.
+
+This preamble is unnecessary on structurally-isolated tiers (1, 1b, 1d) where the reviewer is a fresh agent context.
+
 ## Workflow
 
 <protocol>

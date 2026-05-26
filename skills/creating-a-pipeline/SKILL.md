@@ -28,6 +28,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 - Load `sk-platform-dispatch` via the `Skill` tool → call `DETECT()` → receive `platform_profile` object.
 - Cache `platform_profile` in session context (no state file exists yet during creation).
 - IF `platform_profile.degradation_warnings` is non-empty: emit each warning with "⚠️" prefix before proceeding.
+- **Q8 reviewer-isolation advisory**: IF `platform_profile.capabilities.reviewer_isolation != "structural"` (Tier 2; Tier 1c when un-verified), emit a pattern-specific advisory before pattern selection: *"Patterns 2 and 5 depend on reviewer isolation for over-build / assumption-blindness defense. On this platform reviewer isolation is `<reviewer_isolation>` — review steps execute but cannot provide structural verification. Consider scaffolding production-critical pipelines from a structurally-isolated tier (Claude Code, OpenCode, or Codex)."*
 - Store `platform_profile` for use in Phase 4 dispatch branching.
 
 ### PHASE 0b: GIT PREFLIGHT

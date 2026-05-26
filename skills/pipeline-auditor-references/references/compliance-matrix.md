@@ -9,7 +9,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–22)
-5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09)
+5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09, PR-10)
 
 ---
 
@@ -74,6 +74,7 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 | PR-07 | `sk-model-resolver/SKILL.md` declares `RENDER_RESOLUTION_TABLE(resolved[]) → string` as a public API operation | SEV-2 | `grep -n "RENDER_RESOLUTION_TABLE" skills/sk-model-resolver/SKILL.md` must return ≥1 match in the public API section. Missing = the resolver's interface contract is incomplete; Phase 0.45 would be calling an undeclared operation. |
 | PR-08 | `sk-model-resolver/references/resolution-algorithm.md` references only agent-frontmatter fields declared in `agent-frontmatter-schema.md` | SEV-2 | Detect **consultation** of `agent.<field>` (comparison or assignment use), not bare prose mention. Concrete v2.0.0 rule: `grep -nE "agent\\.role[[:space:]]*(==\|!=\|<\|>)" skills/sk-model-resolver/references/resolution-algorithm.md` MUST return 0 — `role` is the only known phantom field (no `role:` key in the canonical schema). Any match = SEV-2 violation: the algorithm consults a field that does not exist, producing accidentally-correct outputs that mask their own root-cause. Bare prose mentions in rationale comments (e.g., `` `agent.role` here would be... ``) do NOT trip the regex because they lack a comparison operator. **Discriminating-power baselines:** `fixtures/discriminating-power/pr-08/` — pre-baseline (`agent.role != "orchestrator"` clause present) returns ≥1, post-baseline (clause removed; rationale prose retained) returns 0. |
 | PR-09 | Pipeline entry skill does NOT coexist with v2-migrated agents while using direct `Task()` calls | SEV-1 | For each pipeline `{P}` in registry: IF any agent file under `<scope-root>/agents/superpipelines/{P}/` has `model_tier:` (v2 schema) AND no `model:` field, AND the entry skill at `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` contains `Task(subagent_type=` invocations (direct dispatch, bypassing `sk-platform-dispatch` DISPATCH): SEV-1 violation. The entry skill silently dispatches at session-default model, erasing per-step `model_tier` intent stamped in `state.metadata.resolved_models[step_id]`. Detection: `grep -l "Task(subagent_type=" skills/superpipelines/*/run-*/SKILL.md` cross-referenced with `grep -L "^model:" agents/superpipelines/*/*.md`. Remediation: re-run Phase 0.4 (migration) on that pipeline — migration regenerates the entry skill via the v2.0.0 architect; original is archived. (Q13: prevents the post-migration incoherent state where Phase 0.45 resolves a model that dispatch never honors.) |
+| PR-10 | `reviewer_isolation` field on every profile JSON agrees with the `WRITE_REVIEW_ISOLATION` invariant text in `CLAUDE.md` | SEV-1 | Extract `reviewer_isolation` from each `skills/sk-platform-dispatch/profiles/tier_*.json` and cross-reference against the `WRITE_REVIEW_ISOLATION` invariant in `CLAUDE.md`. Invariant text `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2` requires: tier_1/1b/1d profiles MUST declare `"reviewer_isolation": "structural"`; tier_2 MUST declare `"reviewer_isolation": "convention"`. Tier 1c may be either; if `"structural"` the profile MUST include `extensions.reviewer_isolation_recipe`. Any mismatch = SEV-1: the profile and the invariant text contradict each other; users cannot trust either. Remediation: pick one side of the contradiction (verify the structural claim via tier-specific integration test, OR downgrade to convention with degradation_warning) before tagging. (Q8: prevents the v1.0.6-era drift where profile and CLAUDE.md disagreed for a release cycle.) |
 
 ### Resolver remediation
 
@@ -85,13 +86,14 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 - PR-07: Add `RENDER_RESOLUTION_TABLE(resolved[]) → string` to the public API list in `sk-model-resolver/SKILL.md`.
 - PR-08: Remove the `agent.role` clause from the algorithm. On dynamic-subagent platforms the orchestrator is the entry skill (caller), not a topology node (callee) — `agent.role` is never set on a topology agent. Either drop the role check (Step 4 becomes unconditional on `dynamic_subagents`) or add `role:` to `agent-frontmatter-schema.md` first; the algorithm MUST NOT reference undeclared fields.
 - PR-09: Re-run `/superpipelines:run-pipeline` against the affected pipeline. Phase 0.4 (migration) detects the incoherent state, regenerates the entry skill via the v2.0.0 architect, and archives the pre-v2 entry skill to `<scope-root>/superpipelines/pipelines/{P}/entry-skill.pre-v2-backup.md`. After regeneration, the entry skill routes every step through `sk-platform-dispatch` DISPATCH, which consumes `state.metadata.resolved_models[step_id]`.
+- PR-10: Reconcile profile vs invariant before tagging. EITHER verify the `structural` claim via tier-specific integration test (see `.claude/skills/release.md` Step 5c Q8 Tier 1d sandbox-isolation verification) AND keep the profile + invariant in sync, OR downgrade the profile's `reviewer_isolation` to `"convention"`, add a degradation_warning, and amend the invariant text. Shipping with profile and invariant disagreeing is the worst outcome — neither claim can be trusted.
 
 ---
 
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07, PR-08, PR-09 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10 in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

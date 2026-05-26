@@ -50,7 +50,7 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
 
 - **Tier 1 (CC)** — structural, enforced via agent `tools:` frontmatter.
 - **Tier 1b (OC)** — structural, enforced via `permission: { edit: deny }`.
-- **Tier 1d (Codex)** — pending per-agent `sandbox_mode` verification.
+- **Tier 1d (Codex)** — structural via TOML `sandbox_mode = "read-only"` on the reviewer agent. Release-process parity gate verifies the write-deny behavior before each release tag.
 - **Tier 2 (Cursor/Windsurf/Cline)** — convention-only. Reviews are advisory. The orchestrator surfaces this degradation at run start (stderr advisory) and run end (state-file footer + entry-skill summary).
 
 ### Breaking changes
@@ -68,7 +68,7 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
 - `--uninstall` flag stub (full uninstall deferred to v2.1).
 - `--with-init` flag reserved (no-op).
 - Tier 1c (Antigravity Dynamic Subagents) aspirational — falls back to Tier 2 unless dispatch primitive verified.
-- Tier 1d (Codex) `sandbox_mode` per-agent isolation pending verification.
+- Tier 1d (Codex) `sandbox_mode` per-agent isolation is structural; the release-process parity gate verifies write-deny behavior before each tag (Q8 reconciliation).
 - Codex installer command syntax unverified against a stable release.
 - No automated cross-platform parity gate. Per-platform validation is manual.
 - Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.

@@ -25,9 +25,9 @@
     "user": "~/.superpipelines"
   },
   "degradation_warnings": [
-    "Reviewer isolation is convention-only; reviews are advisory, not structurally enforced.",
-    "Parallel fan-out (Pattern 2) degrades to sequential.",
-    "Iterative pattern (Pattern 3) cycle limit still enforced inline.",
+    "Reviewer isolation impossible on this platform: writer and reviewer are the same agent in the same context. Review steps execute the reviewer protocol but cannot provide assumption-blindness defense or context-bleed isolation. Treat review output as a self-check, not verification. For verified review, run from Claude Code, OpenCode, or Codex.",
+    "Parallel fan-out (Pattern 2) requires worktrees and is unavailable on this platform (worktrees: false).",
+    "Iterative pattern (Pattern 3) requires worktrees and is unavailable on this platform (worktrees: false). Inline iteration without writer isolation produces multi-writer state contamination across cycles.",
     "Model selection is owned by the host IDE; per-step model assignment is not emitted."
   ],
   "extensions": {
