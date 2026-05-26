@@ -1,7 +1,7 @@
 # Resolution Algorithm — Normative Specification
 
 > **This file is the single normative source for the resolution algorithm.**
-> `sk-model-resolver/SKILL.md` and `running-a-pipeline` Phase 0.4 are both adapters of this spec.
+> `sk-model-resolver/SKILL.md` and `running-a-pipeline` Phase 0.45 are both adapters of this spec.
 > Changing the algorithm means editing this file. Both adapters must then be verified against it.
 
 ## Table of Contents
@@ -22,6 +22,21 @@
 RESOLVE(agent_frontmatter, profile, prefs) → resolved
 
 1. IF agent.model is present (explicit string):
+     // Q4: discriminate legitimate v2 escape hatch from un-migrated v1-legacy schema.
+     // v1 pipelines had concrete `model:` everywhere; plugin_version stamping was
+     // introduced in v2.0.0. An agent with `model:` present and no plugin_version
+     // (or < 2.0.0) is v1-legacy schema, not user-intentional override.
+     IF agent.plugin_version is absent OR semver(agent.plugin_version) < "2.0.0":
+       return {
+         model: null,
+         effort: null,
+         effort_field_name: null,
+         model_field_format: null,
+         source: "blocked",
+         reason: "v1_legacy_schema_must_be_migrated",
+         warnings: ["v1-legacy agent frontmatter (model: present, plugin_version < 2.0.0). Phase 0.4 migration MUST run before resolution. Do NOT treat this as a frontmatter override."]
+       }
+     // Legitimate v2 escape hatch (plugin_version >= 2.0.0): user explicitly chose a model.
      return {
        model: agent.model,
        effort: agent.effort_tier ?? null,
@@ -99,7 +114,7 @@ RESOLVE(agent_frontmatter, profile, prefs) → resolved
 **Invariants:**
 - Steps 4 and 5 gate on independent capability flags (`dynamic_subagents`, `model_field_format`, `tier`). Neither implies the other. Both must always be evaluated — never short-circuit one by inferring from the other.
 - `prefs` must be a valid `{ user, workspace }` object. When file-read fails, callers pass `{ platforms: {} }` for the failed source. Passing null is an error.
-- `source` is always one of the five enum literals: `frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit`.
+- `source` is one of six enum literals: `frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit | blocked` (Q4: `blocked` added — returned only by Step 1 when v1-legacy schema is detected; callers MUST NOT proceed to dispatch with a blocked resolution).
 
 ---
 
@@ -126,7 +141,7 @@ LOAD_PREFS(workspace_root) → { user, workspace, hashes }
 
 **Invariant:** No merge step. RESOLVE consults workspace first, falls through to user, preserving per-source provenance for the `source` field.
 
-**Hash contract (Q1):** `hashes` is stamped to `pipeline-state.json metadata.preference_files_consulted` at Phase 0.4. On resume, the orchestrator calls `LOAD_PREFS` again and compares the fresh `hashes` to the stamped value. Any divergence emits a non-blocking advisory ("Pref files changed since run start; stamped models will be used. To pick up changes, start a fresh run."). The stamped resolved_models remain authoritative — no mid-run re-resolution.
+**Hash contract (Q1):** `hashes` is stamped to `pipeline-state.json metadata.preference_files_consulted` at Phase 0.45. On resume, the orchestrator calls `LOAD_PREFS` again and compares the fresh `hashes` to the stamped value. Any divergence emits a non-blocking advisory ("Pref files changed since run start; stamped models will be used. To pick up changes, start a fresh run."). The stamped resolved_models remain authoritative — no mid-run re-resolution.
 
 ---
 

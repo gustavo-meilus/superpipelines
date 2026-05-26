@@ -58,7 +58,7 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
 - `WRITE_REVIEW_ISOLATION: TRUE` invariant removed. Replaced by tier-aware `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`. Tooling that hard-asserted the boolean form must update.
 - New `metadata.tier` and `plugin_version` fields required at state init. Pre-v2.0.0 runs without these fields surface informational notes at resume; do not block.
 - Generated entry skills now route through `sk-platform-dispatch` DISPATCH instead of direct `Task()`. Policy:
-  - **Existing pre-v2.0.0 entry skills on Claude Code:** continue to work unchanged. No forced regeneration.
+  - **Existing pre-v2.0.0 entry skills:** automatically regenerated on first run after v2.0.0 upgrade by Phase 0.4 (migration). The pre-v2 entry skill is archived to `<scope-root>/superpipelines/pipelines/{P}/entry-skill.pre-v2-backup.md` for audit. Direct `Task()` calls in pre-v2 entry skills do not consume `state.metadata.resolved_models[step_id]`; regeneration is required for the per-step model-tier system to take effect. (Q13: retraction of earlier "no forced regeneration" claim — that promise produced silent intent erasure on every upgrade scenario.)
   - **Cross-tier portability (running a CC-scaffolded pipeline on Tier 1b/1c/1d/2):** REQUIRES regenerating the entry skill with the v2.0.0 architect — raw `Task()` calls do not dispatch correctly on non-CC tiers.
   - **New pipelines (v2.0.0+):** architect emits DISPATCH-routed entry skills by default; no action needed.
 - `CLAUDE.md` Project Version jumps from `v1.2.0` (stale) to `v2.0.0`. Plugin manifest version (`1.0.6` → `2.0.0`) is now the source of truth.

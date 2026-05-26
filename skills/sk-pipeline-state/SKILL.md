@@ -66,11 +66,11 @@ State must be persisted to `<scope-root>/superpipelines/temp/{P}/{runId}/pipelin
     },
     "preference_files_consulted": {
       "user_path":       "<absolute or ~-prefixed path to user-global prefs>",
-      "user_hash":       "<sha256:hex digest of user prefs file content at Phase 0.4; null if file absent>",
+      "user_hash":       "<sha256:hex digest of user prefs file content at Phase 0.45; null if file absent>",
       "workspace_path":  "<absolute path to workspace prefs>",
-      "workspace_hash":  "<sha256:hex digest of workspace prefs file content at Phase 0.4; null if file absent>"
+      "workspace_hash":  "<sha256:hex digest of workspace prefs file content at Phase 0.45; null if file absent>"
     },
-    "model_tiers_version_at_run": "<profile.model_tiers_version at Phase 0.4; ISO date>"
+    "model_tiers_version_at_run": "<profile.model_tiers_version at Phase 0.45; ISO date>"
   }
 }
 ```

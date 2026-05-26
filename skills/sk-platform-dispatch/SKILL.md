@@ -77,7 +77,7 @@ Tier detection is performed exactly once per orchestrator invocation. On resume:
 
 Before DISPATCH executes any step, callers MUST load `sk-model-resolver` and call `RESOLVE(agent, profile, prefs)` for each topology step. The resolved object is persisted to `pipeline-state.json metadata.resolved_models[step_id]` and consulted by DISPATCH (`native_task` model override; `native_subagent` payload; `toml_split` agent file rewrite; `omit` = no-op).
 
-`running-a-pipeline` Phase 0.4 handles this for run-time execution. `creating-a-pipeline` Phase 4 uses resolution only for the preview table in Phase 5 approval; architect output writes `model_tier:` and never `model:`.
+`running-a-pipeline` Phase 0.45 handles this for run-time execution. `creating-a-pipeline` Phase 4 uses resolution only for the preview table in Phase 5 approval; architect output writes `model_tier:` and never `model:`.
 
 ## DISPATCH Contract
 

@@ -7,7 +7,7 @@ user-invocable: false
 
 # Model Resolver — 5-Layer Cross-Platform Model Resolution
 
-> Translates agent-author intent (`model_tier: deep`) into concrete platform-specific model strings (`claude-opus-4-7` on CC, `opencode-go/kimi-k2.6` on OC, `gpt-5.5` on Codex). Preloaded by `running-a-pipeline` Phase 0.4. Pure function — never writes to disk, never calls APIs.
+> Translates agent-author intent (`model_tier: deep`) into concrete platform-specific model strings (`claude-opus-4-7` on CC, `opencode-go/kimi-k2.6` on OC, `gpt-5.5` on Codex). Preloaded by `running-a-pipeline` Phase 0.45. Pure function — never writes to disk, never calls APIs.
 
 <overview>
 The resolver decouples agent-author intent from runtime model selection. Five resolution layers ranked top-wins: (1) explicit `model:` in agent frontmatter, (2) workspace preferences, (3) user-global preferences, (4) platform profile default, (5) native host inherit. Callers obtain a `resolved` object, persist it to `pipeline-state.json metadata.resolved_models`, and pass it to dispatch.
@@ -17,7 +17,7 @@ The resolver decouples agent-author intent from runtime model selection. Five re
   <term name="tier">Role category: triage | fast | medium | deep | inherit. Author-declared.</term>
   <term name="effort_tier">Orthogonal reasoning intensity: low | medium | high. Optional.</term>
   <term name="resolved">Output object: {model, effort, effort_field_name, model_field_format, source, warnings}.</term>
-  <term name="source">Which layer won resolution: frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit.</term>
+  <term name="source">Which layer won resolution: frontmatter_override | workspace_prefs | user_prefs | profile_default | host_inherit | blocked. The `blocked` enum (Q4) signals v1-legacy schema detected — callers MUST migrate via Phase 0.4 before dispatch.</term>
 </glossary>
 
 ## Public API
@@ -50,7 +50,7 @@ Where each `entries[]` element is `{ step_id, agent_name, model_tier, resolved }
 
 ## Algorithm
 
-Normative source: **`references/resolution-algorithm.md`** — all six operations (RESOLVE, LOAD_PREFS, EMIT, RENDER_RESOLUTION_TABLE, REVERSE_MAP, DETECT_CATALOG_DRIFT) are specified there. Both the skill adapter (this file) and the inline adapter (`running-a-pipeline` Phase 0.4) execute the same algorithm. Do not restate steps here.
+Normative source: **`references/resolution-algorithm.md`** — all six operations (RESOLVE, LOAD_PREFS, EMIT, RENDER_RESOLUTION_TABLE, REVERSE_MAP, DETECT_CATALOG_DRIFT) are specified there. Both the skill adapter (this file) and the inline adapter (`running-a-pipeline` Phase 0.45) execute the same algorithm. Do not restate steps here.
 
 ## Preference File Schema
 
@@ -99,7 +99,7 @@ Normative source: **`references/resolution-algorithm.md`** — all six operation
 ## Red Flags — STOP
 
 - "I'll cache the resolved model across runs." → **STOP**. State file caches per run; mid-run pref edits must take effect on the next run, not be stale-cached.
-- "I'll re-resolve at dispatch time per step." → **STOP**. Phase 0.4 resolves once upfront and writes to state. Phase 3 reads state. Re-resolution at dispatch causes mid-run inconsistency if prefs change.
+- "I'll re-resolve at dispatch time per step." → **STOP**. Phase 0.45 resolves once upfront and writes to state. Phase 3 reads state. Re-resolution at dispatch causes mid-run inconsistency if prefs change.
 - "I'll merge workspace and user prefs into one object." → **STOP**. Consult-in-order preserves provenance (which layer won); merging loses the `source` field.
 - "I'll call platform APIs to validate the resolved model exists." → **STOP**. Resolver is pure. Validation belongs in `change-models` Phase 4.
 
