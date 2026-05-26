@@ -25,9 +25,10 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
   > ⚠️ SessionStart hook degraded (Git Bash not found on the previous session start). Auto-loading of `using-superpipelines` routing context was skipped. The plugin still works, but routing decisions may be less precise. To restore: install Git for Windows (Git Bash), then restart this session. To dismiss this advisory for the current session only: `del "%CLAUDE_PLUGIN_ROOT%\.session-hook-degraded"` (Windows) or `rm "${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded"` (Unix).
   
   Do not delete the marker automatically — it is cleared by the next successful SessionStart hook.
-- Resolve all scope roots via `sk-pipeline-paths`.
-- Read and merge `registry.json` files from `local`, `project`, and `user` scopes.
-- Present available pipelines to the user and capture the selection (`{ROOT}`, `{P}`, `pattern`).
+- **Q5 multi-root enumeration**: Call `sk-pipeline-paths.ENUMERATE_ALL_SCOPE_ROOTS(workspace)` to get every populated scope root across **all 5 tiers** (workspace + user). The result is a list of `{tier, scope, root}` entries.
+- For each enumerated root, read `<root>/superpipelines/registry.json` (if present). Merge all entries into a single registry view, annotating each entry with its `source_tier` (derived from which scope root it was found in) and `scope` (`project | local | user`).
+- Present available pipelines to the user; the listing MUST include the `source_tier` and `scope` per entry so cross-tier and cross-scope provenance is visible.
+- Capture the selection (`{ROOT}`, `{P}`, `pattern`, `source_tier`).
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
 
@@ -227,13 +228,16 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
     - **Abort**: Stop. User must regenerate entry skill with v2.0.0 architect.
     - **Proceed as advisory**: Continue with a note in `metadata.isolation_warning`.
   - IF not found: proceed silently.
+  - **Q5 state-file path rewrite**: When a state file is being resumed from a foreign scope root (Phase 1 detected a cross-tier resume target), ALL absolute path fields in the state file MUST be revalidated against the active `platform_profile.scope_root`. Apply `PORTABILITY_REWRITE` to each path field stamped in the state file (e.g., entries referencing `<source_scope_root>/...`). The rewrite is in-memory only — the on-disk state file is NOT moved (preserves audit trail showing where the original run lived). Subsequent state-file reads use the rewritten paths. Update `metadata.runtime_tier` and append the cross-tier transition to `metadata.tier_changes` per Phase 1.
+  - **Q7 pattern-vs-worktrees abort**: IF the loaded pipeline's `topology.pattern` is in `{2, 3, 5}` AND `platform_profile.capabilities.worktrees == false`: HARD-ABORT, do NOT prompt for advisory proceed. Emit: `"❌ Pattern {N} requires worktrees for writer isolation. The active platform '{name}' has worktrees: false. Running this pipeline here would corrupt state via multi-writer file collisions across iterations or parallel branches. Options: [Abort] [Re-scaffold on a worktrees-capable tier]"`. This is NOT a degrading-to-sequential case — degrading scope is fine; degrading isolation is a correctness regression.
 
 ### PHASE 1: RESUME CHECK
-- Check for existing run directories in `{ROOT}/superpipelines/temp/{P}/`.
+- **Q5 multi-root resume scan**: For every populated scope root from the Phase 0 `ENUMERATE_ALL_SCOPE_ROOTS` result (not just the runtime tier's), check `<root>/superpipelines/temp/{P}/` for existing run directories. This finds state files written under a different tier's scope root (e.g., CC-scaffolded pipeline being resumed from Cursor).
 - **Valid run directory criteria**: name matches `{P}-{YYYYMMDD-HHMMSS}` AND contains `pipeline-state.json`.
   - Directories whose names begin with `edit-` are atomic-staging artifacts from `adding-a-pipeline-step` / `deleting-a-pipeline-step` mutations — **EXCLUDE** them from the resume list.
   - Directories without `pipeline-state.json` are incomplete or foreign — **EXCLUDE** them.
-- **Logic**: If valid runs exist, prompt the user to start new or resume.
+- **Cross-tier state detection**: For each valid run directory found, read `metadata.source_tier` from the state file. IF `source_tier != runtime_tier` (the tier detected in Phase 0.25): the state is a cross-tier resume target. Append `{from: source_tier, to: runtime_tier, at: iso8601_now()}` to `metadata.tier_changes` and trigger Phase 0.6 portability validation against the foreign state file's paths.
+- **Logic**: If valid runs exist (same-tier or cross-tier), prompt the user to start new or resume. The resume listing MUST display the `source_tier` per entry so cross-tier resumes are visible at the prompt.
 - <HARD-GATE>NEVER auto-resume an `escalated` or `failed` run. Surface the state path and require explicit user review first.</HARD-GATE>
 
 ### PHASE 2: STATE INITIALIZATION

@@ -24,7 +24,7 @@
     "provider_families": ["google"]
   },
   "scope_root": {
-    "workspace": ".agents",
+    "workspace": ".agents/antigravity",
     "user": "~/.antigravity"
   },
   "degradation_warnings": [

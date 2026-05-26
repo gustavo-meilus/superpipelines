@@ -44,6 +44,9 @@ Present six modes:
 | **D** — Per-agent explicit `model:` (escape hatch, advanced) | Edit agent frontmatter; surfaces SEV-3 audit warning |
 | **E** — First-run wizard | Interactive 4-tier setup with subscription detection |
 | **F** — Catalog refresh | Reconcile prefs with new profile `model_tiers_version` |
+| **G** (Q6) — Orchestrator-tier override | Set the orchestrator-only model tier on platforms where per-step assignment is meaningless (`dynamic_subagents: true` or `model_field_format: "omit"`). Writes to user or workspace prefs at `platforms[tier].orchestrator_tier`. |
+
+**Q6 mode availability rule:** Modes C and D (per-agent overrides) are **hidden** when the active `platform_profile` has `dynamic_subagents: true` (Tier 1c) OR `model_field_format: "omit"` (Tier 2) — per-agent overrides have no runtime effect on those platforms. The mode selection menu surfaces Mode G in their place. Mode G is hidden on per-step-capable tiers (1, 1b, 1d) where the standard A/B/C/D suffice.
 
 `$ARGUMENTS` fast-paths bypass Mode selection:
 - `/superpipelines:change-models all deep to <model>` → Mode C, target=all, tier=deep

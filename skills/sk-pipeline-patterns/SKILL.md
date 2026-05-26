@@ -22,15 +22,17 @@ Pipeline Patterns provide standardized architectures for diverse agentic workloa
 ## Pattern Selection Matrix
 
 <pattern_matrix>
-| Pattern | Information Flow | Worktree | Best Applied To |
-| :--- | :--- | :--- | :--- |
-| **1. Sequential** | Linear (A → B → C) | Optional | Strictly dependent sequential phases. |
-| **2. Parallel** | Fan-Out / Merge | **Required** | Independent analyses or reviews. |
-| **3. Iterative** | Loop (Test → Fix) | **Required** | Fix/heal cycles with defined exit criteria. |
-| **4. Gated** | Phase → GATE → User | Selective | Destructive or irreversible operations. |
-| **5. Spec-Driven** | Spec → Plan → Implement | **Required** | Large feature work or complex migrations. |
-| **6. 4D Method** | Wrapper (Internal) | N/A | Every agent turn within any other pattern. |
+| Pattern | Information Flow | Worktree | Capability Requirements (Q7) | Best Applied To |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Sequential** | Linear (A → B → C) | Optional | none | Strictly dependent sequential phases. |
+| **2. Parallel** | Fan-Out / Merge | **Required** | `worktrees: true` AND `parallel_subagents: true` | Independent analyses or reviews. |
+| **3. Iterative** | Loop (Test → Fix) | **Required** | `worktrees: true` | Fix/heal cycles with defined exit criteria. |
+| **4. Gated** | Phase → GATE → User | Selective | none | Destructive or irreversible operations. |
+| **5. Spec-Driven** | Spec → Plan → Implement | **Required** | `worktrees: true` AND `parallel_subagents: true` | Large feature work or complex migrations. |
+| **6. 4D Method** | Wrapper (Internal) | N/A | none | Every agent turn within any other pattern. |
 </pattern_matrix>
+
+**Q7 capability gating:** A pattern's worktree requirement is about correctness (writer isolation), not just parallelism. "Degrades to sequential" hides this — degrading scope is fine; degrading isolation is not. Selecting Pattern 2, 3, or 5 on a platform with `worktrees: false` produces multi-writer file collisions across iterations or parallel branches.
 
 ## Pattern 3 — Iterative Loop Protocol
 
@@ -65,13 +67,17 @@ Pipeline Patterns provide standardized architectures for diverse agentic workloa
 ## Decision Tree
 
 <decision_tree>
+**Q7 capability preflight (consult before traversal):**
+- IF `platform_profile.capabilities.worktrees == false`: available patterns = {1, 4, 6}. Skip the Pattern 2 / 3 / 5 branches below and emit advisory: "Pattern 2/3/5 require worktrees, unavailable on this platform. Limited to Patterns 1 and 4."
+- IF `platform_profile.capabilities.parallel_subagents == false`: Patterns 2 and 5 are unavailable (their parallel fan-out cannot execute safely). Allow Pattern 3 only if `worktrees: true`.
+
 Is the task multi-step with dependencies?
 - **NO**: Apply 4D Method and execute directly.
 - **YES**:
-  - Independent/Mergeable tasks? → **Pattern 2**.
-  - Fix/Heal cycle? → **Pattern 3**.
+  - Independent/Mergeable tasks? → **Pattern 2** (requires `worktrees + parallel_subagents`).
+  - Fix/Heal cycle? → **Pattern 3** (requires `worktrees`).
   - Irreversible action? → **Pattern 4** (Human Gate).
-  - Feature work? → **Pattern 5** (SDD).
+  - Feature work? → **Pattern 5** (SDD; requires `worktrees + parallel_subagents`).
   - Linear dependency? → **Pattern 1**.
 </decision_tree>
 

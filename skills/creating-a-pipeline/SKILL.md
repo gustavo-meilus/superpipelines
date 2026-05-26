@@ -36,9 +36,22 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 1: SCOPE & IDENTITY
 - <HARD-GATE>Ask the user to choose a deployment scope (`local`, `project`, or `user`) and a pipeline name BEFORE proceeding to Phase 2. Resolve all paths via `sk-pipeline-paths`. Validate the name: lowercase/hyphens only, ≤48 chars, unique in the scope's `registry.json`. Do NOT advance to Phase 2 without a confirmed scope and a valid, unique pipeline name.</HARD-GATE>
+- **Q15 cross-scope uniqueness check**: After name validation in the chosen scope, scan all OTHER merged scope roots (via `sk-pipeline-paths.ENUMERATE_ALL_SCOPE_ROOTS`) for entries with the same name. IF a same-name pipeline exists in another scope or tier, prompt the user explicitly:
+  > ⚠️ A pipeline named `{P}` already exists in {other-scope / other-tier} (scaffolded {date}). Creating another `{P}` in {this-scope / this-tier} is allowed but may cause disambiguation prompts at run-time. Continue? [y/N]
+  
+  Only proceed on explicit `y`. Default `N` prevents silent collisions.
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
 - Apply the 4D Method to deconstruct core intent and constraints.
+
+- **Q6 capability-gated model prompting.** Before asking per-step model questions, branch on the active `platform_profile`:
+  - IF `platform_profile.capabilities.dynamic_subagents == true` (Tier 1c — host owns subagent model selection) OR `platform_profile.capabilities.model_field_format == "omit"` (Tier 2 — host IDE owns all model selection):
+    - **Skip** the per-step model_tier table below.
+    - Ask **one** question: "What model tier should the pipeline orchestrator run at? (triage | fast | medium | deep; default `fast`)". Record as `orchestrator_tier`.
+    - Write `model_tier: inherit` on every generated agent (the architect will honor this in Phase 4).
+    - Stamp authoring intent: in Phase 6 the topology.json gains `metadata.model_intent_scaffold_tier` recording what the author *would have* picked per step had the platform supported per-step selection. This makes the pipeline cross-tier portable: when run later on a per-step-honoring tier (1, 1b, 1d), the intent is recoverable.
+  - ELSE: proceed with the per-step table below.
+
 - **Model preference per step (4-tier)**: For each topology step the architect will generate in Phase 4, ask the user to choose a model tier:
 
   | Tier | Use cases |
@@ -62,7 +75,15 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 3: PATTERN SELECTION
 - Select a topology pattern (Sequential, Parallel, Iterative, Gated, or Spec-Driven) using the `sk-pipeline-patterns` decision tree.
-- **Restriction**: If git is absent, limit selection to Pattern 1 or 4.
+- **Q7 capability gating**: Build the available-pattern list dynamically:
+  ```
+  IF !git_repo: patterns = [1, 4]
+  ELIF !platform_profile.capabilities.worktrees: patterns = [1, 4]
+  ELSE IF !platform_profile.capabilities.parallel_subagents: patterns = [1, 3, 4]   # Pattern 3 needs worktrees but not parallelism
+  ELSE: patterns = [1, 2, 3, 4, 5]
+  ```
+  When narrowing, emit an advisory naming the missing capability and the excluded patterns: e.g., "Pattern 2/3/5 require `worktrees`, unavailable on `<platform>`. Limited to Patterns 1 and 4."
+- **Restriction**: If git is absent OR `worktrees: false`, limit selection to Pattern 1 or 4 (these are the only patterns that do not require writer isolation via worktrees).
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect** (profile-driven from Phase 0):
@@ -81,6 +102,8 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
 ### PHASE 5: HUMAN APPROVAL
 - Present the topology diagram, spec summary, full task list, and audit results to the user.
+- **Q6 cross-tier flattening footnote**: IF `platform_profile.capabilities.dynamic_subagents == true` OR `platform_profile.capabilities.model_field_format == "omit"`, append to the resolution preview table a footnote:
+  > "This platform owns model selection. Per-step picks have been stored as authoring intent (`topology.json metadata.model_intent_scaffold_tier`); they take effect only when the pipeline is run on a per-step-capable tier (1, 1b, 1d)."
 - **Approval Required**: Do NOT generate the entry skill until the user explicitly approves the design.
 - <HARD-GATE>When the user approves, proceed DIRECTLY to Phase 6 (scaffold generation). Do NOT ask for runtime inputs (e.g., "what's the topic?"). The pipeline does not run here — it is scaffolded. Running is a separate command (`/superpipelines:run-pipeline`).</HARD-GATE>
 
