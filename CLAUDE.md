@@ -16,13 +16,11 @@ Superpipelines implements a multi-agent orchestration framework where architectu
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — State persists to `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. State carries `plugin_version`, `metadata.source_tier`, and `metadata.runtime_tier` from the run start.
 - `MULTI_PIPELINE: TRUE` — Multiple named pipelines coexist in isolation per workspace.
 - `LEAN_AGENTS_CC_ONLY` — Zero-body + protocol-skill pattern is Claude Code specific. OpenCode uses agent bodies ≤150 lines. Codex uses TOML agent files. Tier 2 platforms use protocol skills inline with no agent files.
-- `MULTI_PLATFORM: TRUE` — superpipelines targets CC (Tier 1) + Codex (Tier 1d) + Cursor/Windsurf/Cline (Tier 2) + Antigravity CLI 2.0 (Tier 1c aspirational). superpipelines-opencode targets OC (Tier 1b). Gemini CLI is retired June 18, 2026.
+- `MULTI_PLATFORM: TRUE` — superpipelines targets CC (Tier 1) + OC (Tier 1b) + Antigravity CLI 2.0 (Tier 1c aspirational) + Codex (Tier 1d) + Cursor/Windsurf/Cline (Tier 2). Gemini CLI is retired June 18, 2026.
 - `TIER_MODEL: 5-TIER` — Tier 1 (CC: skill-callable `Task()`); Tier 1b (OC: `mode: subagent`); Tier 1c (Antigravity: Dynamic Subagents, aspirational); Tier 1d (Codex: native parallel subagents, model-driven, TOML agents, up to 6 concurrent); Tier 2 (Cursor/Windsurf/Cline: single-agent inline).
 - `SKILL_PRIMACY: TRUE` — Intelligence lives in `SKILL.md`. Platform manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`) are discovery-only.
 - `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2; OC_NOT_PORTABLE` — Pipelines scaffolded on CC or Codex run on Tier 2 platforms without modification. OC pipelines use OC-specific agent frontmatter and are not portable without re-scaffolding.
-- `OC_FIRST_CLASS: TRUE` — `superpipelines-opencode` is a permanent sibling repo; not deprecated.
-- `SYNC_DISCIPLINE: REQUIRED` — Shared skills are kept in sync between this repo and `superpipelines-opencode` via `docs/SYNC.md`.
-- `PARITY_TESTING: MANUAL_PHASE1` — No automated cross-platform parity gate in v2.0.0. `docs/SYNC.md` tracks per-skill validation. Automated parity tests are a v2.1 objective.
+- `PARITY_TESTING: MANUAL_PHASE1` — No automated cross-platform parity gate in v2.0.0. Per-platform validation is manual.
 - `DEPENDENCY_INVERSION: PROFILE_DRIVEN` — Per-platform facts (dispatch mechanism, reviewer-isolation recipe, scope roots, model_tiers, degradation warnings) live exclusively in `skills/sk-platform-dispatch/profiles/{tier_id}.json`. Skill bodies depend on the abstract shape (`platform_profile.<field>`), never on concrete platform names or values. Adding a new platform = adding a new profile JSON + detection heuristic; no skill-body edits required. Concrete per-tier values duplicated in any skill body are a defect (auditor SEV-2: source-of-truth drift).
 </architecture_invariants>
 
