@@ -43,15 +43,25 @@ The Running a Pipeline workflow acts as the central orchestrator for pipeline ex
 
 **Step 2 — Load or inline-detect:**
 
-- **Skill tool available**: Wrap the load call in try/catch:
+- **Skill tool available**: Wrap the load call in try/catch. Three distinct error shapes require different fallbacks:
   ```
   try:
     profile = Skill(superpipelines:sk-platform-dispatch).DETECT()  // or activate_skill(...)
+  catch DisableModelInvocation:
+    // Skill is registered but has disable-model-invocation: true.
+    // This is NOT a missing-plugin case — it means the skill requires direct file execution.
+    // Read the skill file and execute DETECT() inline using all its heuristics
+    // (including the Task-tool probe, which correctly identifies tier_1 regardless of
+    // whether CLAUDE_CODE env var is set). NEVER fall through to INLINE-DETECT() here
+    // — INLINE-DETECT() lacks the Task-tool probe and will misidentify tier_1 as tier_1c
+    // on any machine where `agy` is installed and CLAUDE_CODE env var is absent.
+    Read(skills/sk-platform-dispatch/SKILL.md)
+    profile = execute_DETECT_from_skill_body()  // Task tool present → tier_1; etc.
   catch SkillNotFound | LookupError:
     emit advisory: "⚠️ Skill loader present but sk-platform-dispatch unresolved — superpipelines plugin may not be registered in this environment. Falling back to INLINE-DETECT()."
     profile = INLINE-DETECT()
   ```
-  On success: cache `platform_profile` in session context. Proceed normally.
+  On success (any path): cache `platform_profile` in session context. Proceed normally.
 - **No skill tool available**: Emit the following advisory, then run INLINE-DETECT():
 
   > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.45 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
@@ -288,6 +298,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - "v1-legacy agents still work, so migration is optional." → **STOP**. Phase 0.4 HARD-GATE: migration is mandatory once v1 candidates are classified. The only valid skip is `plugin_version >= 2.0.0`.
 - "I'll hand-craft the resolution table instead of calling RENDER_RESOLUTION_TABLE." → **STOP**. Phase 0.45 HARD-GATE: `RENDER_RESOLUTION_TABLE` is the format authority. Hand-crafted tables drift from the resolver contract.
 - "The inline path skips LOAD_PREFS because the Skill tool is absent." → **STOP**. ADR-0002: pref-file read is independent of Skill-tool availability. Always attempt LOAD_PREFS; degrade only on file-read failure.
+- "`sk-platform-dispatch` threw `DisableModelInvocation`, so I fell through to INLINE-DETECT()." → **STOP**. `DisableModelInvocation` means the skill requires direct file execution, not that it is absent. Read the skill file and run DETECT() inline — do NOT fall through to INLINE-DETECT(). On machines with `agy` installed but `CLAUDE_CODE` env var unset, INLINE-DETECT() returns `tier_1c` while you are in tier_1.
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
 
 ## Rationalization Table
@@ -302,6 +313,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 | "I'll format the table myself — RENDER_RESOLUTION_TABLE is just a suggestion." | `RENDER_RESOLUTION_TABLE` is the format authority. Hand-crafted tables drift from the resolver contract and trigger auditor PR-05. |
 | "The inline path can't check prefs — the Skill tool is absent." | Pref-file read is independent of Skill-tool availability (ADR-0002). Always attempt LOAD_PREFS; skip only on file-read failure. |
 | "Collecting topic up-front shortens the perceived wait." | Phase ordering exists to prevent input commitment on un-migrated / un-validated state. UX optimization is the wrong axis. |
+| "DisableModelInvocation → fall through to INLINE-DETECT()." | Wrong fallback. DisableModelInvocation means inline execution required, not plugin absent. Read the skill file; execute DETECT() inline; it has the Task-tool probe INLINE-DETECT() lacks. |
 </rationalization_table>
 
 ## Reference Files
