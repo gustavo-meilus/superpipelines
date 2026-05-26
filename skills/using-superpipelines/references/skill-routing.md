@@ -21,8 +21,8 @@ When to invoke which superpipelines skill or agent. Source of truth for the rout
 | "Remove / delete [step] from [pipeline]" | `deleting-a-pipeline-step` |
 | `/superpipelines:delete-step` invoked | `deleting-a-pipeline-step` |
 | "Audit [pipeline]" / "Review my pipeline" | dispatch `pipeline-auditor` (FULL mode) |
-| "Audit all pipelines" / `/audit-pipeline --all` | dispatch `pipeline-auditor` (SCOPE-WIDE mode) |
-| `/superpipelines:audit-pipeline` invoked | dispatch `pipeline-auditor` |
+| "Audit all pipelines" / `/audit-steps --all` | dispatch `pipeline-auditor` (SCOPE-WIDE mode) |
+| `/superpipelines:audit-steps` invoked | dispatch `pipeline-auditor` |
 
 ## Subagent dispatch (direct)
 

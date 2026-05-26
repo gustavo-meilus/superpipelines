@@ -29,7 +29,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | `/new-step` or "Add capability" | `adding-a-pipeline-step` | Topology mutation. |
 | `/update-step` or "Modify agent" | `updating-a-pipeline-step` | Contract-aware update. |
 | `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
-| `/audit-pipeline` | `pipeline-auditor` | Security/topology review. |
+| `/audit-steps` | `pipeline-auditor` | Security/topology review. |
 | `/change-models` or "Change models" | `change-models` | Interactive model reassignment. |
 | Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
 | Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
