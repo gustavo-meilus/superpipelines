@@ -57,6 +57,28 @@ Call RENDER_RESOLUTION_TABLE(resolved[]) and print verbatim.
 
 ## Detection
 
-Scan `running-a-pipeline/SKILL.md` Phase 0.4 inline block for:
-1. `LOAD_PREFS` call presence — required.
-2. Absence of prose like "preference files will NOT be consulted" or "prefs absent" — prohibited.
+Extract the Phase 0.4 *Inline Path* block and count `LOAD_PREFS(` invocations
+(opening paren required — invocation syntax, not the bare identifier):
+
+```bash
+sed -n '/\*\*Inline Path/,/<HARD-GATE>/p' \
+  skills/running-a-pipeline/SKILL.md | grep -c "LOAD_PREFS("
+```
+
+Result `0` = SEV-1 PR-04 violation: the inline adapter never invokes LOAD_PREFS,
+silently dropping user/workspace preferences on Tier 1c and Tier 2 hosts.
+
+**Bare-name mentions elsewhere in the file** (public API summaries, Red Flag prose,
+Rationalization Table) do NOT satisfy this criterion. Invocation syntax with an
+opening paren is required, inside the inline-path block range.
+
+## Discriminating-power test
+
+This fixture is paired with snapshots under `fixtures/discriminating-power/pr-04/`:
+- `pre-baseline.md` (from `39dd0e6`) → the scoped grep returns **0** — the criterion fires SEV-1.
+- `post-baseline.md` (post-S2) → the scoped grep returns **≥ 1** — the criterion is silent.
+
+The whole-file naive grep returns ≥1 against **both** baselines (the pre-refactor
+file had one LOAD_PREFS mention outside the inline block), which is why the
+scope-extraction step is load-bearing. Any future edit to PR-04's regex that
+drops the scope extraction will silently re-introduce the SEV-1 false negative.
