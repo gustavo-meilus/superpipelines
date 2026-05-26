@@ -17,16 +17,16 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
-## 2.0.0 — Multi-Platform (2026-05-21)
+## 2.0.0 — Multi-Platform (2026-05-26)
 
 ### Architecture & Governance
 
-- **Multi-Platform Targets** — Single repo now supports Claude Code (Tier 1), Codex App/CLI (Tier 1d), Cursor/Windsurf/Cline (Tier 2), and Antigravity CLI 2.0 (Tier 1c aspirational). OpenCode (Tier 1b) remains in the sibling `superpipelines-opencode` repo.
-- **5-Tier Execution Model** — New `TIER_MODEL: 5-TIER` invariant in `CLAUDE.md`. See spec `docs/superpowers/specs/2026-05-20-multi-platform-design.md` §6.
+- **Multi-Platform Targets** — Single repo supports Claude Code (Tier 1), OpenCode (Tier 1b), Antigravity CLI 2.0 (Tier 1c aspirational), Codex App/CLI (Tier 1d), and Cursor/Windsurf/Cline (Tier 2).
+- **5-Tier Execution Model** — New `TIER_MODEL: 5-TIER` invariant in `CLAUDE.md`.
 - **Tier-Aware Write/Review Isolation** — `WRITE_REVIEW_ISOLATION: TRUE` invariant replaced by `STRUCTURAL_ON_TIER1_1B_1D; CONVENTION_ONLY_ON_TIER2`. On Tier 2 the orchestrator runs both writer and reviewer protocols with full tools; reviews are advisory. Surfaced at run start and run end.
 - **Skill Primacy** — `SKILL_PRIMACY: TRUE` invariant. Intelligence lives in `SKILL.md`; platform manifests are discovery-only.
-- **Sync Discipline** — `SYNC_DISCIPLINE: REQUIRED` invariant. `docs/SYNC.md` tracks per-skill cross-repo sync between `superpipelines` and `superpipelines-opencode`.
-- **Manual Parity Testing (Phase 1)** — `PARITY_TESTING: MANUAL_PHASE1` invariant. Automated cross-platform parity tests are a v2.1 objective.
+- **Manual Parity Testing** — `PARITY_TESTING: MANUAL_PHASE1` invariant. Per-platform validation is manual.
+- **Project consolidated to a single repo.** OpenCode (Tier 1b) remains a supported platform in the resolver; this repo does not ship a packaged OpenCode installer.
 
 ### Added — Multi-Platform Targets
 
@@ -36,7 +36,6 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - **Universal context files** — `AGENTS.md` (any AGENTS.md-aware tool) and `GEMINI.md` (Antigravity CLI 2.0).
 - **Universal installer** — `bin/install.js` Node.js entrypoint with platform auto-detection; `install.sh` POSIX wrapper; `install.ps1` PowerShell wrapper. Flags: `--all`, `--only`, `--dry-run`, `--list`, `--uninstall`, `--non-interactive`, `--with-init`.
 - **`sk-platform-dispatch` skill** — Tier detection + Tier 2 single-agent inline dispatch loop + per-tier scope-root resolution + Tier 2 degradation surfacing.
-- **`docs/SYNC.md`** — Cross-repo skill sync tracker between `superpipelines` and `superpipelines-opencode`.
 - **Per-tier scope roots in `sk-pipeline-paths`** — `PORTABILITY_REWRITE` enables CC-scaffolded pipelines to run on Tier 2 by rewriting `.claude/` paths to `.superpipelines/` at read/write time.
 
 ### Added — OC → CC Backports
@@ -66,14 +65,13 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 - Tier 1c (Antigravity Dynamic Subagents) is aspirational — falls back to Tier 2 unless the dispatch primitive is verified exposed to skills.
 - Tier 1d (Codex) per-agent isolation via TOML `sandbox_mode` is pending verification; treated as convention-only until confirmed.
 - Codex plugin-install command syntax (`codex plugin add ...`) in the installer is unverified against a stable Codex release; patch in v2.0.1 if the verified command differs.
-- No automated cross-platform parity gate. Per-skill validation tracked manually in `docs/SYNC.md`.
+- No automated cross-platform parity gate. Per-platform validation is manual.
 - True parallel execution on Tier 2 degrades to sequential — Cursor/Windsurf/Cline have no subagent primitive.
 
 ### Non-Goals (Phase 1)
 
-- Merging the `superpipelines` and `superpipelines-opencode` repos (OC remains a permanent sibling).
 - True parallel execution on Tier 2.
-- Automated cross-platform parity tests (Phase 2 objective).
+- Automated cross-platform parity tests.
 
 ## 1.0.6 — Lean Agents & Zero-Body Architecture (2026-05-20)
 

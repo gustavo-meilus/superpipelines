@@ -6,18 +6,18 @@
 Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.6 architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, the 20-criterion compliance matrix, and the Lean Agents zero-body architecture.
 </overview>
 
-## v2.0.0 — Multi-Platform Release (2026-05-21)
+## v2.0.0 — Multi-Platform Release (2026-05-26)
 
 ### Highlights
 
-Superpipelines now runs on **five execution tiers** spanning Claude Code, OpenCode, Codex, Cursor, Windsurf, Cline, and Antigravity CLI 2.0. One repo, one installer, one set of skills.
+Superpipelines runs on **five execution tiers** spanning Claude Code, OpenCode, Codex, Cursor, Windsurf, Cline, and Antigravity CLI 2.0. Project consolidated to a single repo; OpenCode (Tier 1b) remains a supported platform in the resolver but is not shipped with a packaged installer in this distribution.
 
 ### Multi-platform execution model
 
 | Tier | Platform | Subagent primitive |
 |------|----------|--------------------|
 | 1 | Claude Code | Skill-callable `Task()` |
-| 1b | OpenCode (sibling repo) | `mode: subagent` agents |
+| 1b | OpenCode | `mode: subagent` agents |
 | 1c | Antigravity CLI 2.0 | Dynamic Subagents (aspirational) |
 | 1d | Codex App/CLI | Native model-driven subagents (up to 6 concurrent) |
 | 2 | Cursor / Windsurf / Cline | Single-agent inline via `sk-platform-dispatch` |
@@ -70,17 +70,12 @@ The `WRITE_REVIEW_ISOLATION` invariant is now tier-aware:
 - Tier 1c (Antigravity Dynamic Subagents) aspirational — falls back to Tier 2 unless dispatch primitive verified.
 - Tier 1d (Codex) `sandbox_mode` per-agent isolation pending verification.
 - Codex installer command syntax unverified against a stable release.
-- No automated cross-platform parity gate (manual tracking via `docs/SYNC.md`).
+- No automated cross-platform parity gate. Per-platform validation is manual.
 - Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.
 
 ### Deprecations
 
 - **Gemini CLI** as a distribution target. Runtime retires June 18, 2026. Migrate to Antigravity CLI 2.0 via `agy plugin import gemini`.
-
-### Repo relationship
-
-- `superpipelines` (this repo) — Tier 1 (CC), Tier 1d (Codex), Tier 2 (Cursor/Windsurf/Cline), Tier 1c aspirational (Antigravity).
-- `superpipelines-opencode` — Tier 1b (OpenCode). Permanent sibling repo, not deprecated. Shared skills tracked in `docs/SYNC.md`.
 
 ### Upgrade path
 
