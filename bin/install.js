@@ -10,7 +10,8 @@ import { execSync, spawnSync } from 'node:child_process';
 
 const REPO = 'gustavo-meilus/superpipelines';
 const MARKETPLACE = `https://github.com/${REPO}`;
-const OPENCODE_REPO = 'https://github.com/gustavo-meilus/superpipelines-opencode';
+
+// OpenCode (Tier 1b) is supported in the resolver but has no packaged installer in this distribution.
 
 function which(binary) {
   const cmd = process.platform === 'win32' ? `where ${binary}` : `command -v ${binary}`;
@@ -72,17 +73,6 @@ const PLATFORMS = [
     install: ({ dryRun }) => runAll([`npx -y skills add superpipelines -a cline`], dryRun),
   },
   {
-    id: 'opencode',
-    name: 'OpenCode',
-    tier: '1b',
-    detect: () => which('opencode') || dirExists('.opencode'),
-    install: () => {
-      console.log(`OpenCode detected. Install Superpipelines for OpenCode from the sibling repo:`);
-      console.log(`  ${OPENCODE_REPO}`);
-      console.log(`(OpenCode requires a separate plugin bundle; this repo targets CC/Codex/Cursor/Antigravity.)`);
-    },
-  },
-  {
     id: 'antigravity',
     name: 'Antigravity CLI 2.0',
     tier: '1c',
@@ -131,7 +121,7 @@ function printHelp() {
 
 Flags:
   --all                 Install for all detected platforms
-  --only <id>           Install for one platform (repeatable); id ∈ {claude-code, codex, cursor, windsurf, cline, opencode, antigravity}
+  --only <id>           Install for one platform (repeatable); id ∈ {claude-code, codex, cursor, windsurf, cline, antigravity}
   --dry-run             Print commands; write nothing
   --list                Print detection matrix and exit
   --uninstall           Remove the plugin from every detected platform

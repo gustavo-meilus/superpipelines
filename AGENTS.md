@@ -12,7 +12,7 @@ Superpipelines is a multi-agent pipeline orchestration framework. It lets users 
 |---------|---------|
 | `/superpipelines:new-pipeline` | Design a new pipeline end-to-end (brief → spec → topology → audit → scaffold). |
 | `/superpipelines:run-pipeline` | List installed pipelines and execute one. |
-| `/superpipelines:audit-pipeline` | Audit an existing pipeline's spec/plan/topology. |
+| `/superpipelines:audit-steps` | Audit an existing pipeline's spec/plan/topology. |
 | `/superpipelines:new-step` | Add a step to an existing pipeline. |
 | `/superpipelines:update-step` | Modify an existing step. |
 | `/superpipelines:delete-step` | Remove a step. |
@@ -26,7 +26,7 @@ The active agent should invoke a Superpipelines command when the user requests:
 
 - "design a workflow / pipeline for X" → `/superpipelines:new-pipeline`
 - "run the {name} pipeline" / "execute X" → `/superpipelines:run-pipeline` or `/superpipelines:{P}`
-- "audit pipeline X" → `/superpipelines:audit-pipeline`
+- "audit pipeline X" → `/superpipelines:audit-steps`
 - "plan multi-step feature work" → `/superpipelines:new-pipeline`
 
 ## Execution tier
@@ -69,4 +69,3 @@ Intelligence lives in `skills/*/SKILL.md`. Platform manifests (`.claude-plugin/`
 ## More
 
 - Repo: https://github.com/gustavo-meilus/superpipelines
-- OpenCode sibling: https://github.com/gustavo-meilus/superpipelines-opencode

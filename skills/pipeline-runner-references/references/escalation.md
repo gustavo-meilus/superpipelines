@@ -60,7 +60,7 @@ State preserved at ${TEMP_DIR}/pipeline-state.json.
 Suggested next steps:
   - Review the diagnosis history in metadata.attempted_fixes
   - Re-architect the failing component
-  - Run /superpipelines:audit-pipeline on the spec/tasks if specs were drifting
+  - Run /superpipelines:audit-steps on the spec/tasks if specs were drifting
   - When ready, restart with: rm -rf ${TEMP_DIR} && /superpipelines:run-pipeline
 EOF
 ```

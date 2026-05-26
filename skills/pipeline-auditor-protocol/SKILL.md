@@ -28,7 +28,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 | :--- | :--- | :--- |
 | **FULL** | Direct invocation or first audit. | Entire pipeline bundle: all agents, skills, and topology. |
 | **DELTA** | Triggered by mutation commands. | Changed files plus immediate neighbors and the entry skill. |
-| **SCOPE-WIDE** | `audit-pipeline --all` command. | FULL audit across all registered pipelines in all scope roots. |
+| **SCOPE-WIDE** | `audit-steps --all` command. | FULL audit across all registered pipelines in all scope roots. |
 </operating_modes>
 
 ## Workflow

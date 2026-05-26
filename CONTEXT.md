@@ -18,7 +18,7 @@
 
 - **Tier** — execution capability class:
   - **tier_1** — Claude Code; skill-callable `Task()` dispatch.
-  - **tier_1b** — OpenCode; `mode: subagent` native dispatch. First-class sibling repo (`superpipelines-opencode`).
+  - **tier_1b** — OpenCode; `mode: subagent` native dispatch.
   - **tier_1c** — Antigravity CLI 2.0; Dynamic Subagents (aspirational; falls back to Tier 2 if dispatch primitive unverified).
   - **tier_1d** — Codex App/CLI; native model-driven parallel subagents; TOML agents; up to 6 concurrent.
   - **tier_2** — Cursor / Windsurf / Cline; single-agent inline execution.

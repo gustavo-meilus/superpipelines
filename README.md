@@ -27,7 +27,6 @@ Platform-specific install commands:
 | Platform | Install |
 | :--- | :--- |
 | Claude Code | `claude plugin install github:gustavo-meilus/superpipelines` |
-| OpenCode | See [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) |
 | Codex App/CLI | `codex plugin add github:gustavo-meilus/superpipelines` (syntax pending verification — see RELEASE-NOTES) |
 | Antigravity 2.0 | `agy plugin install github:gustavo-meilus/superpipelines` |
 | Cursor / Windsurf / Cline | `npx -y skills add superpipelines -a <cursor\|windsurf\|cline>` |
@@ -125,7 +124,7 @@ The framework selects the optimal pattern based on task complexity:
 | `/superpipelines:new-step` | Adds a new step to an existing named pipeline. |
 | `/superpipelines:update-step` | Modifies an existing step within a named pipeline. |
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
-| `/superpipelines:audit-pipeline` | Audits agents and skills against the v2 compliance matrix. |
+| `/superpipelines:audit-steps` | Audits agents and skills against the v2 compliance matrix. |
 
 ---
 
@@ -157,20 +156,15 @@ superpipelines/
 ├── install.sh / install.ps1  # POSIX + PowerShell installer wrappers
 ├── AGENTS.md                 # Universal context (any AGENTS.md-aware tool)
 ├── GEMINI.md                 # Antigravity-specific context
-├── CLAUDE.md                 # Claude Code project reference + invariants
-└── docs/SYNC.md              # Cross-repo skill-sync tracker (CC ↔ OC)
+└── CLAUDE.md                 # Claude Code project reference + invariants
 ```
 <!-- </file_structure> -->
 
 ---
 
-## Related Projects
-
-The companion project [superpipelines-opencode](https://github.com/gustavo-meilus/superpipelines-opencode) is the OpenCode (Tier 1b) sibling repo. It is a permanent first-class sibling — not deprecated — with its own skill definitions, agent configurations, and command wrappers adapted for the OpenCode environment. Shared skills stay in sync via [`docs/SYNC.md`](./docs/SYNC.md).
-
 ## Contributing
 
-Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Running `/superpipelines:audit-pipeline` before submission validates additions against the compliance matrix and surfaces violations before they reach review, which prevents the most common rejection causes from consuming maintainer time.
+Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Running `/superpipelines:audit-steps` before submission validates additions against the compliance matrix and surfaces violations before they reach review, which prevents the most common rejection causes from consuming maintainer time.
 
 ## License
 
