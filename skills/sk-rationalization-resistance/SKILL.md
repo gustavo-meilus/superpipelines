@@ -1,16 +1,14 @@
 ---
 name: sk-rationalization-resistance
-description: Use when authoring a discipline-enforcing skill or protocol skill that must hold up under time pressure, sunk cost, or "obvious answer" rationalization — defines HARD-GATE / EXTREMELY-IMPORTANT tag conventions, Red Flags lists, and Rationalization Tables. Reference-only; preload via agent skills frontmatter.
+description: Defines HARD-GATE and EXTREMELY-IMPORTANT tag conventions, Red Flags lists, and Rationalization Tables for discipline-enforcing skills and protocol skills. Use when authoring a skill or agent protocol that must hold under time pressure, sunk cost, or "obvious answer" rationalization bias.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Rationalization Resistance — Discipline-Enforcement Conventions
 
-> Establishes mechanisms (HARD-GATE, EXTREMELY-IMPORTANT, Red Flags) to prevent agents from taking shortcuts under time pressure, sunk cost, or cognitive bias. Trigger when authoring discipline-enforcing skills or agent bodies that require strict adherence to protocols.
-
 <overview>
-Rationalization Resistance ensures that critical safety and quality rules hold the line even when an agent is tempted to shortcut them. It utilizes specific semantic tags and tables to force the model to confront its own internal monologue and adhere to non-negotiable architectural gates.
+Rationalization Resistance provides semantic tags and tables that force an agent to confront its own internal monologue and adhere to non-negotiable architectural gates — preventing shortcuts under time pressure, sunk cost, or cognitive bias.
 </overview>
 
 <glossary>

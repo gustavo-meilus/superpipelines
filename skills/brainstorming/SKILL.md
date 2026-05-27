@@ -1,18 +1,16 @@
 ---
 name: brainstorming
-description: Use before creative or design work — features, components, new behaviors, or pipeline briefs that need refinement before a spec exists. Loaded by creating-a-pipeline Phase 0 when the user's request is exploratory or under-specified.
+description: Brainstorming refines vague or exploratory requests into a validated design document through structured clarifying dialogue and trade-off analysis before any implementation begins. Use when a user's request is under-specified, involves new feature or component design, describes new pipeline behavior, or lacks an existing spec — including when loaded by creating-a-pipeline Phase 0 for exploratory briefs.
 ---
 
-# Brainstorming — Idea Refinement Workflow
-
-> Orchestrates the transition from vague ideas to fully formed designs and specifications through collaborative dialogue. Trigger when the user's request is exploratory, under-specified, or involves new feature design before a pipeline exists.
+# Brainstorming — Idea Refinement
 
 <overview>
-Brainstorming acts as the mandatory pre-flight phase for creative and design work. It enforces a strict "no-code-before-design" policy, guiding the orchestrator through context exploration, clarifying questions, and trade-off analysis to produce a validated design document (spec) that serves as the foundation for subsequent pipeline execution.
+Brainstorming is the mandatory pre-flight phase for creative and design work. It enforces a strict "no-code-before-design" policy, guiding the orchestrator through context exploration, clarifying questions, and trade-off analysis to produce a validated design document (spec) that serves as the foundation for subsequent pipeline execution.
 </overview>
 
 <glossary>
-  <term name="Design Doc (Spec)">A persistent markdown file (e.g., `docs/specs/YYYY-MM-DD-topic-design.md`) capturing validated requirements.</term>
+  <term name="Design Doc (Spec)">A persistent markdown file (e.g., `docs/specs/FEATURE-design.md`) capturing validated requirements.</term>
   <term name="Visual Companion">A browser-based tool for presenting mockups and diagrams during the design phase.</term>
   <term name="The Design Gate">The non-negotiable requirement for user approval of a design before any implementation begins.</term>
 </glossary>
@@ -21,26 +19,26 @@ Brainstorming acts as the mandatory pre-flight phase for creative and design wor
 
 <protocol>
 ### 1. CONTEXT & DECOMPOSITION
-- Explore existing project structure, documentation, and recent commits.
-- **Large-Scale Requests**: If the request describes multiple subsystems, decompose them into independent sub-projects before refining details.
+- Existing project structure, documentation, and recent commits are explored first.
+- **Large-Scale Requests**: Requests describing multiple subsystems are decomposed into independent sub-projects before detail refinement.
 
 ### 2. CLARIFYING DIALOGUE
-- Ask clarifying questions focused on purpose, constraints, and success criteria.
-- <invariant>Ask exactly one question per message to avoid overwhelming the user.</invariant>
-- Prefer multiple-choice options (A/B/C) for faster decision-making.
+- Clarifying questions focus on purpose, constraints, and success criteria.
+- <invariant>Exactly one question is asked per message to avoid overwhelming the user.</invariant>
+- Multiple-choice options (A/B/C) are preferred for faster decision-making. Example: "Which data store fits the scale requirement? A) SQLite (embedded, single-node), B) PostgreSQL (shared, multi-writer), C) Redis (ephemeral cache)."
 
 ### 3. APPROACH & RECOMMENDATION
-- Propose 2-3 different architectural approaches with clear trade-offs.
-- Lead with a specific recommendation and provide reasoning grounded in project context.
+- Two to three architectural approaches are proposed with explicit trade-offs.
+- A specific recommendation leads, with reasoning grounded in project context. Example: "Approach B is recommended because the existing service layer already exposes a PostgreSQL connection pool — adding SQLite would introduce a second persistence mechanism with no clear boundary."
 
 ### 4. DESIGN PRESENTATION (THE GATE)
-- Present the refined design in logical sections (Architecture, Data Flow, Error Handling, Testing).
-- <HARD-GATE>Do NOT write code or scaffold projects until the user has explicitly approved the presented design sections.</HARD-GATE>
+- The refined design is presented in logical sections: Architecture, Data Flow, Error Handling, Testing.
+- <HARD-GATE>Code writing and project scaffolding are prohibited until the user has explicitly approved the presented design sections.</HARD-GATE>
 
 ### 5. SPECIFICATION & REVIEW
-- Author the design document to `docs/specs/`.
-- Perform a **Spec Self-Review**: scan for placeholders, internal contradictions, or ambiguity.
-- <HARD-GATE>Ask the user to review the final written spec file. Brainstorming is complete only upon user approval of the spec.</HARD-GATE>
+- The design document is authored to `docs/specs/`.
+- A **Spec Self-Review** is performed: placeholders, internal contradictions, and ambiguity are resolved before handoff.
+- <HARD-GATE>The user is asked to review the final written spec file. Brainstorming is complete only upon user approval of the spec.</HARD-GATE>
 </protocol>
 
 <invariants>
@@ -52,10 +50,10 @@ Brainstorming acts as the mandatory pre-flight phase for creative and design wor
 ## The Visual Companion Protocol
 
 <visual_companion_rules>
-- **Offering**: If upcoming questions are visual (layouts, diagrams), offer the companion once in a standalone message.
-- **Decision**: For every subsequent question, determine if visual treatment (browser) or text treatment (terminal) is superior.
-- **Browser**: Use for mockups, wireframes, and architecture diagrams.
-- **Terminal**: Use for requirements, conceptual choices, and tradeoff lists.
+- **Offering**: When upcoming questions are visual in nature (layouts, diagrams), the companion is offered once in a standalone message.
+- **Decision**: For each subsequent question, visual treatment (browser) or text treatment (terminal) is selected based on content type.
+- **Browser**: Used for mockups, wireframes, and architecture diagrams.
+- **Terminal**: Used for requirements, conceptual choices, and tradeoff lists.
 </visual_companion_rules>
 
 ## Red Flags — STOP

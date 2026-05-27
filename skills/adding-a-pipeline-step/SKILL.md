@@ -1,15 +1,9 @@
 ---
 name: adding-a-pipeline-step
-description: Use when the user wants to add a new step, capability, or agent to an existing named pipeline, or invokes /superpipelines:new-step. Selects insertion point, designs the new component, mutates topology.json, audits the delta, and gates on human approval before writing to disk.
+description: Inserts a new step, capability, or agent into an existing named pipeline topology. Use when the user requests expanding a workflow with a new step or invokes /superpipelines:new-step.
 ---
 
 # Adding a Pipeline Step — Mutation Workflow
-
-> Orchestrates the insertion of a new step, capability, or agent into an existing named pipeline. Trigger when the user requests to expand a workflow or invokes `/superpipelines:new-step`.
-
-<overview>
-The Adding a Pipeline Step workflow ensures that any mutation to an existing topology is seamless, audited, and atomic. It manages the full lifecycle from insertion point selection and architected design to rigorous topology validation and staging-to-production promotion, preventing broken edges or invalid dependency graphs.
-</overview>
 
 <glossary>
   <term name="Insertion Point">The specific location in the topology (Before, After, Parallel, or Append) where the new step is added.</term>

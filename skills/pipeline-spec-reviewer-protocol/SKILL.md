@@ -1,6 +1,6 @@
 ---
 name: pipeline-spec-reviewer-protocol
-description: Loaded by the pipeline-spec-reviewer agent to supply the Stage 1 workflow, under-build/over-build verification rules, verdict emission, and rationalization resistance. Not user-invocable.
+description: Supplies the Stage 1 functional-verification protocol to the pipeline-spec-reviewer agent: acceptance-criteria compliance checks, under-build/over-build detection, binary verdict emission, and rationalization resistance. Use when the pipeline-spec-reviewer agent activates to verify that an executor's output matches its specification before Stage 2 may proceed.
 disable-model-invocation: true
 user-invocable: false
 ---

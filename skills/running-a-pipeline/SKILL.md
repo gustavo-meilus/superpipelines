@@ -1,14 +1,12 @@
 ---
 name: running-a-pipeline
-description: Use when the user asks to run a pipeline, execute a workflow, list available pipelines, or invokes /superpipelines:run-pipeline. Reads all scope registries, lets the user pick a pipeline, then invokes its entry skill.
+description: Registry-driven pipeline launcher for Superpipelines. Use when the user asks to run a pipeline, execute a workflow, list available pipelines, or invokes /superpipelines:run-pipeline.
 ---
 
 # Running a Pipeline — Execution Workflow
 
-> Registry-driven launcher for named Superpipelines. Trigger when the user asks to execute a workflow, list available pipelines, or invokes `/superpipelines:run-pipeline`.
-
 <overview>
-The Running a Pipeline workflow acts as the central orchestrator for pipeline execution. It manages the full lifecycle from discovery across multiple scopes (Local, Project, User) to state-aware resumption and terminal completion. It ensures that execution is always grounded in the current `pipeline-state.json` and that escalation states are preserved for human review.
+Central orchestrator for pipeline execution. Manages the full lifecycle from multi-scope discovery (Local, Project, User) through tier detection, model resolution, version/portability validation, state-aware resumption, and terminal completion. Execution is always grounded in the current `pipeline-state.json`; escalation states are preserved for human review.
 </overview>
 
 <glossary>
@@ -298,7 +296,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - "v1-legacy agents still work, so migration is optional." → **STOP**. Phase 0.4 HARD-GATE: migration is mandatory once v1 candidates are classified. The only valid skip is `plugin_version >= 2.0.0`.
 - "I'll hand-craft the resolution table instead of calling RENDER_RESOLUTION_TABLE." → **STOP**. Phase 0.45 HARD-GATE: `RENDER_RESOLUTION_TABLE` is the format authority. Hand-crafted tables drift from the resolver contract.
 - "The inline path skips LOAD_PREFS because the Skill tool is absent." → **STOP**. ADR-0002: pref-file read is independent of Skill-tool availability. Always attempt LOAD_PREFS; degrade only on file-read failure.
-- "`sk-platform-dispatch` threw `DisableModelInvocation`, so I fell through to INLINE-DETECT()." → **STOP**. `DisableModelInvocation` means the skill requires direct file execution, not that it is absent. Read the skill file and run DETECT() inline — do NOT fall through to INLINE-DETECT(). On machines with `agy` installed but `CLAUDE_CODE` env var unset, INLINE-DETECT() returns `tier_1c` while you are in tier_1.
+- "`sk-platform-dispatch` threw `DisableModelInvocation`, so I fell through to INLINE-DETECT()." → **STOP**. `DisableModelInvocation` means the skill requires direct file execution, not that it is absent. Read the skill file and run DETECT() inline — do NOT fall through to INLINE-DETECT(). On machines with `agy` installed but `CLAUDE_CODE` env var unset, INLINE-DETECT() returns `tier_1c` while the active runtime is `tier_1`.
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
 
 ## Rationalization Table

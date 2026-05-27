@@ -1,17 +1,13 @@
 ---
 name: sk-worktree-safety
-description: Use when creating, populating, verifying, or destroying a git worktree as part of a pipeline — the 4-step safety protocol (verify-ignored, setup-after-create, verify-baseline, commit-before-destroy). Reference-only; preload via agent skills frontmatter.
+description: Enforces a mandatory 4-step safety protocol (Ignore, Setup, Baseline, Commit) for creating, managing, and destroying git worktrees in pipeline isolation contexts. Use when a pipeline step declares `isolation: worktree`, when parallel pattern tasks require branch isolation, or when the iterative or spec-driven patterns require atomic rollback capability.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Worktree Safety Protocol — Isolated Execution
 
-> Defines the mandatory 4-step protocol (Ignore, Setup, Baseline, Commit) for creating, managing, and destroying git worktrees. Trigger when utilizing `isolation: worktree` or preparing parallel branches for pipeline tasks.
-
-<overview>
-Worktrees provide critical isolation for parallel pipeline tasks, but improper handling risks data loss or workspace pollution. This protocol ensures that every worktree is properly ignored, initialized with a verified baseline, and committed before destruction to preserve all generated artifacts and findings.
-</overview>
+> Defines the mandatory 4-step protocol (Ignore, Setup, Baseline, Commit) for creating, managing, and destroying git worktrees.
 
 <glossary>
   <term name="Worktree">An isolated git workspace sharing the same repository object but operating on a different branch and path.</term>
@@ -23,21 +19,21 @@ Worktrees provide critical isolation for parallel pipeline tasks, but improper h
 
 <protocol>
 ### 1. VERIFY_IGNORED
-Ensure the `.worktrees/` directory is git-ignored to prevent accidental pollution of the main workspace or commits.
+The `.worktrees/` directory must be git-ignored before any worktree is created, to prevent accidental commits or workspace pollution.
 ```bash
 git check-ignore -q .worktrees || { echo ".worktrees/" >> .gitignore && git add .gitignore && git commit -m "chore: ignore worktrees"; }
 ```
 
 ### 2. SETUP_AFTER_CREATE
-Auto-detect manifests (`package.json`, `Cargo.toml`, etc.) and run the corresponding installation commands (`npm install`, `cargo build`) to prepare the isolated environment.
+Manifests are auto-detected (`package.json`, `Cargo.toml`, etc.) and the corresponding installation commands (`npm install`, `cargo build`) are run to prepare the isolated environment.
 
 ### 3. VERIFY_BASELINE
-Run the project's full test suite.
-- **Failures Found**: Report results to the user. **DO NOT PROCEED** with implementation without explicit human authorization.
-- **Goal**: Distinguish between pre-existing issues and pipeline-introduced regressions.
+The project's full test suite is run before any modifications.
+- **Failures Found**: Results are reported to the user. **DO NOT PROCEED** with implementation without explicit human authorization.
+- **Goal**: Distinguishes between pre-existing issues and pipeline-introduced regressions.
 
 ### 4. COMMIT_BEFORE_DESTROY
-Before removing any worktree, add and commit all changes to preserve the work-in-progress state.
+All changes are added and committed before any worktree is removed, preserving the work-in-progress state.
 ```bash
 cd "$WORKTREE_PATH" && git add -A && git commit -m "wip: pipeline checkpoint"
 git worktree remove "$WORKTREE_PATH"
@@ -59,14 +55,14 @@ git worktree remove "$WORKTREE_PATH"
 ## Detection Signals
 
 <signals>
-Before execution, verify the environment state:
-- **`GIT_DIR != GIT_COMMON`**: Already in a linked worktree; skip Step 1.
-- **Branch empty**: Detached HEAD detected; cannot branch/push. Escalate to user.
+Environment state is verified before execution:
+- **`GIT_DIR != GIT_COMMON`**: Already in a linked worktree; Step 1 is skipped.
+- **Branch empty**: Detached HEAD detected; branching/pushing is not possible. Escalate to user.
 </signals>
 
 <invariants>
 - NEVER skip the baseline test; it is the leading cause of false escalations in iterative loops.
-- NEVER use `git worktree remove --force` without an preceding commit to preserve findings.
+- NEVER use `git worktree remove --force` without a preceding commit to preserve findings.
 - ALWAYS verify that `.worktrees/` is ignored before creation.
 </invariants>
 
