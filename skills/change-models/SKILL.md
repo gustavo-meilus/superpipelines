@@ -1,16 +1,10 @@
 ---
 name: change-models
-description: Use when the user wants to set, change, or audit model preferences for pipeline agents — interactive 6-mode workflow covering global/workspace preferences, per-agent overrides, first-run setup, and catalog refresh. Invoke via /superpipelines:change-models.
+description: Manages model preferences across the resolver's preference layers — user-global prefs, workspace prefs, per-agent `model_tier:` overrides, escape-hatch `model:` overrides, first-run wizard, catalog drift reconciliation, and orchestrator-tier overrides. Use when a user asks to set, change, view, or audit model assignments for pipeline agents, configure models for a new workspace, reconcile stale model preferences after a catalog update, or override the model for a specific agent or tier.
 user-invocable: true
 ---
 
-# Change Models — Interactive Multi-Platform Model Preference Management
-
-> Provides six modes (A–F) for managing the resolver's preference layers, per-agent overrides, and platform-catalog drift reconciliation. Scans all five scope roots (`.claude/`, `.opencode/`, `.agents/`, `.superpipelines/`). Confirm-before-write everywhere.
-
-<overview>
-v2.0 change-models edits user/workspace preference files and per-agent frontmatter (`model_tier:` or escape-hatch `model:`). It never edits profile JSONs (those are the source of truth, plugin-owned). The first-run wizard (Mode E) configures all four tiers for a platform with subscription-state detection. Mode F reconciles preferences with an updated profile catalog.
-</overview>
+# Change Models — Multi-Platform Model Preference Management
 
 <glossary>
   <term name="User-global prefs">~/.superpipelines/model-preferences.json — defaults across all workspaces.</term>
@@ -34,7 +28,7 @@ v2.0 change-models edits user/workspace preference files and per-agent frontmatt
 
 ### PHASE 1 — Mode Selection
 
-Present six modes:
+Present seven modes:
 
 | Mode | Action |
 |---|---|
@@ -53,7 +47,7 @@ Present six modes:
 - `/superpipelines:change-models reset tier_1` → Mode A, full re-wizard for tier_1
 - `/superpipelines:change-models drift` → Mode F
 
-**HARD-GATE**: empty `$ARGUMENTS` → present all six modes. NEVER fabricate intent.
+**HARD-GATE**: empty `$ARGUMENTS` → present all seven modes. NEVER fabricate intent.
 
 ### PHASE 2 — Agent Selection (Modes C, D only)
 
@@ -162,7 +156,7 @@ If detection file does not exist: prompt user to specify subscription state manu
 - "I'll skip the confirmation table because the diff is small." → **STOP**. Confirm-before-write is non-negotiable.
 - "I'll edit the profile JSON to add a custom model." → **STOP**. Profiles are plugin-owned. Custom models go into preference files.
 - "I'll merge multiple pipelines' agents into one selection prompt without showing scope roots." → **STOP**. Multi-platform scope display is mandatory to avoid editing the wrong file.
-- "Empty `$ARGUMENTS` — I'll pick Mode E by default." → **STOP**. Empty args → present all six modes.
+- "Empty `$ARGUMENTS` — I'll pick Mode E by default." → **STOP**. Empty args → present all seven modes.
 
 ## Reference Files
 

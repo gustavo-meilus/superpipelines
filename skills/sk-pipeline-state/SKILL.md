@@ -1,16 +1,14 @@
 ---
 name: sk-pipeline-state
-description: Use when reading or writing pipeline-state.json, resuming an interrupted pipeline, or detecting a crashed run — defines the schema, recovery rules, and atomic-write pattern. Reference-only; preload via agent skills frontmatter.
+description: Defines the schema, storage layout, and recovery protocols for `pipeline-state.json`. Use when reading or writing pipeline state, resuming an interrupted run, or diagnosing a crashed orchestrator.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Pipeline State — Persistence & Recovery
 
-> Defines the schema, storage layout, and recovery protocols for pipeline execution state. Trigger when reading or writing `pipeline-state.json`, resuming an interrupted run, or diagnosing a crashed orchestrator.
-
 <overview>
-Superpipelines utilize a structured JSON state to manage the lifecycle of multi-agent workflows. This state is isolated from model behavior, ensuring that runs are inspectable, resumable, and resilient to environment restarts. All state transitions must follow an atomic write pattern to prevent corruption.
+Superpipelines use a structured JSON file to manage the lifecycle of multi-agent workflows. State is isolated from model behavior, ensuring runs are inspectable, resumable, and resilient to environment restarts. All state transitions follow an atomic write pattern to prevent corruption.
 </overview>
 
 <glossary>

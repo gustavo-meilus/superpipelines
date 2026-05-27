@@ -1,14 +1,14 @@
 ---
 name: verification-before-completion
-description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+description: Enforces the Iron Law — no completion claim without fresh verification evidence. Use when an agent is about to claim work is complete, a bug is fixed, or a system state is passing; before committing changes or opening PRs; or after receiving a subagent DONE report that has not been independently verified.
 ---
 
 # Verification Before Completion — Success Protocol
 
-> Requires absolute evidence before any claim of task completion, bug resolution, or system readiness. Trigger when about to conclude a task, fixed a bug, or claim a system state is passing before committing changes or creating PRs.
+> Governs the requirement for absolute evidence before any claim of task completion, bug resolution, or system readiness.
 
 <overview>
-Verification Before Completion is governed by the Iron Law: **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE**. It prohibits the use of "should," "probably," or "seems to" in favor of documented command output and logs, ensuring that success is a verifiable fact rather than an assumption.
+The Iron Law: **NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE**. The use of "should," "probably," or "seems to" in status assertions is prohibited. Success is a documented, reproducible fact — not an assumption.
 </overview>
 
 <glossary>

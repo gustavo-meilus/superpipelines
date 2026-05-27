@@ -1,6 +1,6 @@
 ---
 name: pipeline-task-executor-protocol
-description: Loaded by the pipeline-task-executor agent to supply the SDD implementation protocol, self-verification steps, allowlist constraints, and terminal status rules. Not user-invocable.
+description: Supplies the SDD implementation protocol, allowlist constraints, self-verification steps, and terminal status rules to the pipeline-task-executor agent. Use when the pipeline-task-executor agent initializes a task run and requires its full operational protocol.
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -49,7 +49,7 @@ The executor MUST NOT modify files outside the provided allowlist or add unreque
 
 <invariants>
 - NEVER spawn subagents; orchestration is handled by the parent session.
-- NEVER review your own output; functional and qualitative audits are performed by separate reviewer agents.
+- NEVER review its own output; functional and qualitative audits are performed by separate reviewer agents.
 - NEVER write to pipeline state; state management is the orchestrator's sole responsibility.
 - Operate exclusively within the assigned git worktree if `isolation: worktree` is active.
 - ALWAYS use the Hashline protocol for code mutations to prevent stale-line edits.

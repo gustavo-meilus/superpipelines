@@ -1,6 +1,6 @@
 ---
 name: sk-model-resolver
-description: Use when an orchestrator needs the concrete model + effort string for a pipeline step on the active platform — resolves agent `model_tier:` declarations against user preferences and platform profile defaults, returns a serializable resolved object for dispatch.
+description: Resolves agent `model_tier:` declarations into concrete platform-specific model strings and effort values via a 5-layer precedence chain, returning a serializable `resolved` object for dispatch. Use when `running-a-pipeline` Phase 0.45 needs to determine the concrete model + effort for each pipeline step on the active platform before dispatch.
 disable-model-invocation: true
 user-invocable: false
 ---

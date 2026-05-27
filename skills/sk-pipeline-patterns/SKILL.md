@@ -1,17 +1,13 @@
 ---
 name: sk-pipeline-patterns
-description: Use when selecting an execution pattern for a pipeline (Sequential, Parallel Fan-Out, Iterative Loop, Human-Gated, Spec-Driven) or matching a task's information flow to a topology — distillation of Patterns 1–6. Reference-only; preload via agent skills frontmatter.
+description: Defines the six canonical pipeline topologies (Sequential, Parallel Fan-Out, Iterative Loop, Human-Gated, Spec-Driven, 4D Wrapper) and their capability requirements. Use when an orchestrator is selecting an execution pattern for a new pipeline, matching a task's information flow to a topology, or checking Q7 capability gates before pattern traversal.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Pipeline Patterns — Selection Reference
 
-> Distills Patterns 1–6 for pipeline topology selection. Trigger when designing the execution flow of a multi-agent system or matching a task's information flow to a canonical architecture.
-
-<overview>
-Pipeline Patterns provide standardized architectures for diverse agentic workloads. By selecting the appropriate pattern (Sequential, Parallel, Iterative, Gated, or Spec-Driven), orchestrators ensure deterministic handoffs, manageable context windows, and robust failure recovery.
-</overview>
+> Distills Patterns 1–6 for pipeline topology selection. Load via agent `skills:` frontmatter; not user-invocable.
 
 <glossary>
   <term name="Pattern 3 (Iterative Loop)">A fix/heal cycle bounded by max iterations and an escalation protocol.</term>

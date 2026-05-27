@@ -1,14 +1,12 @@
 ---
 name: creating-a-pipeline
-description: Use when the user asks to design a pipeline, build a workflow for X, plan multi-step feature work, or invokes /superpipelines:new-pipeline. Walks git preflight, scope selection, pattern selection, architect dispatch, pre-gate audit, and human approval to produce a runnable named pipeline bundle.
+description: Orchestrates design and scaffolding of a new named multi-agent pipeline from a user brief to an approved, runnable bundle. Use when the user asks to design a pipeline, build a workflow for a task, plan multi-step feature work, or invokes /superpipelines:new-pipeline.
 ---
 
 # Creating a Pipeline — Scaffolding Workflow
 
-> Orchestrates the end-to-end design and scaffolding of a new multi-agent pipeline. Trigger when the user requests to design a workflow, plan multi-step feature work, or invokes `/superpipelines:new-pipeline`.
-
 <overview>
-The Pipeline Creation workflow guides an orchestrator from a raw user brief to an approved, runnable pipeline bundle. It enforces rigorous pre-flight checks (Git status), scope resolution, architectural patterns, and a mandatory audit-architect loop before presenting a final design for human approval.
+The pipeline creation workflow enforces a fixed sequence: tier detection, git preflight, scope resolution, brief refinement, pattern selection, architect dispatch, pre-gate audit, and human approval before generating any artifacts on disk.
 </overview>
 
 <glossary>

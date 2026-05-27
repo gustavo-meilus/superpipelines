@@ -1,17 +1,11 @@
 ---
 name: sk-pipeline-paths
-description: Use when resolving scope-aware file paths for superpipelines artifacts — agents, skills, support files, temp directories, or the pipeline registry. Reference whenever scope (local, project, user) and a pipeline name are known and an absolute path is needed.
+description: Resolves scope-aware absolute file paths for Superpipelines artifacts across local, project, and user scopes. Use when creating or accessing agents, skills, support files, temporary directories, or the pipeline registry, given a known scope and pipeline name.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Pipeline Path Resolver — Scope-Aware Layout
-
-> Resolves absolute file paths for Superpipelines artifacts across local, project, and user scopes. Trigger when creating or accessing agents, skills, temporary directories, or the pipeline registry.
-
-<overview>
-The Path Resolver enforces a canonical layout for the Superpipelines v2 architecture. It eliminates hardcoded paths by providing scope-dependent roots and templates for every artifact type, ensuring consistency across diverse workspace environments.
-</overview>
 
 <glossary>
   <term name="Scope Root">The base directory (`.claude/` or `~/.claude/`) where artifacts are persisted.</term>
@@ -43,9 +37,11 @@ The Path Resolver enforces a canonical layout for the Superpipelines v2 architec
 | Tier 1c (Antigravity) | `<workspace>/.agents/antigravity/` | `~/.antigravity/` |
 | Tier 1d (Codex) | `<workspace>/.agents/codex/` | `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` | `~/.superpipelines/` |
-
-(Q5: Tier 1c and Tier 1d previously both resolved to `<workspace>/.agents/` — a workspace using both Antigravity and Codex collided silently on the same path. Sub-namespacing `.agents/antigravity/` and `.agents/codex/` removes the collision while preserving the AGENTS.md-aware `.agents/` parent directory.)
 </scope_roots_per_tier>
+
+<invariant>
+Tier 1c and Tier 1d use sub-namespaced paths (`.agents/antigravity/` and `.agents/codex/`) to avoid silent collisions on `.agents/` when both platforms coexist in the same workspace. The `.agents/` parent directory remains AGENTS.md-aware.
+</invariant>
 
 <protocol>
 RESOLVE_SCOPE_ROOT(scope, tier):
@@ -58,7 +54,7 @@ PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
   target_root = per-tier table[target_tier][workspace_or_user]
   return artifact_path.replace(source_root, target_root, count=1)
 
-// Q5: Multi-root enumeration for discovery and resume.
+// Multi-root enumeration for discovery and resume.
 // Discovery (running-a-pipeline Phase 0) and resume scanning (Phase 1) MUST
 // enumerate all 5 per-tier scope roots under both `<workspace>/` and `~/`,
 // returning merged results annotated with the source_tier per entry.
@@ -100,10 +96,10 @@ Path resolution MUST consult `metadata.runtime_tier` from the pipeline state for
 - **Format**: Lowercase alphanumeric and hyphens only (`[a-z0-9-]+`).
 - **Length**: Maximum 48 characters to accommodate the `run-` prefix within the 64-character skill limit.
 - **Uniqueness within scope**: Must be unique within the chosen scope's `registry.json`.
-- **Uniqueness across scopes (Q15)**: Same-name pipelines MAY exist in different scopes (e.g., a project-scope `deploy-feature` and a user-scope `deploy-feature`). Scaffolding-time uniqueness checks in `creating-a-pipeline` Phase 1 MUST expand to all merged scopes and prompt the user to confirm when a same-name pipeline already exists elsewhere (no silent allow).
+- **Uniqueness across scopes**: Same-name pipelines MAY exist in different scopes (e.g., a project-scope `deploy-feature` and a user-scope `deploy-feature`). Scaffolding-time uniqueness checks in `creating-a-pipeline` Phase 1 MUST expand to all merged scopes and prompt the user to confirm when a same-name pipeline already exists elsewhere (no silent allow).
 </constraints>
 
-## Collision Semantics (Q15)
+## Collision Semantics
 
 When `ENUMERATE_ALL_SCOPE_ROOTS` returns multiple registry entries with the same pipeline name across different scopes or tiers, the resolution contract is:
 
@@ -111,7 +107,7 @@ When `ENUMERATE_ALL_SCOPE_ROOTS` returns multiple registry entries with the same
 1. `workspace/project` > `workspace/local` > `user/global`
 2. Within the same scope-bucket, `runtime_tier` > other tiers.
 
-**Disambiguation prompt (Q15):** When two or more entries tie after applying precedence (e.g., same-name pipeline in both `workspace/project tier_1` and `workspace/project tier_2`), the runner MUST present a disambiguated list and require explicit selection:
+**Disambiguation prompt:** When two or more entries tie after applying precedence (e.g., same-name pipeline in both `workspace/project tier_1` and `workspace/project tier_2`), the runner MUST present a disambiguated list and require explicit selection:
 
 ```
 Multiple pipelines named `deploy-feature` found:
@@ -122,7 +118,7 @@ Pick one: [1/2]
 
 No silent first-wins. The slash-command form (`/superpipelines:{P}`, OC-only) follows the same precedence rule; OC's command resolver MUST honor it.
 
-## Registry Entry Schema (Q15)
+## Registry Entry Schema
 
 Each registry entry carries an explicit `scope` field to disambiguate project-vs-local entries that share the same physical `.claude/` directory:
 
