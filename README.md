@@ -180,7 +180,7 @@ superpipelines/
 
 ## Contributing
 
-Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines). Running `/superpipelines:audit-steps` before submission validates additions against the compliance matrix and surfaces violations before they reach review, which prevents the most common rejection causes from consuming maintainer time.
+Contributions are managed via issues and PRs at [gustavo-meilus/superpipelines](https://github.com/gustavo-meilus/superpipelines).
 
 ## License
 
