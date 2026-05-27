@@ -1,16 +1,14 @@
 ---
 name: sk-platform-dispatch
-description: Use when an orchestrator skill needs to dispatch pipeline steps and the runtime tier is unknown — provides tier detection and a single-agent inline DISPATCH protocol for Tier 2 platforms (Cursor, Windsurf, Cline). Tier 1/1b/1c/1d orchestrators short-circuit to native subagent dispatch.
+description: Resolves the active runtime tier and provides the canonical DISPATCH contract for all pipeline step execution. Use when an orchestrator skill needs to dispatch pipeline steps — performs tier detection, loads the platform profile, and executes the Tier 2 inline loop when no subagent primitive is available.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Platform Dispatch — Tier Detection & Tier 2 Inline Execution
 
-> Resolves the active execution tier and provides the canonical single-agent dispatch loop for Tier 2 platforms. Preloaded by `running-a-pipeline`. Trigger when dispatching any pipeline step without prior tier knowledge.
-
 <overview>
-Superpipelines runs across five runtime tiers (Tier 1 Claude Code, Tier 1b OpenCode, Tier 1c Antigravity, Tier 1d Codex, Tier 2 IDE agents). Only Tier 1 has a skill-callable `Task()` primitive. Tier 1b/1c/1d use model-driven or platform-native subagent dispatch outside the skill layer. Tier 2 has no subagent primitive at all — the orchestrator executes every step inline using its own toolset. This skill encapsulates that branch so orchestrator skills remain tier-agnostic.
+Superpipelines runs across five runtime tiers (Tier 1 Claude Code, Tier 1b OpenCode, Tier 1c Antigravity, Tier 1d Codex, Tier 2 IDE agents). Only Tier 1 has a skill-callable `Task()` primitive. Tier 1b/1c/1d use model-driven or platform-native subagent dispatch outside the skill layer. Tier 2 has no subagent primitive — the orchestrator executes every step inline using its own toolset. This skill encapsulates that branch so orchestrator skills remain tier-agnostic.
 </overview>
 
 <glossary>
@@ -28,8 +26,8 @@ Detection heuristics run in order — first match wins. **Override:** `SUPERPIPE
 
 1. **Tier 1 (Claude Code):** `Task` tool present AND `subagent_type` parameter accepted. Secondary: `CLAUDE_CODE` env var set OR `.claude-plugin/plugin.json` resolvable via `${CLAUDE_PLUGIN_ROOT}`. (Runtime capability is the primary signal; the secondary check is acceptable here because DETECT() runs in the live runtime where the Task primitive can be probed directly.)
 2. **Tier 1b (OpenCode):** `$OPENCODE_CONFIG_DIR` env var set OR agent files using `mode: subagent` frontmatter present under the active scope root.
-3. **Tier 1c (Antigravity):** `agy` binary on PATH. (Q2: dropped `.agents/skills/` workspace-shape fallback; that directory is colonized by both 1c and 1d.)
-4. **Tier 1d (Codex):** `codex` binary on PATH OR `.codex-plugin/plugin.json` resolvable. (Q2: dropped the TOML-agents-under-`.agents/` fallback for the same disambiguation reason as 1c.)
+3. **Tier 1c (Antigravity):** `agy` binary on PATH.
+4. **Tier 1d (Codex):** `codex` binary on PATH OR `.codex-plugin/plugin.json` resolvable.
 5. **Tier 2 (fallback):** None of the above. Safe default — sequential inline execution always works.
 
 After resolving `tier_id`:
@@ -53,7 +51,7 @@ When calling skills from within a running-a-pipeline orchestration, use the corr
 
 **Antigravity CLI (Tier 1c) — installation requirement:** The superpipelines plugin must be installed in AGY's extension registry for `activate_skill` to resolve it. If superpipelines is only installed in Claude Code, `activate_skill` will fail to resolve the skill even though `skill_tool: true` in the profile. In that case, `running-a-pipeline` Phase 0.25 INLINE-DETECT() handles the fallback automatically. This is expected behavior for cross-platform handoff scenarios where not all platforms share a unified plugin registry.
 
-### Profile capability fields (v2.0 additions)
+### Profile capability fields
 
 | Field | Purpose |
 |---|---|
@@ -165,7 +163,7 @@ Path resolution MUST consult `metadata.runtime_tier` for any artifact write on a
 </invariant>
 
 <invariant>
-PORTABILITY_REWRITE is checked at two levels: (1) creation time — auditor criterion 22, SEV-1, blocking; (2) run time — `running-a-pipeline` Phase 0.6, scans entry skill and offers Abort/Rewrite/Proceed (user-acknowledged advisory, non-blocking). EVERY caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the v2.0.0 architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
+PORTABILITY_REWRITE is checked at two levels: (1) creation time — auditor criterion 22, SEV-1, blocking; (2) run time — `running-a-pipeline` Phase 0.6, scans entry skill and offers Abort/Rewrite/Proceed (user-acknowledged advisory, non-blocking). Every caller that reads or writes a CC-scaffolded path on a non-CC tier MUST route the path through `sk-pipeline-paths` (which performs the rewrite) OR call PORTABILITY_REWRITE directly. Direct string concatenation with `.claude/` on a Tier 2 run is a defect. Entry skills emitted by the current architect already comply; legacy entry skills regenerated for portability MUST be re-audited against this rule.
 </invariant>
 
 ## Degradation Surfacing (Profile-Driven)

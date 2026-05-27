@@ -1,15 +1,11 @@
 ---
 name: pipeline-auditor-protocol
-description: Loaded by the pipeline-auditor agent to supply operating modes, workflow, and invariants for standards-enforcement auditing. Not user-invocable.
+description: Supplies the pipeline-auditor agent with its operating modes (FULL/DELTA/SCOPE-WIDE), 28-criterion compliance matrix dispatch, severity classification, fix routing, and model-tier resolution criteria. Use when the pipeline-auditor agent is invoked to perform standards-enforcement auditing of pipeline bundles.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Pipeline Auditor — Operational Protocol
-
-<overview>
-The Pipeline Auditor provides a rigorous, read-only verification layer. It classifies findings across four severity bands (SEV-0 to SEV-3) and produces evidence-backed reports to ensure all components adhere to the canonical framework specifications.
-</overview>
 
 <glossary>
   <term name="Compliance Matrix">A 28-criterion checklist covering layout, frontmatter, topology, runtime safety, and resolver consolidation (PR-01..PR-05, PR-07).</term>

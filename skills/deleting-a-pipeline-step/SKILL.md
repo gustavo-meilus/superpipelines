@@ -1,14 +1,12 @@
 ---
 name: deleting-a-pipeline-step
-description: Use when the user wants to remove or delete a step from an existing named pipeline, or invokes /superpipelines:delete-step. Performs gap analysis, optionally rewires edges, audits the delta, and gates on human approval before any deletion occurs.
+description: Removes a step from an existing named pipeline while preserving topology continuity. Use when the user requests deletion of a pipeline step, wants to remove a capability from a named pipeline, or invokes /superpipelines:delete-step.
 ---
 
 # Deleting a Pipeline Step — Removal Workflow
 
-> Orchestrates the removal of a step from an existing named pipeline while ensuring topology continuity. Trigger when the user requests to delete a capability or invokes `/superpipelines:delete-step`.
-
 <overview>
-The Deleting a Pipeline Step workflow guarantees that the removal of a component does not result in a fragmented dependency graph. It utilizes a rigorous gap analysis to identify necessary rewiring, stages all deletions and mutations for audit, and enforces a mandatory human gate before executing irreversible file removals.
+Removes a named step from an existing pipeline. Performs gap analysis to identify predecessor/successor disconnections, stages all file removals and topology mutations for audit, and enforces a mandatory human approval gate before any irreversible deletion occurs.
 </overview>
 
 <glossary>
