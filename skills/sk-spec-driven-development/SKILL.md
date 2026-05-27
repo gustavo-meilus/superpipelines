@@ -1,17 +1,11 @@
 ---
 name: sk-spec-driven-development
-description: Use when authoring multi-step pipelines or features that need a spec contract before execution — the spec→plan→tasks→implement workflow aligned with GitHub Spec Kit. Reference-only; preload via agent skills frontmatter.
+description: Establishes a formal spec→plan→tasks→implement contract for multi-step feature work. Use when authoring multi-step pipelines, building new features, refactoring systems, or when a request is too ambiguous for direct execution and a verified specification must precede implementation.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Spec-Driven Development (SDD) — Workflow Reference
-
-> Establishes a formal spec→plan→tasks→implement contract for multi-step feature work and pipeline authoring. Trigger when building new features, refactoring systems, or whenever a request is too ambiguous for direct execution.
-
-<overview>
-Spec-Driven Development (SDD) minimizes hallucinations and misaligned outputs by front-loading requirements analysis. It ensures that every task is rooted in a verified specification and that parallel execution is protected by a mandatory human gate and precise acceptance criteria.
-</overview>
 
 <glossary>
   <term name="spec.md">The canonical contract defining WHAT and WHY, focusing on user journeys and success criteria.</term>
@@ -24,27 +18,27 @@ Spec-Driven Development (SDD) minimizes hallucinations and misaligned outputs by
 <protocol>
 ### 1. SPECIFY (`/specify`)
 - **Goal**: Define the outcome without implementation details.
-- Capture user journeys, success criteria (AC), non-goals, and constraints.
+- User journeys, success criteria (AC), non-goals, and constraints are captured.
 - **Invariant**: The spec must be readable without code; it must answer "What does done look like?"
 
 ### 2. PLAN (`/plan`)
 - **Goal**: Design the technical implementation.
-- Define the tech stack, architecture (contracts/schemas), dependency matrix, and risks.
-- Resolve ambiguities surfaced in the spec via `/clarify`.
+- Tech stack, architecture (contracts/schemas), dependency matrix, and risks are defined.
+- Ambiguities surfaced in the spec are resolved via `/clarify`.
 
 ### 3. TASKS (`/tasks`)
 - **Goal**: Decompose the plan into chunks (5–30 min per agent session).
 - Each task requires a stable ID, description, file list, and verifiable AC.
-- **Validation**: BLOCK implementation if any spec AC lacks a corresponding task.
+- **Validation**: Implementation is blocked if any spec AC lacks a corresponding task.
 
 ### 4. IMPLEMENT (`/implement`)
 - **Goal**: Execute tasks in parallel where dependencies allow.
 - Each task runs through an isolated RPI loop (Research, Plan, Implement).
-- Reconcile `pipeline-state.json` upon completion or failure of each task.
+- `pipeline-state.json` is reconciled upon completion or failure of each task.
 </protocol>
 
 <HARD-GATE>
-**MANDATORY HUMAN APPROVAL**: Before dispatching parallel implementation, present `spec.md` and `tasks.md` to the user. Wait for explicit `APPROVE`. A misunderstood spec at this stage will cause all parallel workers to fail simultaneously.
+**MANDATORY HUMAN APPROVAL**: Before dispatching parallel implementation, `spec.md` and `tasks.md` are presented to the user. Execution waits for explicit `APPROVE`. A misunderstood spec at this stage will cause all parallel workers to fail simultaneously.
 </HARD-GATE>
 
 ## Artifact Skeletons
@@ -83,7 +77,7 @@ Spec-Driven Development (SDD) minimizes hallucinations and misaligned outputs by
 <invariants>
 - Every acceptance criterion in `spec.md` MUST be mapped to at least one task in `tasks.md`.
 - Tasks must be small enough for a single agent session (avoiding context bloat).
-- Maintain strict write/review isolation during the implementation phase.
+- Strict write/review isolation is maintained during the implementation phase.
 </invariants>
 
 ## Reference Files

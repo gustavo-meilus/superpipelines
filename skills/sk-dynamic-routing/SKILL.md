@@ -1,16 +1,14 @@
 ---
 name: sk-dynamic-routing
-description: Use only on Tier 1 (Claude Code) when determining the appropriate LLM for a specific pipeline stage. Defines Anthropic-centric category constraints for dynamic model routing on CC, allowing specific utility and planning agents to diverge from the Sonnet default. Non-CC tiers route via platform_profile.model_tiers instead — do not invoke this skill on tier_1b/1c/1d/2.
+description: Maps pipeline agent roles to intent-based model categories on Tier 1 (Claude Code). Use when a Tier 1 pipeline stage requires model assignment beyond the two-slot fast/deep abstraction — e.g., pure read-only audit agents, deep architectural planners, or visual-analysis roles. Non-CC tiers resolve models via platform_profile.model_tiers only; this skill must not be invoked on tier_1b/1c/1d/2.
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Dynamic Model Routing — Intent-Based Capability Mapping
 
-> Provides the ruleset for dynamically assigning Large Language Models based on the task intent category. Trigger when architecting new pipelines or configuring subagents to ensure cost-efficiency and optimal reasoning paths.
-
 <overview>
-This skill is **Claude Code-scoped (tier_1 only)**. While Superpipelines on Tier 1 maintains `claude-sonnet-4-6` as the baseline default for implementation workers (the Tier 1 resolution of `platform_profile.model_tiers.fast`), certain specialized roles (e.g., fast audits, deep architectural planning, vision analysis) benefit from dynamic routing beyond the 2-slot `fast`/`deep` model_tiers abstraction. This skill defines the CC-specific categories and fallback chains for those overrides. Non-CC tiers do not consult this skill — they resolve models via `platform_profile.model_tiers` only.
+This skill is **Claude Code-scoped (tier_1 only)**. Superpipelines on Tier 1 maintains `claude-sonnet-4-6` as the baseline default for implementation workers (the Tier 1 resolution of `platform_profile.model_tiers.fast`). Certain specialized roles — fast audits, deep architectural planning, visual analysis — benefit from dynamic routing beyond the two-slot `fast`/`deep` abstraction. This skill defines the CC-specific categories and fallback chains for those overrides. Non-CC tiers do not consult this skill; they resolve models via `platform_profile.model_tiers` only.
 </overview>
 
 <glossary>
@@ -34,16 +32,16 @@ This skill is **Claude Code-scoped (tier_1 only)**. While Superpipelines on Tier
 <protocol>
 ### 1. EVALUATE INTENT
 - Determine the nature of the specific task or agent role.
-- If it is standard code implementation or a functional review, the category MUST be `default`.
+- Standard code implementation or functional review maps to category `default`.
 
 ### 2. ASSIGN CATEGORY
-- If the role is exclusively planning, architecture, or deep conceptual alignment, assign `deep-plan`.
-- If the role is pure read-only utility (fast file searching, lint aggregation), assign `quick-audit`.
-- If the role requires interpreting screenshots, assign `visual`.
+- Roles exclusively concerned with planning, architecture, or deep conceptual alignment → `deep-plan`.
+- Roles restricted to read-only utility (fast file searching, lint aggregation) → `quick-audit`.
+- Roles that interpret screenshots or diagrams → `visual`.
 
 ### 3. CONFIGURATION OVERRIDE
-- When generating an agent or scaffold, set the `model:` field in the frontmatter according to the primary model of the selected category.
-- Add a comment or meta-tag noting the category intent for future auditing.
+- When generating an agent or scaffold, the `model:` field in the frontmatter is set to the primary model of the selected category.
+- A comment or meta-tag noting the category intent is added for future auditing.
 </protocol>
 
 <invariants>

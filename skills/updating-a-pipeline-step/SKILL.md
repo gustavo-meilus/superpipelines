@@ -1,14 +1,12 @@
 ---
 name: updating-a-pipeline-step
-description: Use when the user wants to modify, change, or update an existing step within a named pipeline, or invokes /superpipelines:update-step. Reads current step, applies changes, re-validates edges with neighbors, audits the delta, and gates on human approval before writing to disk.
+description: Orchestrates the modification of an existing step within a named pipeline, enforcing impact analysis, edge re-validation, staged promotion, and delta audit. Use when the user requests changes to a step's logic, tools, or I/O contracts, or invokes /superpipelines:update-step.
 ---
 
 # Updating a Pipeline Step — Modification Workflow
 
-> Orchestrates the modification of an existing step within a named pipeline. Trigger when the user requests to change logic, tools, or I/O contracts for a step or invokes `/superpipelines:update-step`.
-
 <overview>
-The Updating a Pipeline Step workflow ensures that modifications to individual components do not break the larger orchestration contract. It focuses on impact analysis—identifying how I/O schema changes propagate to predecessors and successors—and enforces a rigorous audit-and-stage protocol before promoting changes to production paths.
+The Updating a Pipeline Step workflow ensures that modifications to individual components do not break the larger orchestration contract. Impact analysis identifies how I/O schema changes propagate to predecessors and successors, and an audit-and-stage protocol gates all changes before promotion to production paths.
 </overview>
 
 <glossary>

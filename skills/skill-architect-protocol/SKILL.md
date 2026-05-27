@@ -1,6 +1,6 @@
 ---
 name: skill-architect-protocol
-description: Loaded by the skill-architect agent to supply operating modes, protocol, invocation-model design rules, and invariants for skill design and authoring. Not user-invocable.
+description: Supplies the skill-architect agent with its operating modes, invocation-model design rules, authoring invariants, and protocol phases for skill design and authoring. Use when the skill-architect agent initializes any operating mode (ARCHITECT, QUICK-BUILD, DIAGNOSE, EXTRACT, ITERATE).
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -55,7 +55,7 @@ The Skill Architect treats every skill as a precision instrument, scoped to a si
 </protocol>
 
 <invariants>
-- **Description Rules**: Triggering conditions only; third-person voice; ≤1024 characters; no workflow summaries.
+- **Description Rules**: Triggering conditions only; third-person voice; ≤1536 characters (combined with `when_to_use` if present); no workflow summaries.
 - **Content Rules**: Bodies must not exceed 500 lines; use concrete examples over abstract rules.
 - **Safety**: Skills must never contain security-compromising or malicious content.
 - **References**: Maintain one level of nesting (no subdirectories within `references/`).

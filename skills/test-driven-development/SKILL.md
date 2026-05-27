@@ -1,14 +1,12 @@
 ---
 name: test-driven-development
-description: Use when implementing any feature or bugfix, before writing implementation code
+description: Enforces a test-first implementation cycle ensuring code correctness, maintainability, and regression safety. Use when implementing any feature or bugfix, before writing production code, or when authoring any architectural refactor.
 ---
 
 # Test-Driven Development (TDD) — Quality Protocol
 
-> Enforces a "test-first" implementation cycle to ensure code correctness, maintainability, and regression safety. Trigger when implementing any feature, bugfix, or architectural refactor before writing production code.
-
 <overview>
-TDD is governed by the Iron Law: **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST**. By watching a test fail before implementing a solution, we prove that the test is valid and that the resulting code satisfies a specific, verified requirement rather than an assumed implementation.
+TDD is governed by the Iron Law: **NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST**. Watching a test fail before implementing a solution proves the test is valid and that the resulting code satisfies a specific, verified requirement rather than an assumed implementation.
 </overview>
 
 <glossary>
@@ -36,7 +34,7 @@ TDD is governed by the Iron Law: **NO PRODUCTION CODE WITHOUT A FAILING TEST FIR
 </protocol>
 
 <EXTREMELY-IMPORTANT>
-If you wrote production code before the test: **DELETE IT**. Start over from Step 1. Do not "adapt" existing code; the ritual of failure is what guarantees the validity of the test suite.
+If production code was written before the test: **DELETE IT**. Start over from Step 1. Do not adapt existing code; the ritual of failure is what guarantees the validity of the test suite.
 </EXTREMELY-IMPORTANT>
 
 ## Verification Checklist
@@ -52,7 +50,7 @@ If you wrote production code before the test: **DELETE IT**. Start over from Ste
 
 ## Red Flags — STOP
 - "I'll write the tests after to verify it works." → **STOP**. Tests-after prove nothing; they only verify what was built, not what was required.
-- "The test passed immediately." → **STOP**. Your test is invalid or you are testing logic that already exists.
+- "The test passed immediately." → **STOP**. The test is invalid or testing logic that already exists.
 - "Deleting this code is wasteful." → **STOP**. Sunk cost fallacy. Keeping unverified code is technical debt.
 - "I manually tested it, so it's fine." → **STOP**. Manual testing is non-deterministic and non-reproducible.
 

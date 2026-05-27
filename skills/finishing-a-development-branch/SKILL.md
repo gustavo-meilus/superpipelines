@@ -1,11 +1,11 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, tests pass, and integration decisions are pending — presents structured options for merge, PR, or cleanup of the development branch
+description: Structured integration protocol that enforces a test-verification gate and presents branch disposition options (merge, PR, keep, or discard). Use when implementation is complete, all tests pass, and an integration decision for the development branch is pending.
 ---
 
 # Finishing a Development Branch — Integration Protocol
 
-> Facilitates the structured conclusion of development work by verifying readiness and presenting integration options. Trigger when implementation is complete, tests pass, and integration decisions (merge, PR, or cleanup) are pending.
+> Ensures work is integrated or preserved according to explicit user choice. A mandatory test verification gate is enforced before any options are presented, preventing promotion of broken or unverified code to the base branch.
 
 <overview>
 Finishing a Development Branch ensures that work is integrated or preserved according to the user's explicit choice. It enforces a mandatory test verification gate before any options are presented, preventing the promotion of broken or unverified code to the base branch.
@@ -21,27 +21,27 @@ Finishing a Development Branch ensures that work is integrated or preserved acco
 
 <protocol>
 ### 1. VERIFY TESTS (THE GATE)
-- Run the project's primary test suite (e.g., `npm test`, `pytest`).
-- <HARD-GATE>If tests fail, STOP. You cannot proceed to integration options until all tests are green.</HARD-GATE>
+- The project's primary test suite is run (e.g., `npm test`, `pytest`).
+- <HARD-GATE>If tests fail, STOP. Integration options cannot be presented until all tests are green.</HARD-GATE>
 
 ### 2. DETERMINE BASE BRANCH
-- Identify the split point (e.g., `git merge-base HEAD main`).
-- Confirm the base branch with the user if ambiguity exists.
+- The split point is identified (e.g., `git merge-base HEAD main`).
+- The base branch is confirmed with the user if ambiguity exists.
 
 ### 3. PRESENT STRUCTURED OPTIONS
-- Present exactly these four options without modification:
+- Exactly these four options are presented without modification:
   1. **Merge back to [base] locally**
   2. **Push and create a Pull Request**
   3. **Keep the branch as-is (Handle later)**
   4. **Discard this work**
 
 ### 4. EXECUTE CHOICE
-- **Option 1**: Checkout base, pull latest, merge, re-verify tests, and delete feature branch.
-- **Option 2**: Push to origin and create PR using the `gh` CLI.
-- **Option 4**: Request explicit typed confirmation ("discard") before destructive deletion.
+- **Option 1**: Base is checked out, latest is pulled, branch is merged, tests are re-verified, and the feature branch is deleted.
+- **Option 2**: Branch is pushed to origin and a PR is created using the `gh` CLI.
+- **Option 4**: Explicit typed confirmation ("discard") is required before destructive deletion.
 
 ### 5. CLEANUP
-- For Options 1, 2, and 4: Remove the associated git worktree to maintain repository hygiene.
+- For Options 1, 2, and 4: The associated git worktree is removed to maintain repository hygiene.
 </protocol>
 
 <invariants>

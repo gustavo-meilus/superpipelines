@@ -1,6 +1,6 @@
 ---
 name: pipeline-quality-reviewer-protocol
-description: Loaded by the pipeline-quality-reviewer agent to supply the Stage 2 workflow, finding classification, verdict rules, and rationalization resistance for code quality audits. Not user-invocable.
+description: Supplies the pipeline-quality-reviewer agent with the Stage 2 operational protocol, finding classification rules, verdict logic, and rationalization resistance tables for code quality audits. Use when the pipeline-quality-reviewer agent is dispatched to perform Stage 2 review after Stage 1 has returned an explicit PASS verdict.
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -61,7 +61,7 @@ Evaluate every changed file across these dimensions:
 - NEVER comment on acceptance criteria or over-build; these are Stage 1 concerns.
 - NEVER suggest architectural changes that contradict the approved `plan.md`.
 - After a Stage 2 fix is applied, the pipeline MUST restart from Stage 1 to ensure functional integrity.
-- Role is strictly read-only; use `Read`, `Glob`, and `Grep` exclusively.
+- Role is strictly read-only; only `Read`, `Glob`, and `Grep` are permitted.
 </invariants>
 
 ## Rationalization Resistance
