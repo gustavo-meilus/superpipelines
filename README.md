@@ -125,6 +125,8 @@ The framework selects the optimal pattern based on task complexity:
 | `/superpipelines:update-step` | Modifies an existing step within a named pipeline. |
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
 | `/superpipelines:audit-steps` | Audits agents and skills against the v2 compliance matrix. |
+| `/superpipelines:change-models` | Sets, changes, or audits per-agent model-tier preferences. |
+| `/superpipelines:init-deep` | Generates hierarchical `PIPELINE-CONTEXT.md` maps for localized, token-efficient context. |
 
 ---
 
