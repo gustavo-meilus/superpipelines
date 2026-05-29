@@ -20,13 +20,18 @@ Pipeline creation now hardens the brief through an adversarial crawl/grill/recon
 ### Changed
 
 - **`creating-a-pipeline` grilling gate** — Phase 2 runs `GRILL(MODE=brief)` before the 4D step and architect dispatch; Phase 3 runs `GRILL(MODE=architectural)` after pattern selection; Phase 4 threads `captured_failure_modes` + `pipeline_type` into the architect; Phase 6 stamps `topology.json metadata.grilling`. The legacy "≥3 critical slots missing" hard-gate is subsumed by the grilling exit bar and removed. `using-superpipelines` references the new skill.
-- **CC deep tier → Opus 4.8** — `tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (also in `CLAUDE.md` and the `change-models` catalog). `model_tiers_version` advanced to `2026-05-29` on all five tier profiles.
+- **CC deep tier → Opus 4.8** — `tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (also in `CLAUDE.md` and the `change-models` catalog). `model_tiers_version` advanced to `2026-05-29` on the `tier_1` (Claude Code) profile — the only catalog that changed.
 - **All manifests at `2.1.0`** — every per-platform manifest plus the Codex marketplace subdirectory manifest and all five `profile_version` fields. `.codex-plugin/plugin.json` and `gemini-extension.json` had drifted at `2.0.0` and are now resynced. The marketplace catalog root version stays `1.0.0`.
 - **Release process** — `.claude/skills/release.md` now tracks the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`).
+- **Skill authoring pass across all 34 `SKILL.md` files (#25)** — descriptions restructured to triggering-conditions-only form; redundant `<overview>` blocks and duplicate blockquotes removed; voice normalized to third-person impersonal; concrete-example gaps filled; time-sensitive markers removed; UTF-8 BOM / mojibake in `sk-model-migration` fixed; assorted stale-value corrections. Net −55 lines, zero behavioral change.
 
 ### Fixed
 
 - **Manifest version drift** — `.codex-plugin/plugin.json` and `gemini-extension.json` realigned from `2.0.0` to the current plugin version.
+
+### Documentation
+
+- **README** — copy update (#20) plus a note on the brief-hardening grilling gate.
 
 </release_entry>
 

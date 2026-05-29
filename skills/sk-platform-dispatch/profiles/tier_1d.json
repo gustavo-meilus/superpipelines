@@ -3,7 +3,7 @@
   "tier": "tier_1d",
   "name": "Codex",
   "profile_version": "2.1.0",
-  "model_tiers_version": "2026-05-29",
+  "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": true,
