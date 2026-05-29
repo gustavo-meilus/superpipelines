@@ -1,7 +1,7 @@
 ---
 aiboarding_version: 1
 generated: 2026-05-29
-last_synced_commit: 9bab5dc67515054a2076878cfb01676c3ed6d3dc
+last_synced_commit: caad6ab7f19aba6b343130c92fa9b67144251f33
 ---
 
 # 1. Engineering Basics
@@ -28,7 +28,7 @@ last_synced_commit: 9bab5dc67515054a2076878cfb01676c3ed6d3dc
 
 **Skill primacy:** intelligence lives in `SKILL.md`. Agents zero-body (frontmatter only). Each agent has companion `{agent}-protocol/SKILL.md` (full protocol; `disable-model-invocation: true`, `user-invocable: false`). `*-references/` dirs omit SKILL.md -> not preloaded, load on demand.
 
-**Key skills:** `using-superpipelines` (router), `creating-a-pipeline`/`running-a-pipeline`, `sk-platform-dispatch` (tier detect + dispatch), `sk-model-resolver` (5-layer model precedence), `sk-pipeline-paths` (scope roots), `sk-spec-driven-development`, `sk-4d-method`.
+**Key skills:** `using-superpipelines` (router), `creating-a-pipeline`/`running-a-pipeline`, `sk-platform-dispatch` (tier detect + dispatch), `sk-model-resolver` (5-layer model precedence), `sk-pipeline-paths` (scope roots), `sk-pipeline-grilling` (brief-hardening crawl/grill/reconcile), `sk-spec-driven-development`, `sk-4d-method`.
 
 **State:** structured JSON at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Carries `plugin_version`, `metadata.source_tier`, `metadata.runtime_tier`. Crash -> resume from last checkpoint, reset in-progress phases, keep completed work. Topology mutations stage in `edit-{ts}/` before promote (atomic).
 
@@ -42,6 +42,7 @@ last_synced_commit: 9bab5dc67515054a2076878cfb01676c3ed6d3dc
 - `DEPENDENCY_INVERSION: PROFILE_DRIVEN` — per-platform facts (model IDs, dispatch, scope roots, isolation recipe) live ONLY in `skills/sk-platform-dispatch/profiles/{tier}.json`. Skill bodies depend on abstract `platform_profile.<field>`, never concrete platform names/values. Duplicate in skill body = SEV-2 defect.
 - `MODEL_SELECTION: TIER_BASED` — agent frontmatter writes `model_tier:` (triage|fast|medium|deep|inherit), NOT `model:`. Architect writes model_tier only. Runtime resolves via sk-model-resolver 5-layer chain.
 - Agent emit exactly ONE terminal status: `DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED`.
+- `GRILLING_GATE` — `creating-a-pipeline` Phase 2 MUST run `sk-pipeline-grilling` MODE=brief before architect dispatch: confirm pipeline type (project-embedded vs self-contained) -> conditional silent crawl (findings HELD until reconcile) -> one-question-at-a-time grill -> A3 reconciliation HARD GATE (zero unresolved discrepancies). Phase 3 -> MODE=architectural post-pattern-select. Hardened brief (goal, success_criteria, io_contract, step_decomposition, captured_failure_modes, pipeline_type) -> architect; stamped `topology.json metadata.grilling`.
 
 **Authoring rules:** third-person impersonal voice. Skill body ≤500 lines. Agent body empty. Skill desc ≤1536 chars, triggering conditions only (no workflow summary). References >100 lines need ToC.
 
