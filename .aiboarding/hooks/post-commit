@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# aiboarding PostToolUse[git commit] hook: nudge on drift since last sync.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib"
+
+resolve_doc_path
+[ -f "$DOC_PATH" ] || exit 0
+
+read_frontmatter "$DOC_PATH" "last_synced_commit"
+last="$REPLY"
+
+head_sha="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+[ -n "$head_sha" ] || exit 0
+
+# Empty/absent last_synced_commit (malformed or never-synced doc) is treated as
+# drift on purpose: it nudges the user to run update-aiboarding to repair the pointer.
+if [ "$last" != "$head_sha" ]; then
+  raw="$(printf '<aiboarding-drift>Commits have landed since AIBOARDING.md was last synced (%s..HEAD). Run the update-aiboarding skill to triage whether the doc needs updating.</aiboarding-drift>' "$last")"
+  emit_cc_context "PostToolUse" "$raw"
+fi
+exit 0

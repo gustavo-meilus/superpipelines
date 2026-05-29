@@ -11,8 +11,9 @@
 | Model ID | Display Name |
 |----------|-------------|
 | `claude-sonnet-4-6` | Claude Sonnet 4.6 |
-| `claude-opus-4-7` | Claude Opus 4.7 |
-| `claude-opus-4-6` | Claude Opus 4.6 |
+| `claude-opus-4-8` | Claude Opus 4.8 (current) |
+| `claude-opus-4-7` | Claude Opus 4.7 (legacy) |
+| `claude-opus-4-6` | Claude Opus 4.6 (legacy) |
 | `claude-haiku-4-5-20251001` | Claude Haiku 4.5 |
 
 ## Model Aliases
@@ -22,10 +23,10 @@ Common aliases and their canonical model IDs:
 | Alias | Canonical Match |
 |-------|----------------|
 | `sonnet` | `claude-sonnet-4-6` |
-| `opus` | `claude-opus-4-7` |
+| `opus` | `claude-opus-4-8` |
 | `haiku` | `claude-haiku-4-5-20251001` |
 | `claude-sonnet-4-6[1m]` | Extended 1M context variant |
-| `claude-opus-4-7[1m]` | Extended 1M context variant |
+| `claude-opus-4-8[1m]` | Extended 1M context variant |
 
 ## Custom Models
 
@@ -39,4 +40,4 @@ Common user inputs and their canonical model IDs:
 |-----------|----------------|
 | "sonnet" / "claude sonnet" | `claude-sonnet-4-6` |
 | "haiku" / "claude haiku" | `claude-haiku-4-5-20251001` |
-| "opus" / "claude opus" | `claude-opus-4-7` |
+| "opus" / "claude opus" | `claude-opus-4-8` |

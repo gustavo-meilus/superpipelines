@@ -2,6 +2,12 @@
 *.sh text eol=lf
 hooks/session-start text eol=lf
 
+# aiboarding hook scripts are extensionless bash; force LF (Git Bash breaks on CRLF)
+.aiboarding/hooks/_lib text eol=lf
+.aiboarding/hooks/session-start text eol=lf
+.aiboarding/hooks/pre-task text eol=lf
+.aiboarding/hooks/post-commit text eol=lf
+
 # Ensure the polyglot wrapper keeps LF (it's parsed by both cmd and bash)
 *.cmd text eol=lf
 

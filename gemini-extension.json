@@ -1,6 +1,6 @@
 {
   "name": "superpipelines",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Design and run multi-agent AI pipelines on Antigravity CLI 2.0 (Tier 1c aspirational: Dynamic Subagents; falls back to Tier 2 single-agent inline if dispatch primitive unavailable to skills).",
   "author": {
     "name": "Gustavo Meilus",

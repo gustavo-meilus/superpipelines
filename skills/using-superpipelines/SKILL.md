@@ -62,6 +62,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 </rationalization_table>
 
 ## Reference Files
+- `sk-pipeline-grilling/SKILL.md` — Brief-hardening interrogation run during pipeline creation (Phases 2 and 3).
 - `sk-pipeline-paths/SKILL.md` — Scope and path resolution.
 - `sk-pipeline-patterns/SKILL.md` — Topology selection.
 - `sk-write-review-isolation/SKILL.md` — Two-stage review protocol.

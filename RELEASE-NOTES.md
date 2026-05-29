@@ -3,8 +3,32 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the transition from legacy Superpowers-era infrastructure to the standalone v1.0.6 architecture. Key milestones include the implementation of scope-aware deployment, multi-pipeline isolation, the 20-criterion compliance matrix, and the Lean Agents zero-body architecture.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.0 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, and the brief-hardening grilling gate introduced in v2.1.0.
 </overview>
+
+## v2.1.0 — Pipeline Grilling Gate & Opus 4.8 (2026-05-29)
+
+Pipeline creation now hardens the brief through an adversarial crawl/grill/reconcile interrogation before the architect designs the topology, closing knowledge gaps that previously surfaced only at build time. This release also moves the Claude Code deep tier to Opus 4.8 and adds an agent-onboarding document.
+
+<release_entry version="2.1.0" status="STABLE">
+
+### Added
+
+- **`sk-pipeline-grilling` skill** — brief-hardening interrogation run during pipeline creation. `MODE=brief` runs A0 pipeline-type determination (project-embedded vs self-contained) → A1 conditional silent crawl (codebase scan only when project-embedded; registry + capability scans always run) → A2 one-question-at-a-time grill → A3 reconciliation HARD GATE, returning a `hardened_brief`. `MODE=architectural` runs a lighter post-pattern tradeoff-confirmation pass. Orchestrator-loaded (`disable-model-invocation: true`, `user-invocable: false`); profile-driven (no hardcoded platform names or model IDs).
+- **`AIBOARDING.md` + enforcement hooks** — compressed agent-onboarding doc at the repo root and the `.aiboarding/hooks/` SessionStart / PreToolUse / PostToolUse hooks that keep it loaded and flag drift.
+
+### Changed
+
+- **`creating-a-pipeline` grilling gate** — Phase 2 runs `GRILL(MODE=brief)` before the 4D step and architect dispatch; Phase 3 runs `GRILL(MODE=architectural)` after pattern selection; Phase 4 threads `captured_failure_modes` + `pipeline_type` into the architect; Phase 6 stamps `topology.json metadata.grilling`. The legacy "≥3 critical slots missing" hard-gate is subsumed by the grilling exit bar and removed. `using-superpipelines` references the new skill.
+- **CC deep tier → Opus 4.8** — `tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (also in `CLAUDE.md` and the `change-models` catalog). `model_tiers_version` advanced to `2026-05-29` on all five tier profiles.
+- **All manifests at `2.1.0`** — every per-platform manifest plus the Codex marketplace subdirectory manifest and all five `profile_version` fields. `.codex-plugin/plugin.json` and `gemini-extension.json` had drifted at `2.0.0` and are now resynced. The marketplace catalog root version stays `1.0.0`.
+- **Release process** — `.claude/skills/release.md` now tracks the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`).
+
+### Fixed
+
+- **Manifest version drift** — `.codex-plugin/plugin.json` and `gemini-extension.json` realigned from `2.0.0` to the current plugin version.
+
+</release_entry>
 
 ## v2.0.0 — Multi-Platform Release (2026-05-26)
 

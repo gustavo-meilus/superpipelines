@@ -68,7 +68,7 @@ Draft the human-readable release title: a short (≤60 chars) phrase capturing t
 
 ## Step 4 — Bump Version in All Manifests
 
-Update exactly these **twelve** files. No others. (Q11: expanded from six to twelve to cover the per-tier profile_version coupling and the CLAUDE.md Project Version field — v1.0.6 shipped with the Project Version drifted at v1.2.0 because the release skill didn't track it. Never again.)
+Update exactly these **thirteen** files. No others. (Q11: expanded from six to twelve to cover the per-tier profile_version coupling and the CLAUDE.md Project Version field — v1.0.6 shipped with the Project Version drifted at v1.2.0 because the release skill didn't track it. Never again. v2.1.0: added the thirteenth file — the Codex marketplace subdirectory manifest, added in 2.0.1 but previously untracked, which had drifted at 2.0.0.)
 
 ### 4a. `package.json`
 
@@ -103,6 +103,13 @@ Change only `plugins[0].version` — NOT the root `"version"` field (that is the
 ### 4d. `.codex-plugin/plugin.json`
 
 Change only the `"version"` field:
+```json
+"version": "{NEW_VERSION}",
+```
+
+### 4d-ii. `plugins/superpipelines/.codex-plugin/plugin.json`
+
+The Codex marketplace subdirectory manifest (added in 2.0.1 — Codex resolves plugins from named subdirectories, not the marketplace root). Change only the `"version"` field:
 ```json
 "version": "{NEW_VERSION}",
 ```
@@ -229,6 +236,7 @@ Files to be modified:
   .claude-plugin/plugin.json                    {prev} → {NEW_VERSION}
   .claude-plugin/marketplace.json               {prev} → {NEW_VERSION}
   .codex-plugin/plugin.json                     {prev} → {NEW_VERSION}
+  plugins/superpipelines/.codex-plugin/plugin.json  {prev} → {NEW_VERSION}
   .cursor-plugin/plugin.json                    {prev} → {NEW_VERSION}
   gemini-extension.json                         {prev} → {NEW_VERSION}
   skills/sk-platform-dispatch/profiles/tier_1.json    profile_version {prev} → {NEW_VERSION}
@@ -297,6 +305,7 @@ git add package.json \
         .claude-plugin/plugin.json \
         .claude-plugin/marketplace.json \
         .codex-plugin/plugin.json \
+        plugins/superpipelines/.codex-plugin/plugin.json \
         .cursor-plugin/plugin.json \
         gemini-extension.json \
         skills/sk-platform-dispatch/profiles/tier_1.json \

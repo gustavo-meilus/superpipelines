@@ -2,8 +2,8 @@
   "$schema": "./profile.schema.json",
   "tier": "tier_1",
   "name": "Claude Code",
-  "profile_version": "2.0.0",
-  "model_tiers_version": "2026-05-19",
+  "profile_version": "2.1.0",
+  "model_tiers_version": "2026-05-29",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": true,
@@ -32,6 +32,6 @@
     "triage": { "model": "claude-haiku-4-5-20251001", "effort": "low" },
     "fast":   { "model": "claude-haiku-4-5-20251001", "effort": "medium" },
     "medium": { "model": "claude-sonnet-4-6",         "effort": "medium" },
-    "deep":   { "model": "claude-opus-4-7",           "effort": "high" }
+    "deep":   { "model": "claude-opus-4-8",           "effort": "high" }
   }
 }
