@@ -73,7 +73,6 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 
   If the user declines per-step choice, default every step to `fast`.
 - Acknowledge if the user requested a specific output format. If not specified, deduce an appropriate format based on the pipeline's goal (e.g., markdown files, code snippets, code files).
-- <HARD-GATE>If ≥3 critical slots are missing (goal, success criteria, scope, data), STOP and ask targeted questions.</HARD-GATE>
 
 ### PHASE 3: PATTERN SELECTION
 - Select a topology pattern (Sequential, Parallel, Iterative, Gated, or Spec-Driven) using the `sk-pipeline-patterns` decision tree.
