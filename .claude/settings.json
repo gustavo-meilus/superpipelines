@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PROJECT_DIR}/.aiboarding/hooks/run-hook.cmd\" session-start", "async": false }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PROJECT_DIR}/.aiboarding/hooks/run-hook.cmd\" pre-task", "async": false }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PROJECT_DIR}/.aiboarding/hooks/run-hook.cmd\" post-commit", "async": false }
+        ]
+      }
+    ]
+  }
+}

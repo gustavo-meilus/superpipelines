@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Shared helpers for aiboarding hook scripts. Source, do not execute.
+
+# Out-parameter convention: resolve_doc_path sets globals PROJECT_DIR and
+# DOC_PATH; read_frontmatter sets REPLY. Callers must not shadow these with
+# `local` before calling, and should read them immediately after the call.
+
+# Escape a string for embedding in a JSON string literal, using only bash
+# parameter substitution (no sed/awk/jq; safe under Git Bash).
+escape_for_json() {
+  # NOTE: escapes \ " \n \r \t only. Other C0 controls (U+0000-U+001F) are
+  # not escaped; callers pass markdown/text, not arbitrary binary.
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# Resolve the AIBOARDING.md path into DOC_PATH and the project dir into PROJECT_DIR.
+resolve_doc_path() {
+  PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
+  DOC_PATH="${PROJECT_DIR}/AIBOARDING.md"
+}
+
+# Read the value of a top-level frontmatter key from a file into REPLY.
+# Pure bash; trims surrounding spaces. Stops at the closing '---'.
+read_frontmatter() {
+  # read_frontmatter <file> <key>
+  local file="$1" key="$2" line in_fm=0
+  REPLY=""
+  [ -f "$file" ] || return 0
+  while IFS= read -r line; do
+    if [ "$line" = "---" ]; then
+      if [ "$in_fm" -eq 0 ]; then in_fm=1; continue; else break; fi
+    fi
+    [ "$in_fm" -eq 1 ] || continue
+    case "$line" in
+      "${key}:"*)
+        REPLY="${line#"${key}:"}"
+        REPLY="${REPLY#"${REPLY%%[![:space:]]*}"}"   # ltrim
+        REPLY="${REPLY%"${REPLY##*[![:space:]]}"}"   # rtrim
+        ;;
+    esac
+  done < "$file"
+}
+
+# Emit a Claude Code hookSpecificOutput JSON object.
+# emit_cc_context <hookEventName> <raw-context-string>
+emit_cc_context() {
+  local event="$1" raw="$2" esc
+  esc="$(escape_for_json "$raw")"
+  printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' "$event" "$esc"
+}
