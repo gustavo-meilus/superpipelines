@@ -39,6 +39,7 @@ The distinctive value is not "ask more questions." It is:
 | Packaging | **New dedicated skill** `sk-pipeline-grilling`. |
 | Exit bar | **Pipeline-level essentials + an explicit pipeline-level I/O contract.** Per-step contracts left to the architect. |
 | Gate rigor | **Mandatory, self-scaling.** No skip flag; a complete brief yields a short session. |
+| Pipeline type | **Two types, user-confirmed:** *project-embedded* (operates on this repo's code/artifacts) vs *self-contained/generative* (e.g. an article builder). The codebase crawl is **conditional** on this; the registry + capability scans always run. |
 
 ## 4. Skill shape & conventions
 
@@ -52,28 +53,44 @@ The distinctive value is not "ask more questions." It is:
 
 ## 5. Pass A — Brief Hardening (core)
 
-### A0 · Silent Crawl (Track A)
+### A0 · Context Determination (pipeline type)
+Before any crawl, determine whether the pipeline is **project-embedded** (it
+operates on this repository's code/artifacts — e.g. "white-box exploratory tests
+for the API endpoints") or **self-contained / generative** (it does not consume
+the repo — e.g. "an article builder"). The skill may infer a suggested default
+from the raw brief (keywords like "endpoints", "this codebase", "the API" lean
+project-embedded; "build/create an X generator" leans self-contained) but
+**MUST prompt the user to confirm** the type. The result drives A1's crawl scope
+and is recorded for the architect (see §7).
+
+### A1 · Silent Crawl (Track A) — partly conditional
 Using already-available inputs (`platform_profile` from Phase 0, scope/name from
 Phase 1, the raw brief), silently scan and **hold** findings — never revealed
-until A2:
-- the target workspace the pipeline will operate on (manifests, dir structure,
-  key docs — **bounded**, not a full read)
-- existing pipelines via `sk-pipeline-paths` enumeration (overlap / reuse /
-  name-collision)
-- `platform_profile` capabilities (which patterns / isolation / parallelism are
-  even possible)
+until A3:
+- **Always (context-independent):** existing pipelines via `sk-pipeline-paths`
+  enumeration (overlap / reuse / name-collision) and `platform_profile`
+  capabilities (which patterns / isolation / parallelism are possible).
+- **Only when project-embedded:** the target workspace the pipeline will operate
+  on (manifests, dir structure, key docs — **bounded**, not a full read).
 
-### A1 · Grill (Track B)
+For a self-contained pipeline the codebase crawl is skipped entirely; the
+always-on scans still run.
+
+### A2 · Grill (Track B)
 One question at a time, never batched. Challenge vague answers; push for a
 targeted brain-dump per micro-topic. Conceptual tree:
 goal → success criteria → **pipeline I/O contract** → rough step decomposition →
 failure modes.
 
-### A2 · Reconciliation HARD GATE
+### A3 · Reconciliation HARD GATE
 Confront held crawl findings against the user's answers; grill **only on
-discrepancies** (e.g. "you said the pipeline reads test results, but the repo has
-no test runner — where do results come from?"; "a pipeline named X already exists
-in user scope doing Y — how does this differ?").
+discrepancies**. Scope of the confrontation depends on what was crawled:
+- **Project-embedded:** includes codebase contradictions (e.g. "you said the
+  pipeline reads test results, but the repo has no test runner — where do
+  results come from?") plus registry/capability ones.
+- **Self-contained:** registry/capability contradictions only (e.g. "a pipeline
+  named X already exists in user scope doing Y — how does this differ?"). No
+  "the repo lacks X" challenges.
 
 ### Exit bar — gate opens only when ALL true
 - measurable goal
@@ -81,10 +98,10 @@ in user scope doing Y — how does this differ?").
 - pipeline-level I/O contract
 - rough step decomposition
 - ≥1 pipeline-level failure mode
-- zero unresolved crawl discrepancies
+- zero unresolved crawl discrepancies *(scoped to whatever crawl ran)*
 
 **Output:** a structured *hardened brief* returned to the orchestrator, including
-the captured failure modes.
+the pipeline type and the captured failure modes.
 
 ## 6. Pass B — Architectural Confirmation (lighter)
 
@@ -108,7 +125,9 @@ Gate: user acknowledges the key tradeoff(s).
 - **Phase 4 hand-off:** captured failure modes flow into the architect's prompt
   so they inform build-time guardrails (ties into 4D Diagnose's "top 2–3 failure
   modes"). Stamp `topology.json metadata.grilling = { completed: true,
-  captured_failure_modes: [...] }`.
+  pipeline_type: "project_embedded" | "self_contained",
+  captured_failure_modes: [...] }`. The architect uses `pipeline_type` to decide
+  whether generated steps may assume repo access.
 - **Discoverability:** add `sk-pipeline-grilling` to `creating-a-pipeline`'s
   Reference Files and the `using-superpipelines` reference list.
 
