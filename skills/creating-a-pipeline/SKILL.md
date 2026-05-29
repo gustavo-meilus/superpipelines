@@ -43,7 +43,8 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   Only proceed on explicit `y`. Default `N` prevents silent collisions.
 
 ### PHASE 2: BRIEF REFINEMENT (4D)
-- Apply the 4D Method to deconstruct core intent and constraints.
+- **Grilling gate (mandatory)**: FIRST load `sk-pipeline-grilling` via the `Skill` tool and run `GRILL(MODE=brief, platform_profile, scope, name, raw_brief)`. It determines pipeline type, runs the conditional silent crawl, grills the user, and clears the reconciliation HARD GATE. Do NOT proceed to the 4D / model-preference / output-format steps below until it returns a `hardened_brief`. The grilling exit bar subsumes the legacy "≥3 critical slots missing" check.
+- Apply the 4D Method to the `hardened_brief` to finalize intent and constraints.
 
 - **Q6 capability-gated model prompting.** Before asking per-step model questions, branch on the active `platform_profile`:
   - IF `platform_profile.capabilities.dynamic_subagents == true` (Tier 1c — host owns subagent model selection) OR `platform_profile.capabilities.model_field_format == "omit"` (Tier 2 — host IDE owns all model selection):
@@ -85,6 +86,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   ```
   When narrowing, emit an advisory naming the missing capability and the excluded patterns: e.g., "Pattern 2/3/5 require `worktrees`, unavailable on `<platform>`. Limited to Patterns 1 and 4."
 - **Restriction**: If git is absent OR `worktrees: false`, limit selection to Pattern 1 or 4 (these are the only patterns that do not require writer isolation via worktrees).
+- **Architectural confirmation grill (mandatory)**: After the pattern is selected, load `sk-pipeline-grilling` via the `Skill` tool and run `GRILL(MODE=architectural, platform_profile, selected_pattern)`. It confirms the user understands the pattern/isolation/model-tier tradeoffs and surfaces every `platform_profile.degradation_warnings` entry. Do NOT advance to Phase 4 until the user acknowledges.
 
 ### PHASE 4: DESIGN & AUDIT LOOP
 - **Dispatch Architect** (profile-driven from Phase 0):
@@ -96,6 +98,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   | `model_driven` | Model-driven orchestration prompt — include `platform_profile` in the prompt context |
   | `inline` or unknown | `Skill(pipeline-architect-protocol)` → execute inline with own tools — profile already in session context |
 - **Architect output rule for agent frontmatter**: every generated agent file MUST declare `model_tier:` (one of `triage | fast | medium | deep | inherit`) and MAY declare `effort_tier:` (`low | medium | high`). The architect MUST NOT write a concrete `model:` field — that resolves at runtime via `sk-model-resolver`. For preview-only display in Phase 5, the architect MAY call `sk-model-resolver.RESOLVE` and `EMIT` against the active profile, but the resolved string is for the approval table only, never written to agent files.
+- **Hardened-brief hand-off**: The Architect dispatch payload MUST include the `hardened_brief` from Phase 2 — especially `captured_failure_modes` (the Architect designs build-time guardrails from them, per 4D Diagnose) and `pipeline_type` (the Architect uses it to decide whether generated steps may assume repo access).
 - **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
 - **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
@@ -113,7 +116,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
   1. `<scope-root>/superpipelines/pipelines/{P}/spec.md`
   2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
   3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
-  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0)
+  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0; AND `metadata.grilling = { completed: true, pipeline_type, captured_failure_modes: [...] }` from the Phase 2 hardened brief)
   5. `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Run Launcher — single-page launcher document referencing the entry skill, registry entry, topology, and last-run state. Required artifact. NOTE: on Claude Code this is a documentation/discovery file only; CC does NOT auto-register it as a `/superpipelines:{P}` slash command. On OpenCode the same artifact is auto-routed by OC's scope-aware command resolver. Cross-platform `/superpipelines:{P}` direct invocation is OC-only in v2.0.0.)
   6. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
   7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
@@ -152,6 +155,7 @@ The Pipeline Creation workflow guides an orchestrator from a raw user brief to a
 </rationalization_table>
 
 ## Reference Files
+- `sk-pipeline-grilling/SKILL.md` — Brief-hardening crawl/grill/reconcile protocol (Phase 2 and Phase 3).
 - `sk-pipeline-paths/SKILL.md` — Scope and path resolution.
 - `sk-pipeline-patterns/SKILL.md` — Topology selection tree.
 - `sk-4d-method/SKILL.md` — Brief deconstruction framework.
