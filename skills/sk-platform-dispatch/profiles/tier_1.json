@@ -2,8 +2,8 @@
   "$schema": "./profile.schema.json",
   "tier": "tier_1",
   "name": "Claude Code",
-  "profile_version": "2.0.0",
-  "model_tiers_version": "2026-05-19",
+  "profile_version": "2.1.0",
+  "model_tiers_version": "2026-05-29",
   "capabilities": {
     "subagents": true,
     "parallel_subagents": true,

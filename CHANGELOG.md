@@ -17,6 +17,27 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.1.0 — Pipeline Grilling Gate & Opus 4.8 (2026-05-29)
+
+### Added
+
+- **`sk-pipeline-grilling` skill** — a brief-hardening interrogation run during pipeline creation, adapted from the crawl/grill/reconcile protocol. `MODE=brief` runs A0 pipeline-type determination (project-embedded vs self-contained) → A1 conditional silent crawl (codebase scan only when project-embedded; registry + capability scans always run) → A2 one-question-at-a-time grill → A3 reconciliation **HARD GATE**, returning a `hardened_brief`. `MODE=architectural` runs a lighter post-pattern confirmation pass. Orchestrator-loaded (`disable-model-invocation: true`, `user-invocable: false`).
+- **`AIBOARDING.md`** — compressed agent-onboarding doc at the repo root, plus the `.aiboarding/hooks/` enforcement hooks (SessionStart / PreToolUse / PostToolUse) that keep it loaded and surface drift.
+
+### Changed
+
+- **`creating-a-pipeline` wired to the grilling gate** — Phase 2 runs `GRILL(MODE=brief)` before the 4D step and architect dispatch (returns a `hardened_brief`); Phase 3 runs `GRILL(MODE=architectural)` after pattern selection; Phase 4 threads `captured_failure_modes` + `pipeline_type` into the architect dispatch; Phase 6 stamps `topology.json metadata.grilling`. The legacy "≥3 critical slots missing" hard-gate is subsumed by the grilling exit bar and removed.
+- **`using-superpipelines`** — `sk-pipeline-grilling` added to the Reference Files list.
+- **CC deep-tier model → Opus 4.8** — `skills/sk-platform-dispatch/profiles/tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (reflected in `CLAUDE.md` and the `change-models` model catalog). `model_tiers_version` advanced to `2026-05-29` on all five tier profiles.
+- **All plugin manifests versioned at `2.1.0`** — `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (plugin entry; marketplace catalog root stays `1.0.0`), `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`, the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`), and `profile_version` on all five tier profiles.
+- **Release process** — `.claude/skills/release.md` now also tracks the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`), which was added in 2.0.1 but went untracked by the bump list.
+
+### Fixed
+
+- **Manifest version drift** — `.codex-plugin/plugin.json` and `gemini-extension.json`, left at `2.0.0` during the 2.0.1 install-fix patch, are realigned to the current plugin version.
+
+---
+
 ## 2.0.1 — Install Fixes (2026-05-26)
 
 ### Fixed

@@ -12,7 +12,7 @@ last_synced_commit: caad6ab7f19aba6b343130c92fa9b67144251f33
 
 **Run/install:** `claude plugin install github:gustavo-meilus/superpipelines`. Universal installer auto-detects 7 platforms: `install.sh` (POSIX), `install.ps1` (Win), `npx -y superpipelines-install`.
 
-**Versioning:** v2.0.1. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
+**Versioning:** v2.1.0. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
 
 **Source roots (repo root):** `agents/` (7 zero-body defs), `skills/` (~38), `commands/` (8 slash wrappers), `hooks/`. Manifests: `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`.
 
