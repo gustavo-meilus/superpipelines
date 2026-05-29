@@ -3,7 +3,7 @@
   "tier": "tier_2",
   "name": "Cursor / Windsurf / Cline",
   "profile_version": "2.1.0",
-  "model_tiers_version": "2026-05-29",
+  "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": false,
     "parallel_subagents": false,

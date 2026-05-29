@@ -28,13 +28,18 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 
 - **`creating-a-pipeline` wired to the grilling gate** — Phase 2 runs `GRILL(MODE=brief)` before the 4D step and architect dispatch (returns a `hardened_brief`); Phase 3 runs `GRILL(MODE=architectural)` after pattern selection; Phase 4 threads `captured_failure_modes` + `pipeline_type` into the architect dispatch; Phase 6 stamps `topology.json metadata.grilling`. The legacy "≥3 critical slots missing" hard-gate is subsumed by the grilling exit bar and removed.
 - **`using-superpipelines`** — `sk-pipeline-grilling` added to the Reference Files list.
-- **CC deep-tier model → Opus 4.8** — `skills/sk-platform-dispatch/profiles/tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (reflected in `CLAUDE.md` and the `change-models` model catalog). `model_tiers_version` advanced to `2026-05-29` on all five tier profiles.
+- **CC deep-tier model → Opus 4.8** — `skills/sk-platform-dispatch/profiles/tier_1.json` `deep` model `claude-opus-4-7` → `claude-opus-4-8` (reflected in `CLAUDE.md` and the `change-models` model catalog). `model_tiers_version` advanced to `2026-05-29` on the `tier_1` (Claude Code) profile — the only catalog that changed.
 - **All plugin manifests versioned at `2.1.0`** — `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (plugin entry; marketplace catalog root stays `1.0.0`), `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `gemini-extension.json`, the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`), and `profile_version` on all five tier profiles.
 - **Release process** — `.claude/skills/release.md` now also tracks the Codex marketplace subdirectory manifest (`plugins/superpipelines/.codex-plugin/plugin.json`), which was added in 2.0.1 but went untracked by the bump list.
+- **Skill authoring pass across all 34 `SKILL.md` files (#25)** — description fields restructured to a triggering-conditions-only form (sentence 1 = what it does; sentence 2 = "Use when …"); redundant `<overview>` blocks and duplicate blockquotes removed; imperative / second-person voice converted to third-person impersonal; concrete-example gaps filled (`brainstorming`, `systematic-debugging`, `sk-hashline-protocol`); time-sensitive markers removed; UTF-8 BOM + mojibake in `sk-model-migration` corrected; assorted stale-value fixes (model IDs, tier labels, the `skill-architect-protocol` ≤1536 char-limit invariant, `change-models` mode count). Net −55 lines, zero behavioral change.
 
 ### Fixed
 
 - **Manifest version drift** — `.codex-plugin/plugin.json` and `gemini-extension.json`, left at `2.0.0` during the 2.0.1 install-fix patch, are realigned to the current plugin version.
+
+### Documentation
+
+- **README** — copy update (#20), plus a note on the brief-hardening grilling gate.
 
 ---
 
