@@ -48,6 +48,17 @@ RESOLVE_SCOPE_ROOT(scope, tier):
   base = per-tier table above [tier] [scope-bucket]
   return absolute_path(base)
 
+RESOLVE_HOST_WORKSPACE():
+  // The main-worktree root, NOT a linked worktree's cwd. Artifacts and state
+  // MUST anchor here so they survive worktree teardown (issue #31).
+  common = `git rev-parse --path-format=absolute --git-common-dir`   // → <host>/.git
+  if command succeeds: return dirname(strip_trailing("/.git", common))
+  else (not a git repo): return cwd
+
+// INVARIANT: the superpipelines/temp/{P}/{runId}/ artifact + state tree ALWAYS
+// resolves under RESOLVE_HOST_WORKSPACE(), never a linked worktree path. Code
+// edits stay isolated in the worktree; coordination artifacts land on the host.
+
 PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
   if source_tier == target_tier: return artifact_path
   source_root = per-tier table[source_tier][workspace_or_user]
