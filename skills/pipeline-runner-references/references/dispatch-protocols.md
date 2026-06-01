@@ -18,9 +18,16 @@ How `running-a-pipeline` dispatches workers and reviewers per pattern. Maps the 
 ## Common dispatch shape (Claude Code)
 
 ```
+# Resolve the host-anchored artifact directory ONCE (sk-pipeline-paths.RESOLVE_HOST_WORKSPACE):
+HOST_TEMP = {RESOLVE_HOST_WORKSPACE()}/{scope_root_dir}/superpipelines/temp/{P}/{runId}
+
 Task(
   subagent_type="pipeline-task-executor",
   description="Implement T-1: {short_name}",
+  # For steps with isolation: worktree that ALSO emit artifacts, the host temp dir is
+  # OUTSIDE the worktree working dir, so acceptEdits will not auto-accept writes there.
+  # Register it so the artifact write is permitted and survives teardown (issue #31):
+  additionalDirectories=[HOST_TEMP],
   prompt="""
     Inputs:
       - task_text: <extracted from tasks.md>
@@ -28,10 +35,16 @@ Task(
       - plan_path: {ROOT}/superpipelines/pipelines/{P}/plan.md
       - project_context: <relevant files / commands>
 
-    Output: emit one of DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED with the agent's output schema.
+    Output:
+      - Write ALL artifacts to the ABSOLUTE host path: {HOST_TEMP}/<artifact-name>.
+        NEVER write artifacts to a worktree-relative path — a worktree with no tracked
+        changes is auto-cleaned by Claude Code and the artifact is lost.
+      - Emit one of DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED with the agent's output schema.
   """
 )
 ```
+
+> **Artifact retention contract.** Data-only steps OMIT `isolation` and write to `{HOST_TEMP}` directly from the parent cwd (no `additionalDirectories` needed). Worktree code-writer steps that also emit artifacts MUST receive `additionalDirectories=[HOST_TEMP]` and write artifacts to the absolute `{HOST_TEMP}` path. The orchestrator NEVER copies artifacts out of a worktree path and NEVER re-runs a step inline to reconstruct a missing artifact (see escalation.md).
 
 ## Pattern 1 — Sequential
 

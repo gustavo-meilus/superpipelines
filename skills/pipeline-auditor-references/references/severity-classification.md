@@ -22,6 +22,7 @@ Findings classified into four severity tiers.
 - Reviewer agent has `Write` or `Edit` enabled (write/review isolation broken).
 - Stage 2 dispatch without Stage 1 PASS gate.
 - Worktree destroy without commit-before-destroy step.
+- Step declares `isolation: worktree` and writes a declared output artifact to a gitignored path (e.g. `superpipelines/temp/`) without host-anchoring — Claude Code auto-cleans the no-tracked-change worktree, silently destroying the artifact (issue #31).
 
 ## SEV-1 examples
 
@@ -34,6 +35,7 @@ Findings classified into four severity tiers.
 - Missing `skills:` preload when 4D / SDD warranted.
 - Pattern 3 used without max-iterations cap.
 - `tasks.md` missing acceptance criteria for some tasks.
+- Pure data agent (reads/fetches/emits artifacts; no tracked-code writes) declares `isolation: worktree`. Unnecessary worktree overhead plus auto-teardown risk; data agents must omit `isolation` (issue #31).
 
 ## SEV-2 examples
 

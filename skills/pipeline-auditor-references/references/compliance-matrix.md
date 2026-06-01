@@ -1,6 +1,6 @@
 # Compliance Matrix — Auditor Reference
 
-28-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
+30-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
 Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 
 ## Table of contents
@@ -8,7 +8,7 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 1. Layout & registry (criteria 1–5)
 2. Frontmatter (criteria 6–11, including 10a)
 3. Topology (criteria 12–16)
-4. Runtime safety (criteria 17–22)
+4. Runtime safety (criteria 17–24)
 5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09, PR-10)
 
 ---
@@ -55,6 +55,8 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 | 20 | Cleanup contract present in entry skill | Entry skill body explicitly: (a) writes `status: completed` to `pipeline-state.json` on success, (b) deletes `temp/{P}/{runId}/` on DONE, (c) preserves temp on ESCALATED/FAILED/BLOCKED |
 | 21 | `plugin_version` present and consistent | `topology.json` has a `plugin_version` field; all agent frontmatter have `plugin_version`; registry entry has `plugin_version`. Missing → SEV-2. Mismatch between topology and agents → SEV-3 |
 | 22 | No hardcoded scope-root paths (PORTABILITY) | Entry skill, all step agents, all protocol skills, and topology.json contain no hardcoded scope-root directory names (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`) except inside comments that explicitly document `PORTABILITY_REWRITE`. **Permitted pattern:** paths MUST use the `{ROOT}` template variable resolved via `sk-pipeline-paths` at runtime. Hardcoded scope-root path outside of PORTABILITY_REWRITE documentation → SEV-1 |
+| 23 | Worktree artifact retention | No agent file in the bundle both declares `isolation: worktree` AND has its companion protocol/topology declare an output artifact under a gitignored `temp/` path without host-anchoring. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md` cross-referenced against each step's declared outputs in `topology.json`; any worktree step whose outputs resolve under `superpipelines/temp/` without a host-anchor note = FAIL (SEV-0, silent data loss — issue #31). |
+| 24 | Data agents omit isolation | Every agent that writes no tracked code (read-only / data-retrieval / artifact-only — i.e. `tools` has no `Write`/`Edit` to source paths, or the topology marks the step non-code-modifying) does NOT declare `isolation: worktree`. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md`; for each hit, confirm the step modifies tracked code per `topology.json`. A worktree on a non-code step = FAIL (SEV-1 — issue #31). |
 
 Note: Tier 1c (Antigravity) and Tier 1d (Codex) both resolve `workspace` to `.agents/` per the cross-tool open skill-path standard (`.agents/skills/` is read by both Codex and Antigravity). Pipeline state files for either tier live under `.agents/superpipelines/`; the active tier is disambiguated by which orchestrator is loaded in the workspace.
 
@@ -93,7 +95,7 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 ## How to use
 
 1. Read each target file with `Read`.
-2. Walk criteria 1–22 (including 10a) then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+2. Walk criteria 1–24 (including 10a) then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10 in order. Mark each PASS / FAIL / PARTIAL / N/A.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

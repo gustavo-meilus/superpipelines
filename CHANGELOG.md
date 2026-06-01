@@ -17,6 +17,21 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.1.1 — Worktree Artifact Safety & Fail-Fast (2026-06-01)
+
+### Fixed
+
+- **Sub-agent worktree artifact data loss + orchestrator token bleed (#31)** — a pure data-retrieval/generation agent running under `isolation: worktree` that wrote its artifact only to the gitignored `superpipelines/temp/` tree made zero tracked changes, so Claude Code auto-cleaned the worktree on teardown and destroyed the only copy. The orchestrator's manual copy-back then hit `cannot stat` and re-ran the entire subagent protocol **inline in the root session**, flooding the main context window. Four coordinated changes:
+  - **(B, primary) Data agents omit `isolation`** — the architect (`creating-a-pipeline` Phase 4) now classifies each step by a tracked-code-write test: code-modifying → `isolation: worktree`; read-only / data-emitting → omit the field (runs in the parent's host cwd). Documented in `agent-frontmatter-schema` and `sk-pipeline-patterns`; CC corrects an earlier prescription of the non-existent `isolation: none`.
+  - **(A) Host-anchored artifacts** — `sk-pipeline-paths` adds `RESOLVE_HOST_WORKSPACE()` (resolves the main-worktree root via `git rev-parse --git-common-dir`); worktree code-writers that also emit artifacts write to the host temp path, registered in the subagent's `additionalDirectories`. The fragile post-DONE copy-back is deleted.
+  - **(C) Runner fail-fast** — `running-a-pipeline` treats a `DONE` with a missing declared artifact as a hard `BLOCKED` escalation naming the missing path and producing step; inline re-execution is explicitly forbidden (`escalation.md` anti-pattern).
+  - **(D) Auditor detection** — `pipeline-auditor` gains criterion #23 (SEV-0: worktree step with gitignored output, no host-anchor) and #24 (SEV-1: data agent carrying unnecessary `isolation: worktree`); runs on `/audit-steps` and the post-mutation auto-audit.
+- **Live flaw in shipped examples** — the CC `parity-test-b` example agents (`analyzer`, `reporter`, `reviewer`) were carrying `isolation: worktree` as pure data agents; corrected to omit it as the canonical reference configuration.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-01-worktree-artifact-safety-design.md` and `docs/superpowers/plans/2026-06-01-worktree-artifact-safety.md`.
+
 ## 2.1.0 — Pipeline Grilling Gate & Opus 4.8 (2026-05-29)
 
 ### Added

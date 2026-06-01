@@ -3,8 +3,29 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.0 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, and the brief-hardening grilling gate introduced in v2.1.0.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.1 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, and the worktree artifact-safety hardening introduced in v2.1.1.
 </overview>
+
+## v2.1.1 — Worktree Artifact Safety & Fail-Fast (2026-06-01)
+
+Closes a sub-agent worktree isolation flaw (#31) that silently destroyed artifacts written to gitignored paths and triggered catastrophic orchestrator token bleed via inline re-execution. The fix reclassifies data agents to omit worktree isolation, host-anchors artifacts for legitimate code-writers, makes the runner fail-fast on missing artifacts, and adds auditor detection so new pipelines cannot ship the flaw.
+
+<release_entry version="2.1.1" status="STABLE">
+
+### Fixed
+
+- **Sub-agent worktree artifact data loss + orchestrator token bleed (#31)** — a pure data agent under `isolation: worktree` writing only to the gitignored `superpipelines/temp/` tree made zero tracked changes, so Claude Code auto-cleaned the worktree on teardown and destroyed the only copy of the artifact; the orchestrator's copy-back then failed and re-ran the entire subagent protocol **inline in the root session**, flooding the main context window. Resolved by four coordinated changes:
+  - **(B, primary)** Data/artifact-only agents **omit `isolation`** and run in the parent host cwd. The architect (`creating-a-pipeline` Phase 4) classifies each step by a tracked-code-write test; only code-modifying steps get `isolation: worktree`. Documented in `agent-frontmatter-schema` and `sk-pipeline-patterns`. Corrects an earlier prescription of the non-existent `isolation: none` value.
+  - **(A)** Host-anchored artifacts — `sk-pipeline-paths` adds `RESOLVE_HOST_WORKSPACE()` (main-worktree root via `git rev-parse --git-common-dir`); worktree code-writers that emit artifacts write to the host temp path registered in `additionalDirectories`, and the fragile post-DONE copy-back is removed.
+  - **(C)** Runner fail-fast — a `DONE` with a missing declared artifact is a hard `BLOCKED` escalation; inline re-execution is explicitly forbidden (`escalation.md` anti-pattern).
+  - **(D)** Auditor detection — `pipeline-auditor` criterion #23 (SEV-0: worktree step with gitignored output, no host-anchor) and #24 (SEV-1: data agent carrying unnecessary `isolation: worktree`), enforced on `/audit-steps` and the post-mutation auto-audit.
+- **Live flaw in shipped examples** — the CC `parity-test-b` example agents (`analyzer`, `reporter`, `reviewer`) carried `isolation: worktree` as pure data agents; corrected to the canonical omit-isolation reference configuration.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-01-worktree-artifact-safety-design.md` and `docs/superpowers/plans/2026-06-01-worktree-artifact-safety.md`.
+
+</release_entry>
 
 ## v2.1.0 — Pipeline Grilling Gate & Opus 4.8 (2026-05-29)
 

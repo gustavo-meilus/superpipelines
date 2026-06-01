@@ -7,10 +7,11 @@ When and how `running-a-pipeline` escalates to a human. Two main triggers: Patte
 1. Pattern 3 escalation triggers
 2. What escalation looks like
 3. `BLOCKED` status escalation
-4. Worktree handling on escalation
-5. Pattern 4 fallback
-6. Reporting to user
-7. Red Flags — STOP
+4. Missing-artifact fail-fast
+5. Worktree handling on escalation
+6. Pattern 4 fallback
+7. Reporting to user
+8. Red Flags — STOP
 
 ---
 
@@ -89,6 +90,21 @@ Track which step has been tried in `metadata.blocked_resolution_attempts`:
 
 After step 4 escalation, surface to user with the full attempt history.
 
+## Missing-artifact fail-fast
+
+A subagent that returns `DONE` but whose declared output artifact is absent is a hard failure (issue #31). The artifact is verified at its host-anchored path; a missing artifact most often means the step ran with `isolation: worktree` and wrote to a worktree-relative path that Claude Code auto-cleaned.
+
+```
+on DONE | DONE_WITH_CONCERNS:
+  for artifact in step.declared_outputs:
+    if not exists(HOST_TEMP/artifact):
+      escalate(reason="missing artifact after DONE",
+               missing=HOST_TEMP/artifact, step=step.id)
+      # FORBIDDEN: cp from worktree path; re-run protocol inline.
+```
+
+Remediation surfaced to the user: re-scaffold the step to OMIT `isolation` (data agents) or to write to the absolute host path (worktree code-writers) per the artifact retention contract in `dispatch-protocols.md`.
+
 ## Worktree handling on escalation
 
 `sk-worktree-safety` Step 4 still applies. Before any cleanup:
@@ -128,3 +144,4 @@ Escalation messages must include:
 - "One more iteration should do it" → STOP. The escalation triggers exist precisely to prevent this. Trust the protocol.
 - "Let me silently re-dispatch with a different prompt" → NO. Re-dispatch counts as a new iteration; honor the cap.
 - "I'll skip the worktree commit, the failure is the user's problem" → STOP. `WORKTREE_MERGE_REQUIRED: TRUE` applies even on escalation. Commit, then preserve.
+- "The artifact's missing, I'll just re-run the agent's work inline myself" → STOP. Inline reconstruction = token bleed (issue #31). Escalate with the missing path; never run a step's protocol in the root session.
