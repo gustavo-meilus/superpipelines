@@ -36,19 +36,19 @@ Four coordinated changes. **B is the primary fix**; A is the narrower code-modif
 
 | # | Change | File(s) | Fixes |
 |---|--------|---------|-------|
-| B | **`isolation: none` for data/artifact-only agents** (primary) | agent-frontmatter-schema, `creating-a-pipeline` Phase 4, `sk-pipeline-patterns`, parity-test examples | Eliminates the data-loss class entirely |
+| B | **Omit `isolation` for data/artifact-only agents** (primary) | agent-frontmatter-schema, `creating-a-pipeline` Phase 4, `sk-pipeline-patterns`, parity-test examples | Eliminates the data-loss class entirely |
 | A | **Host-anchored artifact paths + `additionalDirectories`** | `sk-pipeline-paths`, dispatch-protocols, `running-a-pipeline` | Code-modifying worktree steps that also emit artifacts |
 | C | **Runner fail-fast (no inline fallback)** | `running-a-pipeline`, `pipeline-runner-references/escalation.md` | Token bleed |
 | D | **Auditor detection rule** | `pipeline-auditor-references/severity-classification.md`, auditor checklist | Owner's comment — prevents new flawed pipelines |
 
-### Component B — `isolation: none` for data/artifact-only agents (primary)
+### Component B — Omit `isolation` for data/artifact-only agents (primary)
 
-Pure data-retrieval/generation agents (read sources, fetch, write a coordination artifact, modify **no tracked code**) MUST NOT use `isolation: worktree`. Without isolation they run in the parent's cwd (the host workspace), write artifacts to the shared host filesystem, and there is no worktree teardown to destroy anything and no copy-back to fail.
+Pure data-retrieval/generation agents (read sources, fetch, write a coordination artifact, modify **no tracked code**) MUST NOT use `isolation: worktree`. They run in the parent's cwd (the host workspace) by omitting the field entirely, write artifacts to the shared host filesystem, and there is no worktree teardown to destroy anything and no copy-back to fail.
 
-- **Agent frontmatter schema** (`pipeline-architect-references/agent-frontmatter-schema.md`): document `isolation: none` as an explicit value alongside `worktree`/omit. Field-rules note: *"`worktree` only for steps that modify tracked code under Patterns 2/3/5. Data-retrieval/generation agents (no tracked-code writes) MUST use `none` — a worktree with no tracked changes is auto-cleaned by Claude Code, destroying any gitignored artifact it produced."*
-- **Architect (`creating-a-pipeline` Phase 4)**: when assigning isolation, classify each step. Code-modifying → `worktree`; read-only / data-emitting → `none`.
+- **Agent frontmatter schema** (`pipeline-architect-references/agent-frontmatter-schema.md`): document that pure data agents **omit** the `isolation` field entirely. Field-rules note: *"`worktree` ONLY for steps that modify tracked code under Patterns 2/2b/3/5. Data-retrieval/generation agents (no tracked-code writes) MUST omit `isolation` — CC defines only `worktree`; omission runs the subagent in the parent's host cwd. A worktree with no tracked changes is auto-cleaned by Claude Code, destroying any gitignored artifact it produced."*
+- **Architect (`creating-a-pipeline` Phase 4)**: when assigning isolation, classify each step. Code-modifying → `isolation: worktree`; read-only / data-emitting → omit the field.
 - **`sk-pipeline-patterns`**: clarify that the Pattern 2/3/5 worktree mandate applies to **code-writer isolation**, not to data/coordination steps within those patterns.
-- **parity-test example pipelines**: the reader/analyzer/reporter/summarizer agents are the reference case — set `isolation: none` on each as the canonical example of correct data-agent configuration.
+- **parity-test example pipelines**: the reader/analyzer/reporter/summarizer agents are the reference case — omit `isolation` on each as the canonical example of correct data-agent configuration.
 
 ### Component A — Host-anchored artifact paths + additional directories
 
@@ -81,7 +81,7 @@ For steps that **do** modify tracked code under Patterns 2/3/5 but also emit a c
 
 ## Data flow (after fix)
 
-**Data agent (Component B):** orchestrator dispatches with `isolation: none` → agent runs in host cwd → writes artifact to `<host>/.claude/superpipelines/temp/{P}/{runId}/…` → returns DONE summary → orchestrator reads artifact from the shared host path. No worktree, no copy-back, no teardown.
+**Data agent (Component B):** orchestrator dispatches without `isolation` → agent runs in host cwd → writes artifact to `<host>/.claude/superpipelines/temp/{P}/{runId}/…` → returns DONE summary → orchestrator reads artifact from the shared host path. No worktree, no copy-back, no teardown.
 
 **Code-modifying worktree agent (Component A):** orchestrator resolves host temp path, registers it in `additionalDirectories`, dispatches with `isolation: worktree` + injected absolute artifact path → agent edits tracked code in worktree (merged back by CC) AND writes artifact to host temp path → returns DONE → orchestrator reads artifact from host. No copy-back.
 
@@ -92,7 +92,7 @@ For steps that **do** modify tracked code under Patterns 2/3/5 but also emit a c
 No automated framework (CI validates JSON manifests + required files only); validation is manual per `PARITY_TESTING: MANUAL_PHASE1`:
 
 1. Dry-run a Pattern 2/3/5 pipeline with a worktree code-writer that emits an artifact; confirm the artifact persists on the host after teardown and no copy-back runs.
-2. Dry-run a data-agent pipeline (`isolation: none`); confirm artifact lands on host with no worktree created.
+2. Dry-run a data-agent pipeline (`isolation` omitted); confirm artifact lands on host with no worktree created.
 3. Run `/audit-steps` against a deliberately-flawed step (`isolation: worktree` + gitignored output, no host-anchor); confirm SEV-0 fires with cited evidence; confirm SEV-1 fires for an unnecessary-worktree data agent.
 4. Self-review the four edited skills via `/audit-steps` for authoring-rule compliance (≤500 lines, third-person voice, ToC on references >100 lines).
 

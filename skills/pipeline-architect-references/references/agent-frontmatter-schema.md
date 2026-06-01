@@ -24,7 +24,11 @@ skills:                                       # sk-* method skills + ONE compani
 mcpServers:
   - server-name
 background: false
-isolation: worktree                           # Patterns 2/2b/3/5
+isolation: worktree                           # ONLY for steps that modify tracked code under Patterns 2/2b/3/5.
+                                                  # OMIT for data-retrieval/generation agents (no tracked-code writes):
+                                                  # a worktree with no tracked changes is auto-cleaned by Claude Code,
+                                                  # destroying any gitignored artifact the agent produced.
+                                                  # Worktrees branch from the DEFAULT branch, not the parent HEAD.
 ---
 ```
 
@@ -45,7 +49,7 @@ isolation: worktree                           # Patterns 2/2b/3/5
 | `permissionMode` | optional | `acceptEdits` for implementation agents; `plan` for analysis-only; omit or `default` for standard. `bypassPermissions` requires inline justification in the companion `{name}-protocol` skill. |
 | `memory` | optional | `local` for agents persisting learned heuristics. Omit (= `none`) for stateless agents. NEVER `project`. |
 | `skills` | recommended | `sk-*` method skills plus the ONE companion `{agent-name}-protocol` skill. Never large workflow skills. Never `*-references` skills. |
-| `isolation` | conditional | `worktree` for parallel/iterative patterns. Omit for read-only analysis. |
+| `isolation` | conditional | `worktree` ONLY for steps that modify tracked code under Patterns 2/2b/3/5. OMIT for any agent that does not write tracked code (read-only analysis AND data-retrieval/generation agents that only emit coordination artifacts). A worktree with no tracked changes is auto-cleaned by Claude Code, destroying gitignored artifacts; and worktrees branch from the default branch, not the parent HEAD. |
 | `background` | optional | `true` only for fire-and-forget observers. Default `false`. |
 
 ## NEVER use
