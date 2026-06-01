@@ -1,6 +1,7 @@
 ---
 name: adding-a-pipeline-step
 description: Inserts a new step, capability, or agent into an existing named pipeline topology. Use when the user requests expanding a workflow with a new step or invokes /superpipelines:new-step.
+user-invocable: false
 ---
 
 # Adding a Pipeline Step — Mutation Workflow

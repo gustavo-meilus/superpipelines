@@ -1,6 +1,7 @@
 ---
 name: creating-a-pipeline
 description: Orchestrates design and scaffolding of a new named multi-agent pipeline from a user brief to an approved, runnable bundle. Use when the user asks to design a pipeline, build a workflow for a task, plan multi-step feature work, or invokes /superpipelines:new-pipeline.
+user-invocable: false
 ---
 
 # Creating a Pipeline — Scaffolding Workflow

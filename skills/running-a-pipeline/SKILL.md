@@ -1,6 +1,7 @@
 ---
 name: running-a-pipeline
 description: Registry-driven pipeline launcher for Superpipelines. Use when the user asks to run a pipeline, execute a workflow, list available pipelines, or invokes /superpipelines:run-pipeline.
+user-invocable: false
 ---
 
 # Running a Pipeline — Execution Workflow
