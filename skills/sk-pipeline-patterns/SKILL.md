@@ -28,7 +28,7 @@ user-invocable: false
 | **6. 4D Method** | Wrapper (Internal) | N/A | none | Every agent turn within any other pattern. |
 </pattern_matrix>
 
-**Q7 capability gating:** A pattern's worktree requirement is about correctness (writer isolation), not just parallelism. "Degrades to sequential" hides this — degrading scope is fine; degrading isolation is not. Selecting Pattern 2, 3, or 5 on a platform with `worktrees: false` produces multi-writer file collisions across iterations or parallel branches.
+**Q7 capability gating:** A pattern's worktree requirement is about correctness (writer isolation), not just parallelism. "Degrades to sequential" hides this — degrading scope is fine; degrading isolation is not. Selecting Pattern 2, 3, or 5 on a platform with `worktrees: false` produces multi-writer file collisions across iterations or parallel branches. The worktree requirement binds **code-writer** steps only: data-retrieval/generation steps within a worktree pattern still OMIT `isolation` (a no-tracked-change worktree is auto-cleaned, losing gitignored artifacts — issue #31).
 
 ## Pattern 3 — Iterative Loop Protocol
 
