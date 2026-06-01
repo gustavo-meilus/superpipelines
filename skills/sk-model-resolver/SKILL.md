@@ -1,7 +1,6 @@
 ---
 name: sk-model-resolver
 description: Resolves agent `model_tier:` declarations into concrete platform-specific model strings and effort values via a 5-layer precedence chain, returning a serializable `resolved` object for dispatch. Use when `running-a-pipeline` Phase 0.45 needs to determine the concrete model + effort for each pipeline step on the active platform before dispatch.
-disable-model-invocation: true
 user-invocable: false
 ---
 
