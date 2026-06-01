@@ -7,9 +7,8 @@ model_tier: medium
 effort_tier: medium
 maxTurns: 15
 version: "1.0.0"
-plugin_version: "2.0.0"
+plugin_version: "2.1.0"
 permissionMode: plan
-isolation: worktree
 skills:
   - reviewer-protocol
 ---
