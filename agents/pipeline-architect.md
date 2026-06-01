@@ -6,7 +6,7 @@ model_tier: deep
 effort_tier: medium
 maxTurns: 40
 version: "3.0"
-permissionMode: plan
+permissionMode: acceptEdits
 skills:
   - sk-4d-method
   - sk-spec-driven-development
