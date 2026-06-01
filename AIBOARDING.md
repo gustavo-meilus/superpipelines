@@ -1,7 +1,7 @@
 ---
 aiboarding_version: 1
 generated: 2026-05-29
-last_synced_commit: caad6ab7f19aba6b343130c92fa9b67144251f33
+last_synced_commit: 68b10e17127e3ad81818e82cf71638fa45c6e260
 ---
 
 # 1. Engineering Basics
@@ -26,7 +26,7 @@ last_synced_commit: caad6ab7f19aba6b343130c92fa9b67144251f33
 
 **6 exec patterns:** Sequential, Parallel Fan-Out, Iterative Loop (cap 3 iter), Human-Gated, Spec-Driven Dev, 4D Wrapper.
 
-**Skill primacy:** intelligence lives in `SKILL.md`. Agents zero-body (frontmatter only). Each agent has companion `{agent}-protocol/SKILL.md` (full protocol; `disable-model-invocation: true`, `user-invocable: false`). `*-references/` dirs omit SKILL.md -> not preloaded, load on demand.
+**Skill primacy:** intelligence lives in `SKILL.md`. Agents zero-body (frontmatter only). Each agent has companion `{agent}-protocol/SKILL.md` (full protocol; `disable-model-invocation: true`, `user-invocable: false`). `*-references/` dirs omit SKILL.md -> not preloaded, load on demand. **Invocation-flag trap:** `disable-model-invocation: true` blocks Skill-tool (model) load — use ONLY on `{agent}-protocol` skills. Utility skills loaded programmatically (`sk-model-resolver` via running-a-pipeline) + orchestration skills with a `commands/` wrapper use `user-invocable: false` ALONE (hides from `/` menu, stays Skill-tool-loadable). `disable-model-invocation` on a Skill-tool-loaded skill = runtime block.
 
 **Key skills:** `using-superpipelines` (router), `creating-a-pipeline`/`running-a-pipeline`, `sk-platform-dispatch` (tier detect + dispatch), `sk-model-resolver` (5-layer model precedence), `sk-pipeline-paths` (scope roots), `sk-pipeline-grilling` (brief-hardening crawl/grill/reconcile), `sk-spec-driven-development`, `sk-4d-method`.
 
