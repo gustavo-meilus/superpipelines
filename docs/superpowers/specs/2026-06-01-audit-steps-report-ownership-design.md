@@ -72,6 +72,8 @@ The spec states the **contract behavior** ("ensure the directory exists"), not a
 - Change `agents/pipeline-architect.md:9` `permissionMode: plan` → `permissionMode: acceptEdits`, matching its `tools:` allowlist and DELIVER protocol (mirrors `pipeline-task-executor`, the other file-producer).
 - Correct the authoring rule at `pipeline-architect-protocol/SKILL.md:89` so it no longer prescribes `plan` for architects. New intent: `permissionMode: plan` for **read-only/advisory** agents (reviewers, auditor, failure-analyzer); `acceptEdits` for **file-producing** agents (architect, task-executor). Reviewers keep `plan`.
 
+**Implementation note (scope expansion during code-quality review):** the Stage-2 review surfaced that `skill-architect` — the 7th agent, missed by the original six-agent sweep — is also a file-producer (`tools: …Write, Edit…`, protocol creates `SKILL.md` files) that was still on `permissionMode: plan`: the identical defect. It was folded into Component 3 (flipped to `acceptEdits`), and the authoring rule was generalized to be capability-based rather than an enumerated list, now naming `architect, skill-architect, task-executor` as file-producers. All 7 agents are now consistent.
+
 This is the minimal change that removes the contradiction without altering any clean agent.
 
 ## Out of Scope (deferred follow-ups)
