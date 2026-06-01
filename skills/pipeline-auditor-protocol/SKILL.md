@@ -43,7 +43,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 
 ### 3. REPORT
 - The auditor is read-only (`disallowedTools: Write, Edit, Bash`) and NEVER writes the report file or mutates `registry.json`. Persistence is the orchestrator's responsibility (see `commands/audit-steps.md` REPORTING).
-- Render the full report per `references/audit-report-template.md` as terminal output, and emit it inline together with the executive summary.
+- Render the full report per `references/audit-report-template.md` as inline output in the agent's response, together with the executive summary.
 - Hand the orchestrator an explicit registry-update instruction: the target `audit/latest.md` path and the `last_audit` timestamp value to record.
 - Record every audit, even those with zero findings.
 

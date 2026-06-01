@@ -6,7 +6,7 @@ model_tier: medium
 effort_tier: high
 maxTurns: 30
 version: "2.0"
-permissionMode: plan
+permissionMode: acceptEdits
 skills:
   - sk-4d-method
   - sk-claude-code-conventions
