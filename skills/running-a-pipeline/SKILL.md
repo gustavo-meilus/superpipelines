@@ -258,6 +258,13 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 
 <HARD-GATE>Entry-skill inputs (e.g., `$TOPIC`, `$LANGUAGE`, free-form prompts that the entry skill declares in its body) MUST NOT be collected before Phase 3. The orchestrator MUST complete Phases 0, 0.25, 0.4, 0.45, 0.5, 0.6, 1, and 2 in that order before reading any entry-skill `## 1. Initialization`-style requirements. Premature input collection (e.g., asking for a topic between 0.25 and 0.4) is a phase-ordering violation — it commits the user to inputs on un-migrated, un-resolved, or portability-defective state. The only inputs collected pre-Phase-3 are (a) pipeline selection (Phase 0) and (b) confirmations explicitly required by Phases 0.5/0.6 advisories.</HARD-GATE>
 
+<HARD-GATE>
+**Missing-artifact fail-fast (#31).** After any subagent returns `DONE` / `DONE_WITH_CONCERNS`, the orchestrator MUST verify each declared output artifact exists at its host-anchored path (sk-pipeline-paths `RESOLVE_HOST_WORKSPACE`). If a declared artifact is ABSENT:
+- Treat it as a hard failure equivalent to `BLOCKED`. Do NOT proceed.
+- Surface a `BLOCKED`-style escalation naming the missing artifact path and the producing step.
+- The orchestrator MUST NOT copy artifacts out of a worktree path, and MUST NOT execute the subagent's protocol inline in the root session to reconstruct the artifact. Inline reconstruction floods the root context with raw tool output (token bleed) and is forbidden.
+</HARD-GATE>
+
 - Invoke the pipeline's entry skill (`run-{P}`).
 - **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.runtime_tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
 - **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
