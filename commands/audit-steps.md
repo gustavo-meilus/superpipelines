@@ -28,9 +28,11 @@ argument-hint: [pipeline-name | --all | path/glob]
 
 ### 3. REPORTING
 - Classify all findings by severity (SEV-0 to SEV-3).
-- Write the report to `<scope-root>/superpipelines/pipelines/{P}/audit/latest.md`.
-- Update the `last_audit` timestamp in `registry.json`.
-- Present the executive summary inline to the user.
+- The auditor is read-only and never persists; the orchestrator owns persistence, in order:
+  1. Ensure `<scope-root>/superpipelines/pipelines/{P}/audit/` exists, creating it if missing (idempotent — no-op if present). This MUST precede the write so a fresh pipeline's first audit cannot fail on a missing directory.
+  2. Write the auditor's rendered report to `audit/latest.md`.
+  3. Update the `last_audit` timestamp in `registry.json` per the auditor's instruction.
+- Present the executive summary inline to the user. If the write fails after the directory is ensured, surface the error and the inline summary so findings are never lost.
 </protocol>
 
 <invariants>

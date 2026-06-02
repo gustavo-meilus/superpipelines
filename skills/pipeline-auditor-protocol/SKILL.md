@@ -42,8 +42,9 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 
 ### 3. REPORT
-- Write the final report to `{ROOT}/.../audit/latest.md` using the template in `references/audit-report-template.md`.
-- Emit an executive summary inline. If `Write` tools are disallowed, provide the registry update instruction as a plan.
+- The auditor is read-only (`disallowedTools: Write, Edit, Bash`) and NEVER writes the report file or mutates `registry.json`. Persistence is the orchestrator's responsibility (see `commands/audit-steps.md` REPORTING).
+- Render the full report per `references/audit-report-template.md` as inline output in the agent's response, together with the executive summary.
+- Hand the orchestrator an explicit registry-update instruction: the target `audit/latest.md` path and the `last_audit` timestamp value to record.
 - Record every audit, even those with zero findings.
 
 ### 4. FIX ROUTING
