@@ -299,6 +299,7 @@ This gate is best-effort prose: at Tier 1 the orchestrator is the model, so ther
 
 ### PHASE 4: COMPLETION & CLEANUP
 - Read final state from `pipeline-state.json`.
+- **Defensive finalization backstop (E.a).** The entry skill is the primary finalizer (compliance criterion #20: it writes `status: completed` on success). As a backstop only: IF the state shows EVERY topology step with `status == "completed"` (or `phases[*].status` all `completed`) BUT the top-level `status != "completed"`, the orchestrator MUST stamp `status: "completed"` via the atomic write BEFORE evaluating cleanup below. This recovers already-created pipelines whose entry skill predates the criterion #20 contract, so a fully-finished run is never left labeled `running` to confuse the next Phase 1 resume scan. Do NOT stamp `completed` if any step is `pending`/`running`/`failed`. (Shares the same `all-steps-completed → atomic stamp` predicate as the Phase 1 finalize option in Task 5.)
 - **Status: `completed`**: Delete the temporary run directory and summarize outputs.
 - **Status: `escalated/failed`**: **PRESERVE** the temporary directory and state path for debugging and recovery.
 </protocol>
