@@ -274,10 +274,14 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 <HARD-GATE>Entry-skill inputs (e.g., `$TOPIC`, `$LANGUAGE`, free-form prompts that the entry skill declares in its body) MUST NOT be collected before Phase 3. The orchestrator MUST complete Phases 0, 0.25, 0.4, 0.45, 0.5, 0.6, 1, and 2 in that order before reading any entry-skill `## 1. Initialization`-style requirements. Premature input collection (e.g., asking for a topic between 0.25 and 0.4) is a phase-ordering violation — it commits the user to inputs on un-migrated, un-resolved, or portability-defective state. The only inputs collected pre-Phase-3 are (a) pipeline selection (Phase 0) and (b) confirmations explicitly required by Phases 0.5/0.6 advisories.</HARD-GATE>
 
 <HARD-GATE>
-**Missing-artifact fail-fast (#31).** After any subagent returns `DONE` / `DONE_WITH_CONCERNS`, the orchestrator MUST verify each declared output artifact exists at its host-anchored path (sk-pipeline-paths `RESOLVE_HOST_WORKSPACE`). If a declared artifact is ABSENT:
-- Treat it as a hard failure equivalent to `BLOCKED`. Do NOT proceed.
-- Surface a `BLOCKED`-style escalation naming the missing artifact path and the producing step.
-- The orchestrator MUST NOT copy artifacts out of a worktree path, and MUST NOT execute the subagent's protocol inline in the root session to reconstruct the artifact. Inline reconstruction floods the root context with raw tool output (token bleed) and is forbidden.
+**Missing-artifact fail-fast (#31).** After any subagent returns `DONE` / `DONE_WITH_CONCERNS`, the orchestrator MUST verify each declared output artifact exists at its host-anchored path (sk-pipeline-paths `RESOLVE_HOST_WORKSPACE`). If a declared artifact is ABSENT, the orchestrator MUST, in order:
+1. STOP. Treat it as a hard failure equivalent to `BLOCKED`. Do NOT proceed to the next step under any circumstance.
+2. NOT read, copy, move, or otherwise touch any file under a worktree path to recover the artifact. There is no exception — copy-back from a worktree is forbidden even if the worktree still exists and the file is visibly present.
+3. NOT re-dispatch the step, retry the agent, or execute the subagent's protocol inline in the root session to reconstruct the artifact. Re-running floods the root context with raw tool output (token bleed) and is forbidden.
+4. Surface a `BLOCKED` escalation naming the missing artifact path and the producing step.
+5. **Diagnostic redirect:** IF the producing agent's frontmatter declares `isolation: worktree`, the BLOCKED message MUST additionally state that the cause is worktree artifact-loss (#31) and instruct: "Run `/superpipelines:audit-steps {P}` to apply the checkpointed fix (Fix 11), then re-launch."
+
+This gate is best-effort prose: at Tier 1 the orchestrator is the model, so there is no structural enforcement. Phase 0.7 is the primary defense; this gate is the runtime backstop for any deviation the tripwire did not arm on.
 </HARD-GATE>
 
 - Invoke the pipeline's entry skill (`run-{P}`).
@@ -321,6 +325,8 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - "The inline path skips LOAD_PREFS because the Skill tool is absent." → **STOP**. ADR-0002: pref-file read is independent of Skill-tool availability. Always attempt LOAD_PREFS; degrade only on file-read failure.
 - "`sk-platform-dispatch` threw `DisableModelInvocation`, so I fell through to INLINE-DETECT()." → **STOP**. `DisableModelInvocation` means the skill requires direct file execution, not that it is absent. Read the skill file and run DETECT() inline — do NOT fall through to INLINE-DETECT(). On machines with `agy` installed but `CLAUDE_CODE` env var unset, INLINE-DETECT() returns `tier_1c` while the active runtime is `tier_1`.
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
+- "The artifact is right there in the worktree, I'll just copy it back." → **STOP**. Fail-fast gate step 2: copy-back from a worktree is forbidden, no exceptions. A missing declared artifact is `BLOCKED`. If the producer has `isolation: worktree`, redirect to `/superpipelines:audit-steps {P}` (Fix 11).
+- "The artifact is missing, I'll just re-run the agent once." → **STOP**. Fail-fast gate step 3: re-dispatch/inline reconstruction causes the exact token bleed this gate exists to prevent. Escalate `BLOCKED`.
 
 ## Rationalization Table
 
@@ -335,6 +341,8 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 | "The inline path can't check prefs — the Skill tool is absent." | Pref-file read is independent of Skill-tool availability (ADR-0002). Always attempt LOAD_PREFS; skip only on file-read failure. |
 | "Collecting topic up-front shortens the perceived wait." | Phase ordering exists to prevent input commitment on un-migrated / un-validated state. UX optimization is the wrong axis. |
 | "DisableModelInvocation → fall through to INLINE-DETECT()." | Wrong fallback. DisableModelInvocation means inline execution required, not plugin absent. Read the skill file; execute DETECT() inline; it has the Task-tool probe INLINE-DETECT() lacks. |
+| "Copying the artifact out of the worktree is faster than blocking." | Forbidden by the #31 fail-fast gate. Copy-back masks a definition defect (data agent in a worktree) that recurs every run. Block and route to `/audit-steps` Fix 11. |
+| "One re-dispatch to regenerate the missing artifact is cheap." | It is the token-bleed failure mode (#31): a worktree data agent will lose the artifact again. Re-running N times costs N×. Block; fix the definition. |
 </rationalization_table>
 
 ## Reference Files
