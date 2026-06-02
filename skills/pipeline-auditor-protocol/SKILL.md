@@ -37,7 +37,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - **SCOPE-WIDE**: Iterate through all scope roots and registered pipelines.
 
 ### 2. AUDIT
-- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–22 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07 per ADR-0001 and ADR-0002).
+- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–24 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07..PR-10 per ADR-0001 and ADR-0002).
 - **Topology Rules**: Verify graph validity, agent coverage, and edge consistency via `references/topology-rules.md`.
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 
