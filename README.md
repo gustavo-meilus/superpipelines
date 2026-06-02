@@ -1,6 +1,6 @@
 # Superpipelines: Multi-Agent Orchestration Across AI Coding Platforms
 
-Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. As of v2.0.0, the same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, Cline, and Antigravity CLI 2.0.
+Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. As of v2.1.3, the same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, Cline, and Antigravity CLI 2.0, with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
@@ -124,7 +124,7 @@ The framework selects the optimal pattern based on task complexity:
 | `/superpipelines:new-step` | Adds a new step to an existing named pipeline. |
 | `/superpipelines:update-step` | Modifies an existing step within a named pipeline. |
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
-| `/superpipelines:audit-steps` | Audits agents and skills against the v2 compliance matrix. |
+| `/superpipelines:audit-steps` | Audits agents and skills against the compliance matrix; applies checkpointed fixes (incl. Fix 11 for worktree artifact-loss). |
 | `/superpipelines:change-models` | Sets, changes, or audits per-agent model-tier preferences. |
 | `/superpipelines:init-deep` | Generates hierarchical `PIPELINE-CONTEXT.md` maps for localized, token-efficient context. |
 
