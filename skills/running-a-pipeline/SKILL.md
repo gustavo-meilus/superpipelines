@@ -240,6 +240,64 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
   - **Q5 state-file path rewrite**: When a state file is being resumed from a foreign scope root (Phase 1 detected a cross-tier resume target), ALL absolute path fields in the state file MUST be revalidated against the active `platform_profile.scope_root`. Apply `PORTABILITY_REWRITE` to each path field stamped in the state file (e.g., entries referencing `<source_scope_root>/...`). The rewrite is in-memory only — the on-disk state file is NOT moved (preserves audit trail showing where the original run lived). Subsequent state-file reads use the rewritten paths. Update `metadata.runtime_tier` and append the cross-tier transition to `metadata.tier_changes` per Phase 1.
   - **Q7 pattern-vs-worktrees abort**: IF the loaded pipeline's `topology.pattern` is in `{2, 3, 5}` AND `platform_profile.capabilities.worktrees == false`: HARD-ABORT, do NOT prompt for advisory proceed. Emit: `"❌ Pattern {N} requires worktrees for writer isolation. The active platform '{name}' has worktrees: false. Running this pipeline here would corrupt state via multi-writer file collisions across iterations or parallel branches. Options: [Abort] [Re-scaffold on a worktrees-capable tier]"`. This is NOT a degrading-to-sequential case — degrading scope is fine; degrading isolation is a correctness regression.
 
+### PHASE 0.7 — PRE-RUN SAFETY TRIPWIRE
+
+> A cheap, inline, read-only fast-path subset of the auditor — NOT a
+> reimplementation of the compliance matrix. `pipeline-auditor` remains the
+> single source of truth (`DEPENDENCY_INVERSION`). The tripwire only pre-checks
+> the genuinely run-breaking artifact-loss class so a doomed launch is refused
+> before any dispatch. Its verdict MUST match what `/superpipelines:audit-steps`
+> would conclude for criteria #23/#24.
+
+- **Inputs (named explicitly — do not assume earlier phases left them free):**
+  the tripwire performs a cheap **single `topology.json` read** (for each step's
+  `outputs`) **plus an agent `isolation` frontmatter scan**, reusing in-context
+  data from Phases 0.4/0.45 when available. This is low cost, not "zero cost".
+- **Arming condition (version-conditioned):** Compute `armed` =
+  (`pipeline.plugin_version` is ABSENT) OR (semver `pipeline.plugin_version` <
+  semver `installed_version`), comparing FULL `major.minor.patch` (independent of
+  Phase 0.5's major-only advisory). `pipeline.plugin_version` and
+  `installed_version` are the SAME single values already resolved in Phase 0.5
+  (`pipeline.plugin_version` via the registry-entry→`topology.json` fallback;
+  `installed_version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`).
+  Do NOT re-read `pipeline.plugin_version` from a different file — reusing Phase
+  0.5's value prevents split-brain on a half-migrated pipeline. IF NOT `armed`:
+  skip Phase 0.7 silently and proceed to Phase 1.
+- **Detection (inline, no subagent) — single load-bearing discriminator:** build
+  `tripped = []`. FOR each step's agent: IF frontmatter declares
+  `isolation: worktree` AND **every one of the step's `outputs` resolves under
+  `superpipelines/temp/`** AND the agent carries no host-anchor note (mirroring
+  #23's "without host-anchoring" escape), append `{step_id, agent_file, line}` to
+  `tripped`. A legitimate tracked-code writer (topology outputs include tracked
+  source paths, OR a host-anchor note present) is NEVER appended. NOTE: `tools`
+  CANNOT discriminate this — CC tool grants are name-only, not path-scoped, and
+  data agents legitimately include `Write` for temp output; treat any tools check
+  as advisory only, never load-bearing.
+- **Halt set is artifact-loss only.** Do NOT halt on MT-02 (agent missing both
+  `model_tier:` and `model:`) — the resolver tolerates it (defaults to `fast`).
+  MT-02 and other non-fatal findings stay manual-`/audit-steps` concerns.
+- <HARD-GATE>The tripwire is READ-ONLY. It MUST NOT edit frontmatter, strip
+  `isolation`, copy artifacts, or apply any fix. Its only two outcomes are
+  *proceed silently* or *stop+redirect*. This applies identically to fresh
+  launches and resumes — placement before Phase 1 is deliberate so a drifted
+  pipeline cannot be resumed back into the artifact-loss bleed.</HARD-GATE>
+- **Ordering interaction (intentional):** Because Phase 0.7 precedes Phase 1, a
+  pipeline that is BOTH worktree-drifted AND has a stale-complete run halts here
+  first; the Phase 1 "finalize & clean up" option for that stale run becomes
+  reachable only after `/audit-steps` fixes the drift and the user re-launches.
+  This is correct — fix the definition before touching its runs.
+- IF `tripped` is non-empty: HARD-STOP (do not proceed to Phase 1) and emit:
+
+  > ❌ Pipeline `{P}` was scaffolded under v{pipeline_version} (installed:
+  > v{installed_version}) and carries run-breaking deviations (worktree
+  > artifact-loss, compliance #23/#24):
+  > {for each tripped: `- {agent_file}:{line}  ({step_id})`}
+  > The run is halted to prevent artifact-loss / token-bleed. Run
+  > `/superpipelines:audit-steps {P}` to review and apply the checkpointed fix
+  > (Fix 11), then re-launch.
+
+- ELSE (`armed` but `tripped` empty): proceed to Phase 1 silently.
+
 ### PHASE 1: RESUME CHECK
 - **Q5 multi-root resume scan**: For every populated scope root from the Phase 0 `ENUMERATE_ALL_SCOPE_ROOTS` result (not just the runtime tier's), check `<root>/superpipelines/temp/{P}/` for existing run directories. This finds state files written under a different tier's scope root (e.g., CC-scaffolded pipeline being resumed from Cursor).
 - **Valid run directory criteria**: name matches `{P}-{YYYYMMDD-HHMMSS}` AND contains `pipeline-state.json`.
@@ -314,7 +372,7 @@ This gate is best-effort prose: at Tier 1 the orchestrator is the model, so ther
 - ALWAYS perform Phase 0.25 tier detection exactly once per fresh run; on resume, re-detect and apply Cross-Tier Resume Protocol if tier changed.
 - ALWAYS perform Phase 0.6 portability validation when `runtime_tier != source_tier`; never silently proceed with unvalidated cross-tier paths.
 - `metadata.source_tier` is immutable after Phase 2 init. Never overwrite it, even on cross-tier resume.
-- Phase ordering is total: 0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 1 → 2 → 3 → 4. (Q4 swap: migration check 0.4 now precedes resolution 0.45 so the resolver never sees v1-legacy schema.) Entry-skill payload assembly (including user-input prompts declared in the entry skill body) happens exclusively inside Phase 3. Pre-collecting Phase 3 inputs during Phase 0 selection is a known rationalization ("the user is already here, batch the prompts") that violates the ordering contract.
+- Phase ordering is total: 0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 0.7 → 1 → 2 → 3 → 4. (Q4 swap: migration check 0.4 now precedes resolution 0.45 so the resolver never sees v1-legacy schema.) Entry-skill payload assembly (including user-input prompts declared in the entry skill body) happens exclusively inside Phase 3. Pre-collecting Phase 3 inputs during Phase 0 selection is a known rationalization ("the user is already here, batch the prompts") that violates the ordering contract. Phase 0.7 (pre-run safety tripwire) runs after 0.6 and before Phase 1 so it gates both fresh launches and resumes against the pipeline definition.
 - **Phase 0.4 read-before-write invariant (Q3)**: Phase 0.4 (migration) MUST NOT read state-file fields that are only written during Phase 2 state initialization. The forbidden fields include `metadata.source_tier`, `metadata.runtime_tier`, and `metadata.platform_profile`. Phase 0.4's migration uses the `legacy_scaffold_tier` constant (`tier_1`, by definition of "v1") rather than `metadata.source_tier`. Phase 0.4 may consume in-memory `platform_profile` cached during Phase 0.25, but never the state-file metadata.
 </invariants>
 
