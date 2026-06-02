@@ -253,6 +253,21 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
 - **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `<workspace>/{platform_profile.extensions.version_manifest_path}` at init — Q12 per-tier manifest, not hardcoded to CC's path), `scope_root_dir` (the directory NAME from `platform_profile.scope_root.workspace`, not an absolute path — Q12 portability), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
+- **Deterministic atomic `platform_profile` write (no transcription).** `metadata.platform_profile` MUST be populated by a deterministic copy, never by the orchestrator transcribing the nested object field-by-field into the Write payload. Procedure: (1) write the state skeleton with `"metadata": { ..., "platform_profile": null }` via the atomic write; (2) run a `python3` merge that injects the profile JSON verbatim and writes **atomically and BOM-free** — dump to `${STATE_PATH}.tmp` then `os.replace`, obeying the same `.tmp`+rename contract as every other state update:
+  ```bash
+  python3 - "$STATE_PATH" "$PROFILE_PATH" <<'PY'
+  import json, os, sys
+  state_path, profile_path = sys.argv[1], sys.argv[2]
+  with open(state_path, encoding="utf-8") as f: state = json.load(f)
+  with open(profile_path, encoding="utf-8") as f: profile = json.load(f)
+  state["metadata"]["platform_profile"] = profile
+  tmp = state_path + ".tmp"
+  with open(tmp, "w", encoding="utf-8") as f: json.dump(state, f, indent=2)
+  os.replace(tmp, state_path)  # atomic on Win32 and POSIX
+  PY
+  ```
+  where `$PROFILE_PATH` = `skills/sk-platform-dispatch/profiles/{platform_profile.tier}.json`. `python3` only (proven available in-run for hashing); do NOT use `jq` (not assumed present on Win11). `encoding="utf-8"` yields no BOM. The state schema is unchanged — resume and the Cross-Tier Resume Protocol still find the full object at `metadata.platform_profile`.
+<HARD-GATE>The orchestrator MUST NOT hand-author the nested `platform_profile` object in the state-file Write payload. Field-by-field transcription is the root cause of state-file corruption (e.g. a garbled `subagent_env_override` key). Use the deterministic atomic merge above; it obeys the same `.tmp`+`os.replace` contract as invariant "All state updates must utilize the atomic write pattern" and is NOT an exception to it.</HARD-GATE>
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 
