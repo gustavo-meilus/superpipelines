@@ -67,25 +67,49 @@ audit process** for the actual fix.
 1. **Gate behavior on a run-breaking deviation:** *Stop + redirect to
    `/audit-steps`.* The run skill never mutates the pipeline definition.
 2. **Gate scope:** *Cheap inline tripwire*, no subagent dispatch in the run
-   path.
+   path. Cost is honestly a **single `topology.json` read + an agent `isolation`
+   frontmatter scan**, reusing in-context data from Phases 0.4/0.45 when
+   available — NOT "zero cost / already read". The two inputs the tripwire
+   requires (topology step `outputs`, agent `isolation` field) are named
+   explicitly so an orchestrator cannot rationalize skipping the read.
 3. **No new criterion.** #23/#24 already cover the case; the tripwire references
    those IDs. Only the missing **fix template** is added.
 4. **Tripwire halt set = artifact-loss class only (#23/#24).** MT-02 (agent
    missing both `model_tier:` and `model:`) is explicitly *excluded* — the
    runtime resolver tolerates it (defaults to `fast`), so halting on it would
    block runs that would succeed. MT-02 remains a manual-`/audit-steps` finding.
-5. **Detection mirrors #24 precisely** — flag `isolation: worktree` only when
-   the agent's tools lack `Write`/`Edit` to source *or* its topology outputs all
-   resolve under `temp/`. Avoids false-halting legitimate worktree code-writers.
+5. **Detection — single load-bearing discriminator + host-anchor carve-out.**
+   The sole reliable test is: an agent declares `isolation: worktree` AND
+   **every one of its topology-declared `outputs` resolves under
+   `superpipelines/temp/`** AND it carries **no host-anchor note** (mirroring
+   #23's "without host-anchoring" escape). A legitimate worktree code-writer —
+   whose topology outputs include tracked source paths, or which host-anchors —
+   is never flagged. The earlier "`tools` lack `Write`/`Edit` to source" clause
+   is demoted to a non-load-bearing advisory hint only: Claude Code `tools:`
+   grants are **name-only, not path-scoped** (verified against the sub-agents
+   reference), so "Write/Edit to source paths" is not expressible in frontmatter
+   and cannot discriminate — most data agents legitimately include `Write` (they
+   write temp artifacts).
 6. **Arming condition = full semver `<`** (not Phase 0.5's major-only), and a
-   **missing `plugin_version` is treated as drifted**.
+   **missing `plugin_version` is treated as drifted**. The `pipeline.plugin_version`
+   used for arming MUST be the **single value already resolved in Phase 0.5**
+   (read once via the registry-entry→`topology.json` fallback), consumed by both
+   phases — never re-read from a different file. This prevents split-brain on a
+   half-migrated pipeline where registry and topology disagree (the exact state
+   the triggering incident left behind).
 7. **Tripwire gates both fresh and resume** (placement before Phase 1 achieves
    this).
 8. **Hygiene — verbatim profile:** Phase 2 builds `metadata.platform_profile`
    via a **deterministic Bash/jq merge** of the profile JSON, never by LLM
    transcription.
-9. **Hygiene — finalization:** criterion #20 keeps ownership in the entry skill;
-   Phase 4 adds a **defensive backstop** only.
+9. **Hygiene — finalization (two entry points).** Criterion #20 keeps ownership
+   in the entry skill. (a) **Phase 4 defensive backstop** finalizes a run the
+   orchestrator actively drove to completion whose legacy entry skill never
+   stamped `completed`. (b) **Phase 1 "appears complete (unfinalized)" option**
+   handles already-abandoned stale runs the user did NOT resume — the path the
+   triggering incident actually took (it chose *start fresh*, leaving a
+   fully-complete run stuck at `running`). Both share the same finalization
+   logic; (b) closes the loop (a) cannot reach.
 10. **Fail-fast hardening:** prose + Red Flag + rationalization-table rows,
     *plus* a diagnostic redirect when the missing artifact's producer has
     `isolation: worktree`. Accepted as **best-effort** (no Tier-1 structural
@@ -99,7 +123,7 @@ audit process** for the actual fix.
 | File | Change |
 |---|---|
 | `skills/pipeline-auditor-references/references/fix-templates.md` | Add **Fix 11 — data-agent worktree artifact loss** (strip `isolation: worktree`; bump agent + pipeline-level `plugin_version`). |
-| `skills/running-a-pipeline/SKILL.md` | Add **Phase 0.7** tripwire; harden #31 fail-fast (prose + Red Flag + rationalization rows + diagnostic redirect); Phase 2 deterministic profile merge; Phase 4 defensive finalization backstop. |
+| `skills/running-a-pipeline/SKILL.md` | Add **Phase 0.7** tripwire; harden #31 fail-fast (prose + Red Flag + rationalization rows + diagnostic redirect); Phase 2 atomic python3-only profile merge; Phase 1 "appears complete (unfinalized) → finalize & clean up" option; Phase 4 defensive finalization backstop. |
 | `commands/audit-steps.md` | Confirm SEV-0/1 fix path covers #23/#24 → Fix 11; sync the criterion-count line (currently "20-criterion") with the matrix's "30-criterion". |
 
 No new files except this spec and a verification fixture.
@@ -110,9 +134,11 @@ No new files except this spec and a verification fixture.
 
 Added to `fix-templates.md`. Remediation for compliance criteria **#23/#24**.
 
-- **Symptom:** a data-only agent (tools lack `Write`/`Edit` to source, or its
-  topology outputs all resolve under `superpipelines/temp/`) declares
-  `isolation: worktree`.
+- **Symptom:** an agent declares `isolation: worktree` while **every one of its
+  topology-declared `outputs` resolves under `superpipelines/temp/`** and it
+  carries no host-anchor note (i.e. it is artifact-only, not a tracked-code
+  writer). Note: `tools` cannot discriminate this — CC tool grants are name-only,
+  not path-scoped, and data agents legitimately include `Write` for temp output.
 - **Action:**
   1. Remove the `isolation: worktree` line from each flagged data-only agent.
      (Claude Code has no `isolation: none` — the field is simply omitted.)
@@ -133,17 +159,25 @@ Phase 1 means the tripwire judges the pipeline *definition* and therefore gates
 **both fresh launches and resumes** identically.
 
 - **Arming condition (version-conditioned):** fire only when the pipeline's
-  stamped `plugin_version` is **semver-less-than** (major.minor.patch) the
+  stamped `plugin_version` is **semver-less-than** (full major.minor.patch) the
   installed plugin version, **or the pipeline `plugin_version` is absent**
-  (treated as drifted). When versions match → skip silently, zero added cost.
-  This arming comparison is independent of Phase 0.5's major-only advisory.
-- **Detection (narrow, inline, no subagent):** using the agent frontmatter
-  already read in Phase 0.4 and the topology steps from Phase 0.45, mirror
-  criterion **#24** precisely — flag `isolation: worktree` on an agent only when
-  the agent's tools lack `Write`/`Edit` to source **or** its topology-declared
-  outputs all resolve under `superpipelines/temp/` (i.e. it is not a tracked-code
-  writer). This makes the tripwire verdict identical to what `/audit-steps`
-  would conclude (no "tripwire stops but audit clean" contradiction).
+  (treated as drifted). The `pipeline.plugin_version` value MUST be the single
+  one already resolved in Phase 0.5 (registry-entry→`topology.json` fallback,
+  read once and consumed by both phases) — never re-read from a different file,
+  to avoid split-brain on a half-migrated pipeline. When versions match → skip
+  silently. This arming comparison is independent of Phase 0.5's major-only
+  advisory.
+- **Detection (narrow, inline, no subagent):** reusing in-context data where
+  available, the tripwire performs a cheap **single `topology.json` read + an
+  agent `isolation` frontmatter scan** — it does not claim Phases 0.4/0.45 left
+  the needed fields free. Flag `isolation: worktree` on an agent only when
+  **every one of its topology-declared `outputs` resolves under
+  `superpipelines/temp/`** AND it carries no host-anchor note (mirrors #23's
+  "without host-anchoring" escape). The `tools`-to-source clause is advisory
+  only — CC tool grants are name-only, not path-scoped, so it cannot
+  discriminate. This makes the tripwire verdict identical to what `/audit-steps`
+  would conclude (no "tripwire stops but audit clean" contradiction) and never
+  false-halts a legitimate worktree code-writer.
 - **Halt set:** artifact-loss class only (#23/#24). MT-02 and other non-fatal
   findings do NOT halt.
 - **Explicitly a fast-path subset**, documented as such in the skill body — NOT
@@ -161,6 +195,11 @@ Phase 1 means the tripwire judges the pipeline *definition* and therefore gates
 - **On clean (or version match):** proceed to Phase 1 silently.
 - **HARD-GATE wording:** the tripwire MUST NOT attempt any fix, frontmatter
   edit, or copy-back; its only outcomes are *proceed* or *stop+redirect*.
+- **Ordering interaction (intentional):** Phase 0.7 runs *before* Phase 1. On a
+  pipeline that is both worktree-drifted *and* has a stale-complete run, the
+  tripwire halts first, so the Phase 1 "finalize & clean up" option (§E.b) for
+  that stale run is only reachable after `/audit-steps` fixes the drift and the
+  user re-launches. This is correct: fix the definition before touching its runs.
 
 ### C. #31 fail-fast hardening (best-effort)
 
@@ -187,22 +226,50 @@ tripwire is the primary defense; this gate is the backstop.
 ### D. Hygiene — Phase 2 deterministic profile merge
 
 Phase 2 MUST construct `metadata.platform_profile` by a deterministic copy: write
-the state skeleton, then a Bash step (`python3`/`jq`, already used in the run for
-hashing) reads `skills/sk-platform-dispatch/profiles/{tier}.json` and injects it
-into `metadata.platform_profile`. The skill body adds a HARD-GATE forbidding
-LLM transcription of the nested profile object field-by-field. Eliminates the
-`subagent_env_ировать` corruption class at the mechanism level. State schema is
-unchanged — resume and the Cross-Tier Resume Protocol still find the full object
-where they expect it.
+the state skeleton, then a **`python3`-only** step (proven available in the run —
+already used for hashing; `jq` is NOT assumed present on Win11) reads
+`skills/sk-platform-dispatch/profiles/{tier}.json` and injects it into
+`metadata.platform_profile`. The merge MUST be **atomic and BOM-free**: dump to
+`${STATE_PATH}.tmp` with `encoding="utf-8"`, then `os.replace(tmp, state_path)`
+(atomic on Win32 and POSIX) — obeying the same `.tmp`+rename contract as every
+other state write (invariant "All state updates must utilize the atomic write
+pattern"), so this mechanism is never read as an exception to it. The skill body
+adds a HARD-GATE forbidding LLM transcription of the nested profile object
+field-by-field. Eliminates the `subagent_env_ировать` corruption class at the
+mechanism level. State schema is unchanged — resume and the Cross-Tier Resume
+Protocol still find the full object where they expect it.
 
-### E. Hygiene — Phase 4 defensive finalization backstop
+### E. Hygiene — finalization (two entry points)
 
 Criterion #20 keeps the entry skill as the primary finalizer (it writes
-`status: completed` on success and deletes temp). Phase 4 adds a backstop only:
-when control returns to Phase 4 and the state shows **all** topology steps
+`status: completed` on success and deletes temp); its wording is unchanged. Two
+backstops share one finalization routine:
+
+**E.a — Phase 4 defensive backstop.** When control returns to Phase 4 of a run
+the orchestrator actively drove and the state shows **all** topology steps
 `completed` but `status != "completed"`, Phase 4 stamps `completed` (atomic
-write) before cleanup. Fixes the stale-run problem for already-created pipelines
-without editing per-pipeline entry skills. Criterion #20 wording is unchanged.
+write) before cleanup. Do NOT stamp if any step is `pending`/`running`/`failed`.
+Catches a legacy entry skill that finished work but predates the #20 contract.
+
+**E.b — Phase 1 "appears complete (unfinalized)" option.** The Phase 1 resume
+scan may surface an interrupted run whose state shows **every** `phases[*].status
+== completed` but top-level `status == running`. Such a run is listed as "appears
+complete (unfinalized)" with a third action alongside resume / start-fresh:
+**finalize & clean up** — atomic-stamp `status: completed`, then delete the temp
+run directory. This is the only path that recovers an *abandoned* stale run the
+user does not resume (the triggering incident chose *start fresh*, orphaning a
+complete run at `running` forever). Guards:
+
+- Offered ONLY when every step is `completed`; never when any step is
+  `pending`/`running`/`failed`.
+- Honors the existing Phase 1 HARD-GATE: NEVER auto-act on an `escalated` or
+  `failed` run — those still require explicit human review.
+- The action is user-selected, not automatic; deletion happens only after the
+  atomic `completed` stamp succeeds (preserving "never destroy recovery state
+  without user say-so").
+
+Both backstops reuse the same `all-steps-completed → atomic stamp` predicate so
+the two entry points cannot diverge.
 
 ## Testing / verification
 
@@ -218,13 +285,17 @@ Verification is by **fixture audit**, matching
    the #24-mirror detection flags the data agents, and the run halts with the
    redirect — no mutation — on both a fresh launch and a resume.
 3. Confirm a version-matching pipeline skips Phase 0.7 silently, and a
-   legitimate worktree **code-writer** (tools include Write/Edit to source) is
-   NOT flagged.
+   legitimate worktree **code-writer** (topology outputs include tracked source
+   paths, OR a host-anchor note present) is NOT flagged — the discriminator is
+   the topology `outputs` path + host-anchor, not `tools`.
 4. Confirm a missing-`plugin_version` pipeline is treated as drifted (scan
-   runs).
+   runs), using the single Phase 0.5-resolved version value.
 5. Confirm Phase 2 writes `metadata.platform_profile` byte-identical to the
-   loaded profile JSON (deterministic merge), and Phase 4 stamps
-   `status: "completed"` when all steps are done but status is stale.
+   loaded profile JSON via the atomic `.tmp`+`os.replace` merge (no BOM); Phase 4
+   stamps `status: "completed"` when all steps are done but status is stale; and
+   the Phase 1 scan lists an all-steps-completed `running` run as "appears
+   complete (unfinalized)" and the **finalize & clean up** action atomic-stamps
+   `completed` then deletes temp.
 6. Confirm the fail-fast BLOCKED message names worktree artifact-loss and the
    `/audit-steps` redirect when the missing artifact's producer has
    `isolation: worktree`.
@@ -238,3 +309,8 @@ Verification is by **fixture audit**, matching
   deterministic merge preserves the contract).
 - Always-on auditing / dispatching the full auditor every run.
 - Cross-platform parity automation (`PARITY_TESTING: MANUAL_PHASE1` stands).
+- The protocol-skill invocation tension (`disable-model-invocation: true` skills
+  cannot be preloaded via a subagent `skills:` field, per the skills reference —
+  "skipped… logs a warning"). This contradicts CLAUDE.md's protocol-skill
+  pattern but is pre-existing #33 territory, unrelated to the run-safety gate.
+  Flagged here for a separate investigation; not addressed by this spec.
