@@ -17,6 +17,31 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.1.3 — Run-Safety Audit Gate (2026-06-02)
+
+### Added
+
+- **Phase 0.7 — Pre-run safety tripwire** — new read-only fast-path phase between 0.6 and 1 that pre-checks for run-breaking worktree artifact-loss deviations (#23/#24) before any dispatch. Arming is version-conditioned (compares `pipeline.plugin_version` vs `installed_version`). Detection uses a single load-bearing discriminator: step agent with `isolation: worktree` whose every output resolves under `superpipelines/temp/` with no host-anchor note. HARD-STOP with redirect to `/superpipelines:audit-steps {P}` (Fix 11) when tripped. Placement before Phase 1 gates both fresh launches and resumed runs against a drifted definition.
+- **Phase 1 finalize-and-cleanup** — stalled runs with all steps completed but top-level `status: "running"` (unfinalized) now get a third resume-prompt action: atomic-stamp `status: "completed"`, then delete the temp run directory. Deletion only after the atomic stamp succeeds (preserving "never destroy recovery state without user say-so"). Never applies to `escalated` or `failed` runs — still requires explicit human review.
+- **Fix 11 — Data-agent worktree artifact-loss template** — new checkpointed audit fix for #23 (worktree step with gitignored output, no host-anchor) and #24 (data agent carrying unnecessary `isolation: worktree`). Applied via `/superpipelines:audit-steps`.
+
+### Fixed
+
+- **Phase 2 deterministic atomic `platform_profile` write** — `metadata.platform_profile` is now populated via a deterministic `python3` merge (dump to `.tmp` then `os.replace`), not by the orchestrator transcribing the nested object field-by-field into the Write payload. Field-by-field transcription caused state-file corruption (e.g. garbled `subagent_env_override` key). The `.tmp`+`os.replace` contract is identical to every other state update — not an exception.
+- **Phase 4 defensive finalization backstop** — if the entry skill predates criterion #20 and left a fully-finished run labeled `status: "running"`, the orchestrator now stamps `status: "completed"` via atomic write before evaluating cleanup. Shares the same `all-steps-completed → atomic stamp` predicate as the Phase 1 finalize option. Only fires when every step is `completed`; never stamps on `pending`/`running`/`failed` steps.
+- **#31 fail-fast gate hardened** — gate now specifies a strict 5-step sequence: stop, no copy-back, no re-dispatch, surface BLOCKED escalation, diagnostic redirect to `/superpipelines:audit-steps` (Fix 11). Two new anti-rationalizations explicitly ruled out: "copy from worktree is faster" and "one re-dispatch is cheap".
+- **AUDIT criterion-count reference sync** — stale hardcoded `28-criterion` and `criteria 1–22` references replaced with matrix-pointer prose in `pipeline-auditor-protocol` and `commands/audit-steps.md`.
+
+### Changed
+
+- **Phase ordering** — total order advanced from `0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 1 → 2 → 3 → 4` to include `0.7` between 0.6 and 1.
+- **Red Flags + rationalization table** — two new Red Flag entries (worktree copy-back, re-dispatch-as-cheap-fix) and two new rationalization rows document the mechanical prohibitions in the hardened #31 fail-fast gate.
+
+### Documentation
+
+- **Discriminating fixture** — `skills/pipeline-auditor-references/references/fixtures/discriminating-power/wt-legacy-data-agent-worktree.md` exercises the detection discriminator identically across Phase 0.7, Fix 11, and the fixture.
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-02-run-safety-audit-gate-design.md` and `docs/superpowers/plans/2026-06-02-run-safety-audit-gate.md`.
+
 ## 2.1.2 — Audit Report Ownership & permissionMode Consistency (2026-06-01)
 
 ### Fixed

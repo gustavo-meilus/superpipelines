@@ -240,6 +240,64 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
   - **Q5 state-file path rewrite**: When a state file is being resumed from a foreign scope root (Phase 1 detected a cross-tier resume target), ALL absolute path fields in the state file MUST be revalidated against the active `platform_profile.scope_root`. Apply `PORTABILITY_REWRITE` to each path field stamped in the state file (e.g., entries referencing `<source_scope_root>/...`). The rewrite is in-memory only — the on-disk state file is NOT moved (preserves audit trail showing where the original run lived). Subsequent state-file reads use the rewritten paths. Update `metadata.runtime_tier` and append the cross-tier transition to `metadata.tier_changes` per Phase 1.
   - **Q7 pattern-vs-worktrees abort**: IF the loaded pipeline's `topology.pattern` is in `{2, 3, 5}` AND `platform_profile.capabilities.worktrees == false`: HARD-ABORT, do NOT prompt for advisory proceed. Emit: `"❌ Pattern {N} requires worktrees for writer isolation. The active platform '{name}' has worktrees: false. Running this pipeline here would corrupt state via multi-writer file collisions across iterations or parallel branches. Options: [Abort] [Re-scaffold on a worktrees-capable tier]"`. This is NOT a degrading-to-sequential case — degrading scope is fine; degrading isolation is a correctness regression.
 
+### PHASE 0.7 — PRE-RUN SAFETY TRIPWIRE
+
+> A cheap, inline, read-only fast-path subset of the auditor — NOT a
+> reimplementation of the compliance matrix. `pipeline-auditor` remains the
+> single source of truth (`DEPENDENCY_INVERSION`). The tripwire only pre-checks
+> the genuinely run-breaking artifact-loss class so a doomed launch is refused
+> before any dispatch. Its verdict MUST match what `/superpipelines:audit-steps`
+> would conclude for criteria #23/#24.
+
+- **Inputs (named explicitly — do not assume earlier phases left them free):**
+  the tripwire performs a cheap **single `topology.json` read** (for each step's
+  `outputs`) **plus an agent `isolation` frontmatter scan**, reusing in-context
+  data from Phases 0.4/0.45 when available. This is low cost, not "zero cost".
+- **Arming condition (version-conditioned):** Compute `armed` =
+  (`pipeline.plugin_version` is ABSENT) OR (semver `pipeline.plugin_version` <
+  semver `installed_version`), comparing FULL `major.minor.patch` (independent of
+  Phase 0.5's major-only advisory). `pipeline.plugin_version` and
+  `installed_version` are the SAME single values already resolved in Phase 0.5
+  (`pipeline.plugin_version` via the registry-entry→`topology.json` fallback;
+  `installed_version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`).
+  Do NOT re-read `pipeline.plugin_version` from a different file — reusing Phase
+  0.5's value prevents split-brain on a half-migrated pipeline. IF NOT `armed`:
+  skip Phase 0.7 silently and proceed to Phase 1.
+- **Detection (inline, no subagent) — single load-bearing discriminator:** build
+  `tripped = []`. FOR each step's agent: IF frontmatter declares
+  `isolation: worktree` AND **every one of the step's `outputs` resolves under
+  `superpipelines/temp/`** AND the agent carries no host-anchor note (mirroring
+  #23's "without host-anchoring" escape), append `{step_id, agent_file, line}` to
+  `tripped`. A legitimate tracked-code writer (topology outputs include tracked
+  source paths, OR a host-anchor note present) is NEVER appended. NOTE: `tools`
+  CANNOT discriminate this — CC tool grants are name-only, not path-scoped, and
+  data agents legitimately include `Write` for temp output; treat any tools check
+  as advisory only, never load-bearing.
+- **Halt set is artifact-loss only.** Do NOT halt on MT-02 (agent missing both
+  `model_tier:` and `model:`) — the resolver tolerates it (defaults to `fast`).
+  MT-02 and other non-fatal findings stay manual-`/audit-steps` concerns.
+- <HARD-GATE>The tripwire is READ-ONLY. It MUST NOT edit frontmatter, strip
+  `isolation`, copy artifacts, or apply any fix. Its only two outcomes are
+  *proceed silently* or *stop+redirect*. This applies identically to fresh
+  launches and resumes — placement before Phase 1 is deliberate so a drifted
+  pipeline cannot be resumed back into the artifact-loss bleed.</HARD-GATE>
+- **Ordering interaction (intentional):** Because Phase 0.7 precedes Phase 1, a
+  pipeline that is BOTH worktree-drifted AND has a stale-complete run halts here
+  first; the Phase 1 "finalize & clean up" option for that stale run becomes
+  reachable only after `/audit-steps` fixes the drift and the user re-launches.
+  This is correct — fix the definition before touching its runs.
+- IF `tripped` is non-empty: HARD-STOP (do not proceed to Phase 1) and emit:
+
+  > ❌ Pipeline `{P}` was scaffolded under v{pipeline_version} (installed:
+  > v{installed_version}) and carries run-breaking deviations (worktree
+  > artifact-loss, compliance #23/#24):
+  > {for each tripped: `- {agent_file}:{line}  ({step_id})`}
+  > The run is halted to prevent artifact-loss / token-bleed. Run
+  > `/superpipelines:audit-steps {P}` to review and apply the checkpointed fix
+  > (Fix 11), then re-launch.
+
+- ELSE (`armed` but `tripped` empty): proceed to Phase 1 silently.
+
 ### PHASE 1: RESUME CHECK
 - **Q5 multi-root resume scan**: For every populated scope root from the Phase 0 `ENUMERATE_ALL_SCOPE_ROOTS` result (not just the runtime tier's), check `<root>/superpipelines/temp/{P}/` for existing run directories. This finds state files written under a different tier's scope root (e.g., CC-scaffolded pipeline being resumed from Cursor).
 - **Valid run directory criteria**: name matches `{P}-{YYYYMMDD-HHMMSS}` AND contains `pipeline-state.json`.
@@ -247,22 +305,42 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
   - Directories without `pipeline-state.json` are incomplete or foreign — **EXCLUDE** them.
 - **Cross-tier state detection**: For each valid run directory found, read `metadata.source_tier` from the state file. IF `source_tier != runtime_tier` (the tier detected in Phase 0.25): the state is a cross-tier resume target. Append `{from: source_tier, to: runtime_tier, at: iso8601_now()}` to `metadata.tier_changes` and trigger Phase 0.6 portability validation against the foreign state file's paths.
 - **Logic**: If valid runs exist (same-tier or cross-tier), prompt the user to start new or resume. The resume listing MUST display the `source_tier` per entry so cross-tier resumes are visible at the prompt.
+- **Unfinalized-complete detection.** For each valid run directory found, read its state. IF top-level `status == "running"` AND EVERY `phases[*].status == "completed"` (no step `pending`/`running`/`failed`), label that entry in the resume listing as **"appears complete (unfinalized)"** and offer a third action alongside resume / start-fresh: **finalize & clean up**. On selection: atomic-stamp `status: "completed"` (`.tmp`+`os.replace`), THEN delete the temp run directory. Deletion happens ONLY after the atomic stamp succeeds (preserving "never destroy recovery state without user say-so"). This shares the same `all-steps-completed → atomic stamp` predicate as the Phase 4 backstop. It NEVER applies to `escalated` or `failed` runs — those still require explicit human review per the HARD-GATE below.
 - <HARD-GATE>NEVER auto-resume an `escalated` or `failed` run. Surface the state path and require explicit user review first.</HARD-GATE>
 
 ### PHASE 2: STATE INITIALIZATION
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
 - **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `<workspace>/{platform_profile.extensions.version_manifest_path}` at init — Q12 per-tier manifest, not hardcoded to CC's path), `scope_root_dir` (the directory NAME from `platform_profile.scope_root.workspace`, not an absolute path — Q12 portability), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
+- **Deterministic atomic `platform_profile` write (no transcription).** `metadata.platform_profile` MUST be populated by a deterministic copy, never by the orchestrator transcribing the nested object field-by-field into the Write payload. Procedure: (1) write the state skeleton with `"metadata": { ..., "platform_profile": null }` via the atomic write; (2) run a `python3` merge that injects the profile JSON verbatim and writes **atomically and BOM-free** — dump to `${STATE_PATH}.tmp` then `os.replace`, obeying the same `.tmp`+rename contract as every other state update:
+  ```bash
+  python3 - "$STATE_PATH" "$PROFILE_PATH" <<'PY'
+  import json, os, sys
+  state_path, profile_path = sys.argv[1], sys.argv[2]
+  with open(state_path, encoding="utf-8") as f: state = json.load(f)
+  with open(profile_path, encoding="utf-8") as f: profile = json.load(f)
+  state["metadata"]["platform_profile"] = profile
+  tmp = state_path + ".tmp"
+  with open(tmp, "w", encoding="utf-8") as f: json.dump(state, f, indent=2)
+  os.replace(tmp, state_path)  # atomic on Win32 and POSIX
+  PY
+  ```
+  where `$PROFILE_PATH` = `skills/sk-platform-dispatch/profiles/{platform_profile.tier}.json`. `python3` only (proven available in-run for hashing); do NOT use `jq` (not assumed present on Win11). `encoding="utf-8"` yields no BOM. The state schema is unchanged — resume and the Cross-Tier Resume Protocol still find the full object at `metadata.platform_profile`.
+<HARD-GATE>The orchestrator MUST NOT hand-author the nested `platform_profile` object in the state-file Write payload. Field-by-field transcription is the root cause of state-file corruption (e.g. a garbled `subagent_env_override` key). Use the deterministic atomic merge above; it obeys the same `.tmp`+`os.replace` contract as invariant "All state updates must utilize the atomic write pattern" and is NOT an exception to it.</HARD-GATE>
 
 ### PHASE 3: ENTRY SKILL DISPATCH
 
 <HARD-GATE>Entry-skill inputs (e.g., `$TOPIC`, `$LANGUAGE`, free-form prompts that the entry skill declares in its body) MUST NOT be collected before Phase 3. The orchestrator MUST complete Phases 0, 0.25, 0.4, 0.45, 0.5, 0.6, 1, and 2 in that order before reading any entry-skill `## 1. Initialization`-style requirements. Premature input collection (e.g., asking for a topic between 0.25 and 0.4) is a phase-ordering violation — it commits the user to inputs on un-migrated, un-resolved, or portability-defective state. The only inputs collected pre-Phase-3 are (a) pipeline selection (Phase 0) and (b) confirmations explicitly required by Phases 0.5/0.6 advisories.</HARD-GATE>
 
 <HARD-GATE>
-**Missing-artifact fail-fast (#31).** After any subagent returns `DONE` / `DONE_WITH_CONCERNS`, the orchestrator MUST verify each declared output artifact exists at its host-anchored path (sk-pipeline-paths `RESOLVE_HOST_WORKSPACE`). If a declared artifact is ABSENT:
-- Treat it as a hard failure equivalent to `BLOCKED`. Do NOT proceed.
-- Surface a `BLOCKED`-style escalation naming the missing artifact path and the producing step.
-- The orchestrator MUST NOT copy artifacts out of a worktree path, and MUST NOT execute the subagent's protocol inline in the root session to reconstruct the artifact. Inline reconstruction floods the root context with raw tool output (token bleed) and is forbidden.
+**Missing-artifact fail-fast (#31).** After any subagent returns `DONE` / `DONE_WITH_CONCERNS`, the orchestrator MUST verify each declared output artifact exists at its host-anchored path (sk-pipeline-paths `RESOLVE_HOST_WORKSPACE`). If a declared artifact is ABSENT, the orchestrator MUST, in order:
+1. STOP. Treat it as a hard failure equivalent to `BLOCKED`. Do NOT proceed to the next step under any circumstance.
+2. NOT read, copy, move, or otherwise touch any file under a worktree path to recover the artifact. There is no exception — copy-back from a worktree is forbidden even if the worktree still exists and the file is visibly present.
+3. NOT re-dispatch the step, retry the agent, or execute the subagent's protocol inline in the root session to reconstruct the artifact. Re-running floods the root context with raw tool output (token bleed) and is forbidden.
+4. Surface a `BLOCKED` escalation naming the missing artifact path and the producing step.
+5. **Diagnostic redirect:** IF the producing agent's frontmatter declares `isolation: worktree`, the BLOCKED message MUST additionally state that the cause is worktree artifact-loss (#31) and instruct: "Run `/superpipelines:audit-steps {P}` to apply the checkpointed fix (Fix 11), then re-launch."
+
+This gate is best-effort prose: at Tier 1 the orchestrator is the model, so there is no structural enforcement. Phase 0.7 is the primary defense; this gate is the runtime backstop for any deviation the tripwire did not arm on.
 </HARD-GATE>
 
 - Invoke the pipeline's entry skill (`run-{P}`).
@@ -280,6 +358,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 
 ### PHASE 4: COMPLETION & CLEANUP
 - Read final state from `pipeline-state.json`.
+- **Defensive finalization backstop (E.a).** The entry skill is the primary finalizer (compliance criterion #20: it writes `status: completed` on success). As a backstop only: IF the state shows EVERY topology step with `status == "completed"` (or `phases[*].status` all `completed`) BUT the top-level `status != "completed"`, the orchestrator MUST stamp `status: "completed"` via the atomic write BEFORE evaluating cleanup below. This recovers already-created pipelines whose entry skill predates the criterion #20 contract, so a fully-finished run is never left labeled `running` to confuse the next Phase 1 resume scan. Do NOT stamp `completed` if any step is `pending`/`running`/`failed`. (Shares the same `all-steps-completed → atomic stamp` predicate as the Phase 1 finalize option.)
 - **Status: `completed`**: Delete the temporary run directory and summarize outputs.
 - **Status: `escalated/failed`**: **PRESERVE** the temporary directory and state path for debugging and recovery.
 </protocol>
@@ -293,7 +372,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - ALWAYS perform Phase 0.25 tier detection exactly once per fresh run; on resume, re-detect and apply Cross-Tier Resume Protocol if tier changed.
 - ALWAYS perform Phase 0.6 portability validation when `runtime_tier != source_tier`; never silently proceed with unvalidated cross-tier paths.
 - `metadata.source_tier` is immutable after Phase 2 init. Never overwrite it, even on cross-tier resume.
-- Phase ordering is total: 0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 1 → 2 → 3 → 4. (Q4 swap: migration check 0.4 now precedes resolution 0.45 so the resolver never sees v1-legacy schema.) Entry-skill payload assembly (including user-input prompts declared in the entry skill body) happens exclusively inside Phase 3. Pre-collecting Phase 3 inputs during Phase 0 selection is a known rationalization ("the user is already here, batch the prompts") that violates the ordering contract.
+- Phase ordering is total: 0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 0.7 → 1 → 2 → 3 → 4. (Q4 swap: migration check 0.4 now precedes resolution 0.45 so the resolver never sees v1-legacy schema.) Entry-skill payload assembly (including user-input prompts declared in the entry skill body) happens exclusively inside Phase 3. Pre-collecting Phase 3 inputs during Phase 0 selection is a known rationalization ("the user is already here, batch the prompts") that violates the ordering contract. Phase 0.7 (pre-run safety tripwire) runs after 0.6 and before Phase 1 so it gates both fresh launches and resumes against the pipeline definition.
 - **Phase 0.4 read-before-write invariant (Q3)**: Phase 0.4 (migration) MUST NOT read state-file fields that are only written during Phase 2 state initialization. The forbidden fields include `metadata.source_tier`, `metadata.runtime_tier`, and `metadata.platform_profile`. Phase 0.4's migration uses the `legacy_scaffold_tier` constant (`tier_1`, by definition of "v1") rather than `metadata.source_tier`. Phase 0.4 may consume in-memory `platform_profile` cached during Phase 0.25, but never the state-file metadata.
 </invariants>
 
@@ -306,6 +385,8 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - "The inline path skips LOAD_PREFS because the Skill tool is absent." → **STOP**. ADR-0002: pref-file read is independent of Skill-tool availability. Always attempt LOAD_PREFS; degrade only on file-read failure.
 - "`sk-platform-dispatch` threw `DisableModelInvocation`, so I fell through to INLINE-DETECT()." → **STOP**. `DisableModelInvocation` means the skill requires direct file execution, not that it is absent. Read the skill file and run DETECT() inline — do NOT fall through to INLINE-DETECT(). On machines with `agy` installed but `CLAUDE_CODE` env var unset, INLINE-DETECT() returns `tier_1c` while the active runtime is `tier_1`.
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
+- "The artifact is right there in the worktree, I'll just copy it back." → **STOP**. Fail-fast gate step 2: copy-back from a worktree is forbidden, no exceptions. A missing declared artifact is `BLOCKED`. If the producer has `isolation: worktree`, redirect to `/superpipelines:audit-steps {P}` (Fix 11).
+- "The artifact is missing, I'll just re-run the agent once." → **STOP**. Fail-fast gate step 3: re-dispatch/inline reconstruction causes the exact token bleed this gate exists to prevent. Escalate `BLOCKED`.
 
 ## Rationalization Table
 
@@ -320,6 +401,8 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 | "The inline path can't check prefs — the Skill tool is absent." | Pref-file read is independent of Skill-tool availability (ADR-0002). Always attempt LOAD_PREFS; skip only on file-read failure. |
 | "Collecting topic up-front shortens the perceived wait." | Phase ordering exists to prevent input commitment on un-migrated / un-validated state. UX optimization is the wrong axis. |
 | "DisableModelInvocation → fall through to INLINE-DETECT()." | Wrong fallback. DisableModelInvocation means inline execution required, not plugin absent. Read the skill file; execute DETECT() inline; it has the Task-tool probe INLINE-DETECT() lacks. |
+| "Copying the artifact out of the worktree is faster than blocking." | Forbidden by the #31 fail-fast gate. Copy-back masks a definition defect (data agent in a worktree) that recurs every run. Block and route to `/audit-steps` Fix 11. |
+| "One re-dispatch to regenerate the missing artifact is cheap." | It is the token-bleed failure mode (#31): a worktree data agent will lose the artifact again. Re-running N times costs N×. Block; fix the definition. |
 </rationalization_table>
 
 ## Reference Files

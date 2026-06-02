@@ -3,8 +3,39 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.2 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, and the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, and the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3.
 </overview>
+
+## v2.1.3 — Run-Safety Audit Gate (2026-06-02)
+
+Adds a pre-run safety tripwire that refuses to launch a drifted pipeline before any dispatch, a deterministic atomic `platform_profile` merge replacing a fragile field-by-field transcription pattern, a defensive finalization backstop for stale-status runs, a finalize-and-cleanup option for abandoned complete runs, hardened fail-fast prohibitions for the #31 worktree artifact-loss gate, and a Fix 11 audit template for the same class of defect.
+
+<release_entry version="2.1.3" status="STABLE">
+
+### Added
+
+- **Phase 0.7 — Pre-run safety tripwire** — cheap inline read-only fast-path between Phase 0.6 and Phase 1. Version-conditioned arming compares `pipeline.plugin_version` vs `installed_version`. Detection uses a single load-bearing discriminator: steps with `isolation: worktree` + every output under `superpipelines/temp/` + no host-anchor note. HARD-STOP + redirect to `/superpipelines:audit-steps` (Fix 11). Gates both fresh launches and resumed runs.
+- **Phase 1 finalize-and-cleanup** — unfinalized complete runs (all steps done, top-level `running`) get a third resume-prompt action: atomic stamp `completed` then clean up.
+- **Fix 11 template** — checkpointed audit fix for #23/#24 worktree artifact-loss deviations.
+
+### Fixed
+
+- **Deterministic atomic `platform_profile` merge** — replaces fragile field-by-field transcription with a `python3` atomic `.tmp`+`os.replace` injection. Removes the root cause of garble corruption in state-file metadata.
+- **Phase 4 defensive finalization backstop** — stale `running` status on fully-completed runs is stamped `completed` before cleanup evaluation. Only when every step is `completed` (shares predicate with Phase 1 finalize).
+- **#31 fail-fast gate hardened** — strict 5-step stop/no-copy/no-redispatch/escalate/redirect sequence with two new anti-rationalizations codified.
+- **AUDIT criterion-count references synced** — stale `28-criterion` and `criteria 1–22` literals replaced with matrix-pointer prose.
+
+### Changed
+
+- **Phase ordering** — `0.7` inserted between `0.6` and `1`.
+- **Red Flags + rationalization table** — two entries each for the hardened fail-fast prohibitions.
+
+### Documentation
+
+- **Discriminating fixture** — `skills/pipeline-auditor-references/references/fixtures/discriminating-power/wt-legacy-data-agent-worktree.md` exercises the detection discriminator identically across Phase 0.7, Fix 11, and the fixture.
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-02-run-safety-audit-gate-design.md` and `docs/superpowers/plans/2026-06-02-run-safety-audit-gate.md`.
+
+</release_entry>
 
 ## v2.1.2 — Audit Report Ownership & permissionMode Consistency (2026-06-01)
 

@@ -23,7 +23,7 @@ argument-hint: [pipeline-name | --all | path/glob]
 
 ### 2. CLASSIFICATION & AUDIT
 - Classify files into categories: subagent, internal skill, entry skill, reference, topology, or registry.
-- Apply the 20-criterion compliance matrix across the four standard bands.
+- Apply the full compliance matrix (see `compliance-matrix.md`) across the four standard bands plus the resolver-consolidation criteria.
 - Execute topology graph rules, including edge consistency and cycle checks.
 
 ### 3. REPORTING
