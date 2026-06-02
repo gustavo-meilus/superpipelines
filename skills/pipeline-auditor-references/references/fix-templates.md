@@ -14,6 +14,7 @@ Canonical fixes for common findings. Use as Edit templates when the user request
 8. Hardcoded plugin path
 9. Missing capability contract
 10. Per-agent Bash hook with global allow
+11. Data-agent worktree artifact loss
 
 ---
 
@@ -151,3 +152,49 @@ user-invocable: false
 ## Fix 10 — Per-agent Bash hook with global allow
 
 **Action:** Remove the hooks block from agent frontmatter when plugin `settings.json` already has `Bash(*)` in `permissions.allow`. Verify before removing — without the global allow, removing the hook breaks the agent.
+
+## Fix 11 — Data-agent worktree artifact loss
+
+**Symptom (compliance criteria #23 / #24):** an agent declares
+`isolation: worktree` while **every one of its topology-declared `outputs`
+resolves under `superpipelines/temp/`** and it carries no host-anchor note —
+i.e. it is artifact-only, not a tracked-code writer. Such an agent writes only
+gitignored artifacts; Claude Code auto-cleans its worktree on teardown and the
+artifact is destroyed (issue #31).
+
+> **Detection note — `tools` cannot discriminate this.** Claude Code `tools:`
+> grants are name-only, not path-scoped (verified against the sub-agents
+> reference), so "Write/Edit to source paths" is NOT expressible in frontmatter.
+> Most data agents legitimately include `Write` (they write temp artifacts). The
+> sole reliable discriminator is the topology `outputs` path + absence of a
+> host-anchor note. Legitimate tracked-code writers (topology outputs include
+> tracked source paths, OR a host-anchor note present) are NOT affected and MUST
+> keep `isolation: worktree`.
+
+**Before (data agent):**
+```yaml
+permissionMode: acceptEdits
+isolation: worktree
+skills:
+  - researcher-protocol
+```
+
+**After:**
+```yaml
+permissionMode: acceptEdits
+skills:
+  - researcher-protocol
+```
+
+**Action:**
+1. Remove the `isolation: worktree` line from each flagged data-only agent.
+   Claude Code has no `isolation: none` — omit the field entirely.
+2. Re-stamp each touched agent's `plugin_version` to the current plugin version.
+3. **Bump the pipeline-level `plugin_version`** to current in BOTH `topology.json`
+   and the pipeline's `registry.json` entry. This keeps criterion #21 (version
+   consistency) satisfied and ensures the run-time Phase 0.7 tripwire's
+   version-drift arming condition is no longer met on the next launch.
+
+**Applied by** `pipeline-architect` under `/superpipelines:audit-steps` with a
+git checkpoint and explicit user authorization (auditor is read-only; SEV-0/1
+fixes route to the architect).
