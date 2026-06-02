@@ -2,7 +2,7 @@
   "$schema": "./profile.schema.json",
   "tier": "tier_2",
   "name": "Cursor / Windsurf / Cline",
-  "profile_version": "2.1.1",
+  "profile_version": "2.1.2",
   "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": false,

@@ -17,6 +17,19 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.1.2 — Audit Report Ownership & permissionMode Consistency (2026-06-01)
+
+### Fixed
+
+- **Audit-steps report-ownership split-brain (#33)** — a `/superpipelines:audit-steps` run exposed that the `pipeline-auditor` protocol framed writing the report as its own primary action behind a never-false "if `Write` is disallowed" fallback, even though the agent permanently carries `disallowedTools: Write`. Real persistence ownership lived only in the command file, and no party owned ensuring the `audit/` directory exists — so the orchestrator's first write on a fresh pipeline failed on a missing directory. Resolved by:
+  - **Auditor protocol** (`pipeline-auditor-protocol`) now states plainly that the auditor is read-only and never writes the report or mutates `registry.json`; it renders the report as inline output and hands the orchestrator an explicit registry-update instruction.
+  - **audit-steps command** now makes the orchestrator own persistence in order: ensure `audit/` exists (idempotent) **before** writing `latest.md`, then update `registry.json`, with a fail-surface fallback so findings are never lost.
+- **Agent `permissionMode` vs protocol/capability contradiction** — `pipeline-architect` and `skill-architect` are file-producers (their `tools:` include `Write`/`Edit` and their protocols create/edit files) yet were declared `permissionMode: plan`, contradicting both the allowlist and the protocol. Both corrected to `acceptEdits` (mirroring `pipeline-task-executor`). The architect authoring rule (`pipeline-architect-protocol`) is generalized to a capability-based mapping — `plan` for read-only/advisory agents (reviewers, auditor, failure-analyzer), `acceptEdits` for file-producers (architect, skill-architect, task-executor). All 7 agents are now consistent. Framed as a consistency fix, not a verified runtime write-failure.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-01-audit-steps-report-ownership-design.md` and `docs/superpowers/plans/2026-06-01-audit-steps-report-ownership.md`.
+
 ## 2.1.1 — Worktree Artifact Safety & Fail-Fast (2026-06-01)
 
 ### Fixed

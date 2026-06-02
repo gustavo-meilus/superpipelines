@@ -3,8 +3,25 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.1 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, and the worktree artifact-safety hardening introduced in v2.1.1.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.2 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, and the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2.
 </overview>
+
+## v2.1.2 — Audit Report Ownership & permissionMode Consistency (2026-06-01)
+
+Closes a frontmatter-vs-protocol split-brain surfaced during an `/superpipelines:audit-steps` run: the read-only auditor's protocol implied it wrote its own report, persistence ownership was ambiguous, and nobody ensured the `audit/` directory existed before the orchestrator's first write. Also aligns the `permissionMode` of file-producing agents (`pipeline-architect`, `skill-architect`) with their `tools:` capability and write protocols, generalizing the architect authoring rule to a capability-based mapping.
+
+<release_entry version="2.1.2" status="STABLE">
+
+### Fixed
+
+- **Audit-steps report-ownership split-brain (#33)** — the `pipeline-auditor` protocol framed writing the report as its primary action behind a never-false "if `Write` is disallowed" fallback, despite the agent permanently carrying `disallowedTools: Write`; real persistence ownership lived only in the command file, and no party owned ensuring the `audit/` directory exists, so the orchestrator's first write on a fresh pipeline failed. The auditor protocol now declares it read-only (renders the report inline, hands the orchestrator a registry-update instruction), and the audit-steps command makes the orchestrator ensure `audit/` exists **before** writing `latest.md`, with a fail-surface fallback.
+- **Agent `permissionMode` vs capability/protocol contradiction** — `pipeline-architect` and `skill-architect` are file-producers yet declared `permissionMode: plan`, contradicting their `tools:` allowlist and write protocols. Both corrected to `acceptEdits`; the architect authoring rule is generalized to map `permissionMode` by capability (`plan` for read-only/advisory agents, `acceptEdits` for file-producers). All 7 agents are now consistent. Framed as a consistency fix, not a verified runtime write-failure.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-01-audit-steps-report-ownership-design.md` and `docs/superpowers/plans/2026-06-01-audit-steps-report-ownership.md`.
+
+</release_entry>
 
 ## v2.1.1 — Worktree Artifact Safety & Fail-Fast (2026-06-01)
 
