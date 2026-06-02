@@ -1,7 +1,7 @@
 ---
 aiboarding_version: 1
-generated: 2026-05-29
-last_synced_commit: 68b10e17127e3ad81818e82cf71638fa45c6e260
+generated: 2026-06-01
+last_synced_commit: bf3af93
 ---
 
 # 1. Engineering Basics
@@ -12,7 +12,7 @@ last_synced_commit: 68b10e17127e3ad81818e82cf71638fa45c6e260
 
 **Run/install:** `claude plugin install github:gustavo-meilus/superpipelines`. Universal installer auto-detects 7 platforms: `install.sh` (POSIX), `install.ps1` (Win), `npx -y superpipelines-install`.
 
-**Versioning:** v2.1.0. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
+**Versioning:** v2.1.2. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
 
 **Source roots (repo root):** `agents/` (7 zero-body defs), `skills/` (~38), `commands/` (8 slash wrappers), `hooks/`. Manifests: `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`.
 
@@ -26,7 +26,7 @@ last_synced_commit: 68b10e17127e3ad81818e82cf71638fa45c6e260
 
 **6 exec patterns:** Sequential, Parallel Fan-Out, Iterative Loop (cap 3 iter), Human-Gated, Spec-Driven Dev, 4D Wrapper.
 
-**Skill primacy:** intelligence lives in `SKILL.md`. Agents zero-body (frontmatter only). Each agent has companion `{agent}-protocol/SKILL.md` (full protocol; `disable-model-invocation: true`, `user-invocable: false`). `*-references/` dirs omit SKILL.md -> not preloaded, load on demand. **Invocation-flag trap:** `disable-model-invocation: true` blocks Skill-tool (model) load — use ONLY on `{agent}-protocol` skills. Utility skills loaded programmatically (`sk-model-resolver` via running-a-pipeline) + orchestration skills with a `commands/` wrapper use `user-invocable: false` ALONE (hides from `/` menu, stays Skill-tool-loadable). `disable-model-invocation` on a Skill-tool-loaded skill = runtime block.
+**Skill primacy:** intelligence lives in `SKILL.md`. Agents zero-body (frontmatter only). Each agent has companion `{agent}-protocol/SKILL.md` (full protocol; `disable-model-invocation: true`, `user-invocable: false`). `*-references/` dirs omit SKILL.md -> not preloaded, load on demand. **Invocation-flag trap:** `disable-model-invocation: true` blocks Skill-tool (model) load — use ONLY on `{agent}-protocol` skills. Utility skills loaded programmatically (`sk-model-resolver` via running-a-pipeline) + orchestration skills with a `commands/` wrapper use `user-invocable: false` ALONE (hides from `/` menu, stays Skill-tool-loadable). `disable-model-invocation` on a Skill-tool-loaded skill = runtime block. **Frontmatter-vs-protocol trap (#33, v2.1.2):** an agent's `permissionMode` MUST match its write capability + protocol — `acceptEdits` for file-producers (architect, skill-architect, task-executor: `tools:` include Write/Edit, protocol writes files), `plan` for read-only/advisory (reviewers, auditor, failure-analyzer: `disallowedTools: Write`). A read-only agent's protocol must NOT instruct it to write (auditor renders report inline; ORCHESTRATOR persists + ensures `audit/` dir exists, not the auditor). Empirically `permissionMode: plan` is largely inert for dispatched subagents — real write-gate = `tools:`/`disallowedTools:` allowlist.
 
 **Key skills:** `using-superpipelines` (router), `creating-a-pipeline`/`running-a-pipeline`, `sk-platform-dispatch` (tier detect + dispatch), `sk-model-resolver` (5-layer model precedence), `sk-pipeline-paths` (scope roots), `sk-pipeline-grilling` (brief-hardening crawl/grill/reconcile), `sk-spec-driven-development`, `sk-4d-method`.
 
@@ -48,7 +48,9 @@ last_synced_commit: 68b10e17127e3ad81818e82cf71638fa45c6e260
 
 **Tier model (5):** Tier1 CC `Task()` · 1b OpenCode `mode: subagent` · 1c Antigravity (aspirational) · 1d Codex (TOML agents, ≤6 concurrent) · 2 Cursor/Windsurf/Cline (single-agent inline). Gemini CLI retired 2026-06-18.
 
-**Failure-mode honesty:** structural guardrails (isolation, iter cap, profile inversion) = PREVENTIVE, NOT yet validated against real incidents. `PARITY_TESTING: MANUAL_PHASE1` — no automated cross-platform gate. No observed prod failures reported by maintainer. Cross-platform parity = manual per-platform.
+**Worktree artifact-safety (#31, v2.1.1):** data/artifact-only agents OMIT `isolation` (run in parent host cwd); `isolation: worktree` ONLY for tracked-code writers. Pure data agent in worktree writing gitignored `superpipelines/temp/` = zero tracked changes -> CC auto-cleans worktree on teardown -> artifact destroyed -> copy-back fails -> orchestrator re-runs protocol INLINE = token bleed. Code-writers host-anchor artifacts via `RESOLVE_HOST_WORKSPACE()` + `additionalDirectories`; runner fail-fast (missing declared artifact after DONE = BLOCKED, never inline); auditor #23 SEV-0 / #24 SEV-1. NOTE: CC has no `isolation: none` — omit the field.
+
+**Failure-mode honesty:** structural guardrails (isolation, iter cap, profile inversion) = mostly PREVENTIVE — EXCEPT two real reported flaws now fixed: worktree artifact-loss (#31, v2.1.1) + audit-report-ownership / `permissionMode` split-brain (#33, v2.1.2). `PARITY_TESTING: MANUAL_PHASE1` — no automated cross-platform gate. Cross-platform parity = manual per-platform.
 
 **Before claiming done:** invoke `verification-before-completion`. Before topology edits: `/superpipelines:audit-steps` (SEV-0..3 report). Use `Skill` tool not `Read` for skills.
 
