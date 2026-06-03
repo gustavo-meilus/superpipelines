@@ -17,6 +17,21 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.2.0 — On-Demand Pipeline Optimizer (2026-06-03)
+
+### Added
+
+- **`optimizing-a-pipeline` workflow + `/superpipelines:optimize-pipeline` command** — on-demand optimization of an existing named pipeline. Surveys topology, model-tier cost, and past-run signals; runs a discovery session (`sk-4d-method` → `brainstorming` → grilling) to lock an `optimization_plan`; then batch-applies it atomically through the existing mutation + `change-models` engines with a snapshot + git checkpoint, an all-or-nothing promotion gated by `pipeline-auditor` DELTA + full audits (SEV-0/1 == 0 on both), a graph-integrity check, and auto-rollback on failure. Single human plan-gate; a multi-change optimization is treated as one semantic change.
+- **`pipeline-optimizer` agent + `pipeline-optimizer-protocol`** — read-only four-axis analyst (topology structure / model-tier cost / past-run signals / protocol quality). Mirrors `pipeline-auditor`: `tools: Read, Glob, Grep`, `disallowedTools: Write, Edit, Bash`, `permissionMode: plan`, `model_tier: deep`, and **omits `isolation`** (data/analysis agent, #31). Renders its opportunity report inline; the orchestrator persists it (render-inline, #33). Isolation/frontmatter compliance is delegated to `pipeline-auditor`, never re-checked (`DEPENDENCY_INVERSION`).
+- **Opportunity taxonomy reference** — `skills/pipeline-optimizer-references/references/opportunity-taxonomy.md` catalogues each opportunity class with symptom · discriminator · false-positive guard · `suggested_engine`.
+- **`sk-pipeline-grilling` `MODE=optimization`** — new PASS C reconciles analyst opportunities one at a time against the 4D-hardened constraints, with a zero-unresolved HARD GATE, returning a structured `optimization_plan`.
+- **Opt-in `subagent-telemetry` hook** — `SubagentStop` capture appending per-step cost/latency rows to `run-telemetry.jsonl`. **Ships disabled** (not registered in `hooks/hooks.json`): the orchestrator model cannot see per-subagent token counts (anthropics/claude-code #21837, #22625), so capture must be hook-authored. Fail-open (`exit 0` on any error), BOM-free. `optimizing-a-pipeline` degrades gracefully across no-run / state-only / full-telemetry tiers.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-03-optimizing-a-pipeline-design.md` and `docs/superpowers/plans/2026-06-03-optimizing-a-pipeline.md`.
+- **`AIBOARDING.md` sync** — onboarding doc updated for the optimizer feature, the run-safety audit gate (#37), and the subagent-telemetry blind-spot gotcha.
+
 ## 2.1.3 — Run-Safety Audit Gate (2026-06-02)
 
 ### Added
