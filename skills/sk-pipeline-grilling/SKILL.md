@@ -1,6 +1,6 @@
 ---
 name: sk-pipeline-grilling
-description: Use when creating-a-pipeline needs to harden a pipeline brief before architect dispatch — runs an adversarial crawl/grill/reconcile interrogation (MODE=brief) and a lighter post-pattern architectural-confirmation pass (MODE=architectural). Reference-only; preload via the orchestrator's Skill invocation.
+description: Use when creating-a-pipeline needs to harden a pipeline brief before architect dispatch — runs an adversarial crawl/grill/reconcile interrogation (MODE=brief) and a lighter post-pattern architectural-confirmation pass (MODE=architectural). Also used by optimizing-a-pipeline to reconcile optimization opportunities one at a time (MODE=optimization). Reference-only; preload via the orchestrator's Skill invocation.
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -26,6 +26,7 @@ Pipeline Grilling replaces passive slot-filling with an adversarial interrogatio
 GRILL(MODE, platform_profile, scope, name, raw_brief):
   IF MODE == "brief":         run PASS A (A0 → A1 → A2 → A3), return hardened_brief
   IF MODE == "architectural": run PASS B, return acknowledgement
+  IF MODE == "optimization":  run PASS C (findings, hardened), return optimization_plan
 </protocol>
 
 ## PASS A — Brief Hardening (MODE=brief)
@@ -91,6 +92,27 @@ Return a structured object:
   - isolation reality on this tier: `platform_profile.capabilities.reviewer_isolation` (structural vs convention-only). Surface every entry of `platform_profile.degradation_warnings`.
   - model-tier implications of the chosen tiers.
 - Gate: the user acknowledges the key tradeoff(s). This is confirmation, not extraction.
+</protocol>
+
+## PASS C — Optimization Reconciliation (MODE=optimization)
+
+<protocol>
+- Invoked by `optimizing-a-pipeline` Phase 2 AFTER the `pipeline-optimizer` survey. No new crawl.
+- **Inputs:** the analyst's opportunity report (`findings`) and the `hardened` constraints distilled by `sk-4d-method` (what "better" means for this pipeline).
+- **Behavior — convergent, one opportunity at a time:** walk the rendered opportunities individually. NEVER batch. For each, confront the user against the finding (e.g. "the analyst found steps B and C are redundant — merge them, or is the split intentional?"). Capture a per-opportunity verdict: accept / reject / modify, each WITH a rationale.
+- Challenge vague verdicts the same way Pass A challenges vague answers: push until the decision is concrete and grounded in the hardened constraints.
+- <HARD-GATE>RECONCILIATION: do not exit until ZERO opportunities remain unresolved — every opportunity carries an explicit accept/reject/modify verdict. Mirrors the A3 reconciliation gate.</HARD-GATE>
+
+### OUTPUT — optimization_plan
+Return a structured object:
+```
+{
+  accepted:      [ {id, axis, proposed_change, suggested_engine}, ... ],
+  rejected:      [ {id, reason}, ... ],
+  modifications: [ {id, original, modified_change}, ... ],
+  success_criteria: <how the optimization will be judged better>
+}
+```
 </protocol>
 
 <invariants>
