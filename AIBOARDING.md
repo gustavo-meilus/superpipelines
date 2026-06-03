@@ -1,7 +1,7 @@
 ---
 aiboarding_version: 1
 generated: 2026-06-01
-last_synced_commit: a9d00e7c20c43784b9af46078a54c04d29c91f4b
+last_synced_commit: 32c6970abe960f6ad01ead42cb1c2c729e6bd147
 ---
 
 # 1. Engineering Basics
