@@ -126,6 +126,7 @@ The framework selects the optimal pattern based on task complexity:
 | `/superpipelines:delete-step` | Removes a step from a named pipeline with gap analysis. |
 | `/superpipelines:audit-steps` | Audits agents and skills against the compliance matrix; applies checkpointed fixes (incl. Fix 11 for worktree artifact-loss). |
 | `/superpipelines:change-models` | Sets, changes, or audits per-agent model-tier preferences. |
+| `/superpipelines:optimize-pipeline` | Surveys an existing pipeline (topology, model-tier cost, past-run signals), locks an optimization plan with the user, then batch-applies it atomically with a mandatory post-apply audit. |
 | `/superpipelines:init-deep` | Generates hierarchical `PIPELINE-CONTEXT.md` maps for localized, token-efficient context. |
 
 ---

@@ -1,6 +1,6 @@
 {
   "name": "superpipelines",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "type": "module",
   "bin": {
     "superpipelines-install": "./bin/install.js"
