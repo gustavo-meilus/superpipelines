@@ -25,6 +25,7 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 | `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
 | `/audit-steps` | `pipeline-auditor` | Security/topology review. |
 | `/change-models` or "Change models" | `change-models` | Interactive model reassignment. |
+| `/optimize-pipeline` or "Optimize [P]" | `optimizing-a-pipeline` | On-demand topology/cost optimization. |
 | Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
 | Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
 | Authoring Agents or Skills | `sk-claude-code-conventions` | Format enforcement. |
