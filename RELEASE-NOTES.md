@@ -3,8 +3,33 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, and the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, and the on-demand pipeline optimizer in v2.2.0.
 </overview>
+
+## v2.2.0 — On-Demand Pipeline Optimizer (2026-06-03)
+
+Adds an on-demand workflow to optimize an existing pipeline: a read-only `pipeline-optimizer` surveys topology, model-tier cost, past-run signals, and protocol quality; a 4D → brainstorm → grill discovery session locks an `optimization_plan`; and the approved plan is batch-applied atomically through the existing mutation + `change-models` engines with snapshot + git checkpoint, all-or-nothing promotion gated by `pipeline-auditor` DELTA + full audits, and a graph-integrity check. Plus an opt-in `SubagentStop` telemetry hook that feeds cost/latency signals into future runs.
+
+<release_entry version="2.2.0" status="STABLE">
+
+### Added
+
+- **`optimizing-a-pipeline` + `/superpipelines:optimize-pipeline`** — orchestration skill (Phases 0–5) and command wrapper. Selection → no-active-run soft gate → optimizer survey → discovery session → single plan-gate → atomic batch-apply → mandatory post-apply proof. Orchestration is top-level only (`SUB_AGENT_SPAWNING: FALSE`).
+- **`pipeline-optimizer` agent + protocol** — read-only four-axis analyst (topology / model-tier cost / past-run signals / protocol quality). Read-only render-inline (#33); omits `isolation` (#31); declares `model_tier: deep` not `model:`; isolation/compliance delegated to `pipeline-auditor` (`DEPENDENCY_INVERSION`).
+- **Opportunity taxonomy reference** — heuristics catalogue (symptom · discriminator · false-positive guard · suggested engine) with a Table of Contents.
+- **`sk-pipeline-grilling` `MODE=optimization`** — convergent one-opportunity-at-a-time reconciliation with a zero-unresolved HARD GATE; emits `optimization_plan`.
+- **Opt-in `subagent-telemetry` hook** — `SubagentStop` capture to `run-telemetry.jsonl`; ships disabled (model can't see per-subagent token counts — #21837/#22625), fail-open, BOM-free.
+
+### Safety
+
+- **Atomic batch-apply** — snapshot to `edit-{ts}/backup/` + git checkpoint precede any write; all changes staged in one `edit-{ts}/`; SEV-0/1 == 0 gates both the pre-promote DELTA and post-promote full audits; all-or-nothing promotion with rollback on any audit/graph/promotion failure; `plugin_version` re-stamped and `topology.metadata.optimization` recorded.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-03-optimizing-a-pipeline-design.md` and `docs/superpowers/plans/2026-06-03-optimizing-a-pipeline.md`.
+- **`AIBOARDING.md` sync** — updated for the optimizer feature, the run-safety audit gate (#37), and the subagent-telemetry blind-spot gotcha.
+
+</release_entry>
 
 ## v2.1.3 — Run-Safety Audit Gate (2026-06-02)
 
