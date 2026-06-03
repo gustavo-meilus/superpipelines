@@ -1,6 +1,7 @@
 # Ensure shell scripts always have LF line endings
 *.sh text eol=lf
 hooks/session-start text eol=lf
+hooks/subagent-telemetry text eol=lf
 
 # aiboarding hook scripts are extensionless bash; force LF (Git Bash breaks on CRLF)
 .aiboarding/hooks/_lib text eol=lf
