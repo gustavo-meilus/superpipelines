@@ -1,7 +1,6 @@
 ---
 name: sk-claude-code-conventions
 description: Provides canonical engineering standards for authoring agents, skills, hooks, and pipeline orchestration in Claude Code. Use when authoring or modifying agents, skills, hooks, or pipeline-orchestration artifacts — covers model-tier selection, prompt-cache discipline, frontmatter schemas, and progressive-disclosure rules.
-disable-model-invocation: true
 user-invocable: false
 ---
 

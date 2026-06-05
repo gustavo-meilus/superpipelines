@@ -1,7 +1,6 @@
 ---
 name: sk-4d-method
 description: Provides a per-invocation four-phase processing wrapper (Deconstruct, Diagnose, Develop, Deliver) for structured request resolution. Use when an agent faces an ambiguous request, missing required slots, or feedback that requires re-entry into a specific processing phase.
-disable-model-invocation: true
 user-invocable: false
 ---
 

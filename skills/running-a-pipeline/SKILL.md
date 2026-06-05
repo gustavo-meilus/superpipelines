@@ -48,39 +48,44 @@ Mark a todo `completed` ONLY after its phase has actually run. A skipped or out-
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
 
-**Step 1 — Skill-tool probe.** Identify the correct skill-loading tool. The probe distinguishes **three** observable conditions, not two (Q16): tool present and load succeeds, tool present and lookup fails, tool absent.
+**Step 1 — Locate the dispatch skill.** The dispatch profile is obtained by reading the
+`sk-platform-dispatch` skill body directly, never by invoking it through the skill-load tool —
+`sk-platform-dispatch` declares `disable-model-invocation: true`, so a `Skill()` /
+`activate_skill()` load is guaranteed to be rejected. The probe distinguishes three observable
+conditions:
 
-| Tool present | Action |
+| Condition | Action |
 |---|---|
-| `Skill` tool (Claude Code / Tier 1) | `Skill(superpipelines:sk-platform-dispatch)` → `DETECT()` |
-| `activate_skill` tool (Antigravity when plugin installed) | `activate_skill(sk-platform-dispatch)` → `DETECT()` |
-| Tool present, lookup fails (e.g., AGY without superpipelines installed in its registry) | Catch `SkillNotFound` / `LookupError`; emit "plugin not registered in this env" advisory; fall through to INLINE-DETECT() |
-| Neither / plugin not installed in this environment | Run INLINE-DETECT() — emit advisory first |
+| File-read tool present and `skills/sk-platform-dispatch/SKILL.md` readable | `Read` the file → execute `DETECT()` from its body (includes the Task-tool probe). |
+| File-read tool present, dispatch skill file NOT readable (plugin not installed in this env) | Emit "plugin not registered in this env" advisory; fall through to `INLINE-DETECT()`. |
+| No file-read tool available | Emit advisory; run `INLINE-DETECT()`. |
 
 **Step 2 — Load or inline-detect:**
 
-- **Skill tool available**: Wrap the load call in try/catch. Three distinct error shapes require different fallbacks:
+- **File-read tool available**: Read the dispatch skill body and execute `DETECT()` inline.
+  No `Skill()` / `activate_skill()` load is attempted — the flag makes it a guaranteed failure.
+
   ```
   try:
-    profile = Skill(superpipelines:sk-platform-dispatch).DETECT()  // or activate_skill(...)
-  catch DisableModelInvocation:
-    // Skill is registered but has disable-model-invocation: true.
-    // This is NOT a missing-plugin case — it means the skill requires direct file execution.
-    // Read the skill file and execute DETECT() inline using all its heuristics
-    // (including the Task-tool probe, which correctly identifies tier_1 regardless of
-    // whether CLAUDE_CODE env var is set). NEVER fall through to INLINE-DETECT() here
-    // — INLINE-DETECT() lacks the Task-tool probe and will misidentify tier_1 as tier_1c
-    // on any machine where `agy` is installed and CLAUDE_CODE env var is absent.
     Read(skills/sk-platform-dispatch/SKILL.md)
     profile = execute_DETECT_from_skill_body()  // Task tool present → tier_1; etc.
-  catch SkillNotFound | LookupError:
-    emit advisory: "⚠️ Skill loader present but sk-platform-dispatch unresolved — superpipelines plugin may not be registered in this environment. Falling back to INLINE-DETECT()."
+  catch FileNotFound | unreadable:
+    // Plugin not registered in this environment — the skill file is not on disk.
+    emit advisory: "⚠️ Dispatch skill file not found — superpipelines plugin may not be
+    registered in this environment. Falling back to INLINE-DETECT()."
     profile = INLINE-DETECT()
   ```
-  On success (any path): cache `platform_profile` in session context. Proceed normally.
-- **No skill tool available**: Emit the following advisory, then run INLINE-DETECT():
 
-  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.45 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
+  Executing `DETECT()` from the body preserves the **Task-tool probe**, which correctly
+  identifies `tier_1` regardless of whether the `CLAUDE_CODE` env var is set. NEVER skip the
+  Read and go straight to `INLINE-DETECT()` when the file IS readable — `INLINE-DETECT()` lacks
+  the Task-tool probe and will misidentify `tier_1` as `tier_1c` on any machine where `agy` is
+  installed and `CLAUDE_CODE` is absent.
+
+  On success (any path): cache `platform_profile` in session context. Proceed normally.
+- **No file-read tool available**: Emit the following advisory, then run INLINE-DETECT():
+
+  > ⚠️ **PLATFORM ADVISORY:** No file-read tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.45 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
 
   **INLINE-DETECT() heuristics** — first match wins. Each heuristic requires a **runtime-capability signal** (env var or binary on PATH), never a workspace filesystem artifact alone — filesystem artifacts indicate the plugin's presence, not the host's identity.
 
