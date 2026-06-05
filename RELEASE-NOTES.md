@@ -3,8 +3,26 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, and the on-demand pipeline optimizer in v2.2.0.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, and the phase-skip safety hardening in v2.2.1.
 </overview>
+
+## v2.2.1 — Phase-Skip Safety Hardening (2026-06-04)
+
+Closes a live-orchestration defect (#45) in `running-a-pipeline`: a run could drift from the canonical phase order, invent a non-existent "no-active-run" phase, and skip the pre-dispatch safety phases (0.6 portability, 0.7 run-safety tripwire). The fix is structural — the total phase order is stated at the top of the protocol, a phase-manifest `TodoWrite` makes any skip user-visible, and a Phase 3 precondition HARD-STOPs dispatch if the safety phases are absent from a persisted phase ledger.
+
+<release_entry version="2.2.1" status="STABLE">
+
+### Fixed
+
+- **Phase-skip during live orchestration (#45)** — `skills/running-a-pipeline/SKILL.md` could execute phases out of order and bypass 0.6/0.7 before dispatch. No runtime observer existed to catch it (the auditor checks definitions; CI checks JSON/file existence; guardrails were prose HARD-GATEs self-enforced by the drifting model).
+
+### Safety
+
+- **Phase Ordering Contract** lifted to the top of the protocol — total order `0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 0.7 → 1 → 2 → 3 → 4` stated verbatim, with an explicit note that no "soft-gate"/"no-active-run" phase exists.
+- **Mandatory phase-manifest `TodoWrite`** at Phase 0 — 11 todos, one per phase; a skipped or out-of-order todo is a visible defect the user can intervene on.
+- **Phase 3 dispatch precondition** — HARD-STOPs when `0.6`/`0.7` are absent from the in-session phase ledger; the ledger is persisted to `metadata.phases_executed` at Phase 2 so a resume cannot re-enter dispatch with the safety phases missing. Two new red-flag entries codify the failure mode.
+
+</release_entry>
 
 ## v2.2.0 — On-Demand Pipeline Optimizer (2026-06-03)
 
