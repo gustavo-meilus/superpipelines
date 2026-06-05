@@ -17,6 +17,12 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.2.1 — Phase-Skip Safety Hardening (2026-06-04)
+
+### Fixed
+
+- **`running-a-pipeline` phase-skip during live orchestration (#45)** — a run could drift from the canonical phase order, invent a non-existent "no-active-run" phase, and skip Phase 0.6 (portability) and Phase 0.7 (pre-run safety tripwire) on the way to dispatch. Three structural weaknesses are now closed in `skills/running-a-pipeline/SKILL.md`: (1) a **Phase Ordering Contract** lifted to the top of the protocol, stating the total order verbatim and explicitly noting that no "soft-gate" / "no-active-run" phase exists; (2) a **mandatory phase-manifest `TodoWrite`** at Phase 0 entry so a skipped or out-of-order phase becomes user-visible mid-run; (3) a **Phase 3 dispatch precondition** that HARD-STOPs when `0.6`/`0.7` are absent from the in-session phase ledger. The ledger is persisted to `metadata.phases_executed` at Phase 2 so a resume cannot re-enter dispatch with the safety phases missing. Two new red-flag entries codify the failure mode.
+
 ## 2.2.0 — On-Demand Pipeline Optimizer (2026-06-03)
 
 ### Added
