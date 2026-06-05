@@ -19,6 +19,23 @@ Central orchestrator for pipeline execution. Manages the full lifecycle from mul
 ## Workflow Phases
 
 <protocol>
+
+### PHASE ORDERING CONTRACT (read first — non-negotiable)
+
+<HARD-GATE>
+Phase execution order is **total** and fixed:
+
+`0 → 0.25 → 0.4 → 0.45 → 0.5 → 0.6 → 0.7 → 1 → 2 → 3 → 4`
+
+Phase numbers are decimals because phases were inserted over time — they are NOT optional, NOT reorderable, and NONE may be skipped or renamed. There is no "soft gate", "no-active-run gate", or any phase not listed above; inventing a phase name or running phases from memory instead of from this body is the known phase-drift failure mode. Execute each phase by reading its section below, in this exact order.
+
+**Mandatory phase manifest.** Before executing Phase 0, create a TodoWrite list with exactly these 11 items, in this order, each as a separate todo:
+
+`Phase 0 — Discovery & Selection`, `Phase 0.25 — Tier Detect & Dispatch Load`, `Phase 0.4 — Model Migration Check`, `Phase 0.45 — Model Resolution`, `Phase 0.5 — Version Compatibility Advisory`, `Phase 0.6 — Portability Validation`, `Phase 0.7 — Pre-Run Safety Tripwire`, `Phase 1 — Resume Check`, `Phase 2 — State Initialization`, `Phase 3 — Entry Skill Dispatch`, `Phase 4 — Completion & Cleanup`.
+
+Mark a todo `completed` ONLY after its phase has actually run. A skipped or out-of-order todo is a visible defect — the user can see it and intervene. Maintain an in-session **phase ledger** (the set of phases marked completed); Phase 3 asserts against it before any dispatch.
+</HARD-GATE>
+
 ### PHASE 0: DISCOVERY & SELECTION
 - **Q16 degraded-state preflight** — IF the marker file `${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded` exists, emit:
   > ⚠️ SessionStart hook degraded (Git Bash not found on the previous session start). Auto-loading of `using-superpipelines` routing context was skipped. The plugin still works, but routing decisions may be less precise. To restore: install Git for Windows (Git Bash), then restart this session. To dismiss this advisory for the current session only: `del "%CLAUDE_PLUGIN_ROOT%\.session-hook-degraded"` (Windows) or `rm "${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded"` (Unix).
@@ -312,6 +329,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - Generate a new `runId` (format: `{P}-{YYYYMMDD-HHMMSS}`).
 - Initialize `pipeline-state.json` using the atomic write protocol (write to `.tmp` then rename).
 - **Invariants**: Must include `pipeline_id`, `started_at`, `plugin_version` (read from `<workspace>/{platform_profile.extensions.version_manifest_path}` at init — Q12 per-tier manifest, not hardcoded to CC's path), `scope_root_dir` (the directory NAME from `platform_profile.scope_root.workspace`, not an absolute path — Q12 portability), the selected execution `pattern`, and the platform fields cached in Phase 0.25: `metadata.source_tier`, `metadata.runtime_tier`, `metadata.platform_profile`.
+- **Phase ledger persistence (anti-phase-skip).** Stamp `metadata.phases_executed` with the in-session phase ledger accumulated so far (every phase from `0` through `1` that has run). Phase 3's phase-completion precondition reads this back so a resume cannot re-enter dispatch with `0.6`/`0.7` missing. Continue appending `2`, `3`, `4` as they complete.
 - **Deterministic atomic `platform_profile` write (no transcription).** `metadata.platform_profile` MUST be populated by a deterministic copy, never by the orchestrator transcribing the nested object field-by-field into the Write payload. Procedure: (1) write the state skeleton with `"metadata": { ..., "platform_profile": null }` via the atomic write; (2) run a `python3` merge that injects the profile JSON verbatim and writes **atomically and BOM-free** — dump to `${STATE_PATH}.tmp` then `os.replace`, obeying the same `.tmp`+rename contract as every other state update:
   ```bash
   python3 - "$STATE_PATH" "$PROFILE_PATH" <<'PY'
@@ -329,6 +347,14 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 <HARD-GATE>The orchestrator MUST NOT hand-author the nested `platform_profile` object in the state-file Write payload. Field-by-field transcription is the root cause of state-file corruption (e.g. a garbled `subagent_env_override` key). Use the deterministic atomic merge above; it obeys the same `.tmp`+`os.replace` contract as invariant "All state updates must utilize the atomic write pattern" and is NOT an exception to it.</HARD-GATE>
 
 ### PHASE 3: ENTRY SKILL DISPATCH
+
+<HARD-GATE>
+**Phase-completion precondition (anti-phase-skip).** BEFORE any dispatch, assert the in-session phase ledger (and `metadata.phases_executed` if persisted in Phase 2) contains EVERY phase from `0` through `0.7` — specifically including `0.6` (portability) and `0.7` (pre-run safety tripwire). IF `0.6` OR `0.7` is absent from the ledger, HARD-STOP and emit:
+
+> ❌ Phase-ordering defect: dispatch reached before Phase {missing} executed. The pre-dispatch safety phases (0.6 portability, 0.7 run-safety tripwire) were skipped. Aborting before dispatch to prevent running an unvalidated pipeline. Re-run from Phase 0 and execute all phases in order per the Phase Ordering Contract.
+
+Do NOT dispatch, do NOT "run the missing phase now and continue" (out-of-order execution corrupts the ordering guarantees — restart cleanly from Phase 0). This gate exists because the skipped phases (0.6/0.7) are the ones whose absence is catastrophic, and Phase 3 is the last point before that absence causes harm.
+</HARD-GATE>
 
 <HARD-GATE>Entry-skill inputs (e.g., `$TOPIC`, `$LANGUAGE`, free-form prompts that the entry skill declares in its body) MUST NOT be collected before Phase 3. The orchestrator MUST complete Phases 0, 0.25, 0.4, 0.45, 0.5, 0.6, 1, and 2 in that order before reading any entry-skill `## 1. Initialization`-style requirements. Premature input collection (e.g., asking for a topic between 0.25 and 0.4) is a phase-ordering violation — it commits the user to inputs on un-migrated, un-resolved, or portability-defective state. The only inputs collected pre-Phase-3 are (a) pipeline selection (Phase 0) and (b) confirmations explicitly required by Phases 0.5/0.6 advisories.</HARD-GATE>
 
@@ -387,6 +413,8 @@ This gate is best-effort prose: at Tier 1 the orchestrator is the model, so ther
 - "The user already typed `Run X`, I'll batch the topic prompt now." → **STOP**. Phase 3 HARD-GATE: entry-skill inputs are collected during Phase 3, not before. Pre-collection commits the user to inputs on un-validated state.
 - "The artifact is right there in the worktree, I'll just copy it back." → **STOP**. Fail-fast gate step 2: copy-back from a worktree is forbidden, no exceptions. A missing declared artifact is `BLOCKED`. If the producer has `isolation: worktree`, redirect to `/superpipelines:audit-steps {P}` (Fix 11).
 - "The artifact is missing, I'll just re-run the agent once." → **STOP**. Fail-fast gate step 3: re-dispatch/inline reconstruction causes the exact token bleed this gate exists to prevent. Escalate `BLOCKED`.
+- "I'll run the no-active-run check first, then detect the tier." → **STOP**. There is no "no-active-run" phase. Follow the Phase Ordering Contract verbatim; running phases from memory invents phases and skips 0.6/0.7. Create the phase-manifest TodoWrite before Phase 0.
+- "Portability/safety look fine, I'll skip 0.6/0.7 and dispatch." → **STOP**. Phase 3 precondition HARD-STOPs if 0.6/0.7 are absent from the phase ledger. Skipping them is the catastrophic-by-design failure mode this gate guards.
 
 ## Rationalization Table
 
