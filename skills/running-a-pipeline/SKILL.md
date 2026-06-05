@@ -85,7 +85,7 @@ conditions:
   On success (any path): cache `platform_profile` in session context. Proceed normally.
 - **No file-read tool available**: Emit the following advisory, then run INLINE-DETECT():
 
-  > ⚠️ **PLATFORM ADVISORY:** No skill-load tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.45 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
+  > ⚠️ **PLATFORM ADVISORY:** No file-read tool detected in this environment (superpipelines plugin may not be installed here). Running INLINE-DETECT() fallback. Phase 0.45 will execute the resolution algorithm inline — preference files will be consulted if readable. If detection looks wrong, set `SUPERPIPELINES_FORCE_TIER=tier_1|tier_1b|tier_1c|tier_1d|tier_2` to override.
 
   **INLINE-DETECT() heuristics** — first match wins. Each heuristic requires a **runtime-capability signal** (env var or binary on PATH), never a workspace filesystem artifact alone — filesystem artifacts indicate the plugin's presence, not the host's identity.
 
