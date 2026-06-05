@@ -1,7 +1,7 @@
 ---
 aiboarding_version: 1
 generated: 2026-06-01
-last_synced_commit: 32c6970abe960f6ad01ead42cb1c2c729e6bd147
+last_synced_commit: 82e9ff8afce96d25eead4f5c4ee7bd2779077939
 ---
 
 # 1. Engineering Basics
@@ -12,7 +12,7 @@ last_synced_commit: 32c6970abe960f6ad01ead42cb1c2c729e6bd147
 
 **Run/install:** `claude plugin install github:gustavo-meilus/superpipelines`. Universal installer auto-detects 7 platforms: `install.sh` (POSIX), `install.ps1` (Win), `npx -y superpipelines-install`.
 
-**Versioning:** v2.2.0. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
+**Versioning:** v2.2.1. `.version-bump.json` syncs version across `package.json` + `.claude-plugin/plugin.json` + `marketplace.json` (`plugins.0.version`). `.cursor-plugin/plugin.json` + `CLAUDE.md` Project Version tracked manually. Stamp `plugin_version` on every artifact mutation.
 
 **Source roots (repo root):** `agents/` (8 zero-body defs), `skills/` (~40), `commands/` (9 slash wrappers), `hooks/` (SessionStart + opt-in SubagentStop telemetry). Manifests: `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`.
 
@@ -52,7 +52,7 @@ last_synced_commit: 32c6970abe960f6ad01ead42cb1c2c729e6bd147
 
 **Worktree artifact-safety (#31, v2.1.1):** data/artifact-only agents OMIT `isolation` (run in parent host cwd); `isolation: worktree` ONLY for tracked-code writers. Pure data agent in worktree writing gitignored `superpipelines/temp/` = zero tracked changes -> CC auto-cleans worktree on teardown -> artifact destroyed -> copy-back fails -> orchestrator re-runs protocol INLINE = token bleed. Code-writers host-anchor artifacts via `RESOLVE_HOST_WORKSPACE()` + `additionalDirectories`; runner fail-fast (missing declared artifact after DONE = BLOCKED, never inline); auditor #23 SEV-0 / #24 SEV-1. NOTE: CC has no `isolation: none` — omit the field.
 
-**Failure-mode honesty:** structural guardrails (isolation, iter cap, profile inversion) = mostly PREVENTIVE — EXCEPT two real reported flaws now fixed: worktree artifact-loss (#31, v2.1.1) + audit-report-ownership / `permissionMode` split-brain (#33, v2.1.2). Plus run-safety audit gate (#37): `running-a-pipeline` Phase 0.7 pre-run tripwire HARD-STOPs a version-drifted pipeline carrying worktree artifact-loss (#23/#24) before dispatch. `PARITY_TESTING: MANUAL_PHASE1` — no automated cross-platform gate. Cross-platform parity = manual per-platform.
+**Failure-mode honesty:** structural guardrails (isolation, iter cap, profile inversion) = mostly PREVENTIVE — EXCEPT two real reported flaws now fixed: worktree artifact-loss (#31, v2.1.1) + audit-report-ownership / `permissionMode` split-brain (#33, v2.1.2). Plus run-safety audit gate (#37): `running-a-pipeline` Phase 0.7 pre-run tripwire HARD-STOPs a version-drifted pipeline carrying worktree artifact-loss (#23/#24) before dispatch. Plus phase-skip hardening (#45, v2.2.1): live orchestration could drift phase order, invent a fake "no-active-run" phase, skip 0.6/0.7 pre-dispatch -> no runtime observer caught it (auditor checks defs, CI checks JSON, guardrails self-enforced by drifting model). Fix in `running-a-pipeline`: Phase Ordering Contract lifted to top of protocol (total order stated verbatim, no fake phase exists) + mandatory phase-manifest `TodoWrite` at Phase 0 (skip = user-visible) + Phase 3 dispatch precondition HARD-STOPs if 0.6/0.7 absent from phase ledger (persisted to `metadata.phases_executed` at Phase 2 -> resume-safe). `PARITY_TESTING: MANUAL_PHASE1` — no automated cross-platform gate. Cross-platform parity = manual per-platform.
 
 **Before claiming done:** invoke `verification-before-completion`. Before topology edits: `/superpipelines:audit-steps` (SEV-0..3 report). Use `Skill` tool not `Read` for skills.
 
