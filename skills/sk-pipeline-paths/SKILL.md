@@ -1,7 +1,6 @@
 ---
 name: sk-pipeline-paths
 description: Resolves scope-aware absolute file paths for Superpipelines artifacts across local, project, and user scopes. Use when creating or accessing agents, skills, support files, temporary directories, or the pipeline registry, given a known scope and pipeline name.
-disable-model-invocation: true
 user-invocable: false
 ---
 

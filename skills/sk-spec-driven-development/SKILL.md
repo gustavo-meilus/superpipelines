@@ -1,7 +1,6 @@
 ---
 name: sk-spec-driven-development
 description: Establishes a formal spec→plan→tasks→implement contract for multi-step feature work. Use when authoring multi-step pipelines, building new features, refactoring systems, or when a request is too ambiguous for direct execution and a verified specification must precede implementation.
-disable-model-invocation: true
 user-invocable: false
 ---
 
