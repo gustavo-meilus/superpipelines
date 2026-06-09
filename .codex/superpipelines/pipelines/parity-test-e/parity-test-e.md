@@ -6,15 +6,15 @@
 
 This pipeline reads a changelog markdown file, extracts per-version breaking changes and new features, and produces a concise markdown release summary. It was scaffolded on Tier 1d (Codex CLI) and uses model_driven dispatch with TOML agent files. Per-step model (`gpt-5.4-mini`) and effort (`medium`) are declared directly in each agent TOML.
 
-**This file is a documentation and discovery artifact.** It is NOT a runnable slash command. Codex CLI discovers and runs this pipeline via the `.agents/codex` scope root and the registered entry skill.
+**This file is a documentation and discovery artifact.** It is NOT a runnable slash command. Codex CLI discovers and runs this pipeline via the `.codex` scope root and the registered entry skill.
 
 ## Entry Skill
 
 ```
-{ROOT}/skills/superpipelines/parity-test-e/run-parity-test-e/SKILL.md
+{ROOT}/../.agents/skills/superpipelines/parity-test-e/run-parity-test-e/SKILL.md
 ```
 
-Invoke via the Codex CLI's native skill invocation interface when the superpipelines extension is installed and the `.agents/codex` scope is active.
+Invoke via the Codex CLI's native skill invocation interface when the superpipelines extension is installed and the `.codex` scope is active.
 
 ## Topology
 

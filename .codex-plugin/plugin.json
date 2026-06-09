@@ -9,9 +9,7 @@
   "homepage": "https://github.com/gustavo-meilus/superpipelines",
   "repository": "https://github.com/gustavo-meilus/superpipelines",
   "license": "MIT",
-  "skills": "./skills/",
-  "agents": "./.agents/codex/agents/",
-  "commands": "./commands/",
+  "skills": "../.agents/skills/",
   "interface": {
     "displayName": "Superpipelines",
     "shortDescription": "Design and run multi-agent AI pipelines.",
