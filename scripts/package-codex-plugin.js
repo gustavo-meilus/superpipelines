@@ -72,6 +72,55 @@ function findSkillFiles(dir) {
   return out;
 }
 
+function toRelativePath(root, file) {
+  return path.relative(root, file).split(path.sep).join('/');
+}
+
+function findFiles(root, dir = root) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...findFiles(root, full));
+    } else if (entry.isFile()) {
+      out.push(toRelativePath(root, full));
+    }
+  }
+  return out.sort();
+}
+
+function validateMirrorsSourceSkills() {
+  if (!fs.existsSync(sourceSkills) || !fs.statSync(sourceSkills).isDirectory()) {
+    fail('missing source skills directory');
+  }
+
+  const sourceFiles = findFiles(sourceSkills);
+  const packagedFiles = findFiles(packageSkills);
+  const sourceSet = new Set(sourceFiles);
+  const packagedSet = new Set(packagedFiles);
+  const remediation = 'run `node scripts/package-codex-plugin.js` to regenerate the package';
+
+  const missing = sourceFiles.find((file) => !packagedSet.has(file));
+  if (missing) {
+    fail(`packaged skills are missing ${missing}; ${remediation}`);
+  }
+
+  const extra = packagedFiles.find((file) => !sourceSet.has(file));
+  if (extra) {
+    fail(`packaged skills contain extra file ${extra}; ${remediation}`);
+  }
+
+  const differing = sourceFiles.find((file) => {
+    const source = fs.readFileSync(path.join(sourceSkills, file));
+    const packaged = fs.readFileSync(path.join(packageSkills, file));
+    return !source.equals(packaged);
+  });
+  if (differing) {
+    fail(`packaged skills differ from source at ${differing}; ${remediation}`);
+  }
+}
+
 function validateManifest(manifest) {
   if (manifest.skills !== './skills/') {
     fail(`manifest skills must be "./skills/", got ${JSON.stringify(manifest.skills)}`);
@@ -100,6 +149,7 @@ function validatePackage() {
       `missing packaged skills directory: ${path.relative(repoRoot, packageSkills)}; run \`node scripts/package-codex-plugin.js\` to generate the package before checking`,
     );
   }
+  validateMirrorsSourceSkills();
   const skillFiles = findSkillFiles(packageSkills);
   if (skillFiles.length === 0) {
     fail('packaged skills directory contains no SKILL.md files');
