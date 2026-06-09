@@ -1,8 +1,0 @@
-name = "formatter"
-description = "Use when the parity-test-e pipeline needs to render a concise markdown release summary from extracted changelog entries produced by the extractor step."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
-version = "1.0.0"
-plugin_version = "2.0.0"
-skills = ["formatter-protocol"]

@@ -27,7 +27,7 @@ This skill initializes the pipeline run, resolves the scope root and run ID, dis
 
 ### PHASE 0: PREFLIGHT
 
-1. Resolve `{ROOT}` via `sk-pipeline-paths` (scope root resolved from the active tier profile at runtime — never hardcode `.agents/codex/` or any platform path).
+1. Resolve `{ROOT}` via `sk-pipeline-paths` (scope root resolved from the active tier profile at runtime — never hardcode `.codex/` or any platform path).
 2. Resolve `{runId}` = ISO-8601 compact timestamp (e.g., `20260526T143000Z`).
 3. Create temp directory: `{ROOT}/superpipelines/temp/parity-test-f/{runId}/`.
 4. Create `output/` directory if absent: `{ROOT}/output/`.
@@ -92,7 +92,7 @@ DISPATCH via model_driven orchestration:
 
 ```
 Agent: analyzer  (analyzer.toml)
-Protocol: {ROOT}/skills/superpipelines/parity-test-f/analyzer-protocol/SKILL.md
+Protocol: {ROOT}/../.agents/skills/superpipelines/parity-test-f/analyzer-protocol/SKILL.md
 Context to pass:
   - diff_path: {DIFF_PATH}
   - findings_output_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json
@@ -113,7 +113,7 @@ DISPATCH via model_driven orchestration:
 
 ```
 Agent: reviewer  (reviewer.toml — sandbox_mode = "read-only")
-Protocol: {ROOT}/skills/superpipelines/parity-test-f/reviewer-protocol/SKILL.md
+Protocol: {ROOT}/../.agents/skills/superpipelines/parity-test-f/reviewer-protocol/SKILL.md
 Context to pass:
   - findings_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json
   - verdict_output_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json
@@ -135,7 +135,7 @@ DISPATCH via model_driven orchestration:
 
 ```
 Agent: reporter  (reporter.toml)
-Protocol: {ROOT}/skills/superpipelines/parity-test-f/reporter-protocol/SKILL.md
+Protocol: {ROOT}/../.agents/skills/superpipelines/parity-test-f/reporter-protocol/SKILL.md
 Context to pass:
   - findings_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json
   - verdict_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json
@@ -167,7 +167,7 @@ Wait for terminal status from reporter:
 
 <invariants>
 - NEVER use `Task()` — Tier 1d has `task_primitive: false`. All dispatch is model_driven.
-- NEVER hardcode platform paths (`.agents/codex/`, `.claude/`, etc.) — always use `{ROOT}` resolved via `sk-pipeline-paths`.
+- NEVER hardcode platform paths (`.codex/`, `.claude/`, etc.) — always use `{ROOT}` resolved via `sk-pipeline-paths`.
 - NEVER pass file contents in dispatch prompts — pass file paths only (anti-pattern #3 Context Dumping).
 - ALWAYS update `pipeline-state.json` after each phase completes.
 - NEVER advance past a `BLOCKED` or `NEEDS_CONTEXT` status without human input.

@@ -1,8 +1,0 @@
-name = "reporter"
-description = "Use when the parity-test-f pipeline needs to read analyzer findings and reviewer verdict and produce the final markdown code review report."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
-version = "1.0.0"
-plugin_version = "2.0.0"
-skills = ["reporter-protocol"]

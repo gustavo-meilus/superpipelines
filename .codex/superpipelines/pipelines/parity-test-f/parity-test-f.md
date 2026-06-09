@@ -6,15 +6,15 @@
 
 This pipeline reads a pull request diff file, identifies code issues (null checks, error handling, naming) via the analyzer step, validates those findings through a read-only reviewer step (structural isolation via `sandbox_mode = "read-only"`), and produces a final markdown code review report. It was scaffolded on Tier 1d (Codex CLI) and uses model_driven dispatch with TOML agent files. Per-step model and effort are declared directly in each agent TOML.
 
-**This file is a documentation and discovery artifact.** It is NOT a runnable slash command. Codex CLI discovers and runs this pipeline via the `.agents/codex` scope root and the registered entry skill.
+**This file is a documentation and discovery artifact.** It is NOT a runnable slash command. Codex CLI discovers and runs this pipeline via the `.codex` scope root and the registered entry skill.
 
 ## Entry Skill
 
 ```
-{ROOT}/skills/superpipelines/parity-test-f/run-parity-test-f/SKILL.md
+{ROOT}/../.agents/skills/superpipelines/parity-test-f/run-parity-test-f/SKILL.md
 ```
 
-Invoke via the Codex CLI's native skill invocation interface when the superpipelines extension is installed and the `.agents/codex` scope is active.
+Invoke via the Codex CLI's native skill invocation interface when the superpipelines extension is installed and the `.codex` scope is active.
 
 ## Topology
 
