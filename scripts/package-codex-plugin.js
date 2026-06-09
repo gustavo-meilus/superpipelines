@@ -36,6 +36,7 @@ function readManifest() {
 }
 
 function copyDirectory(source, target) {
+  ensureInside(packageRoot, target, path.relative(repoRoot, target));
   fs.rmSync(target, { recursive: true, force: true });
   fs.mkdirSync(target, { recursive: true });
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
@@ -95,7 +96,9 @@ function validatePackage() {
   const manifest = readManifest();
   validateManifest(manifest);
   if (!fs.existsSync(packageSkills) || !fs.statSync(packageSkills).isDirectory()) {
-    fail('missing packaged skills directory');
+    fail(
+      `missing packaged skills directory: ${path.relative(repoRoot, packageSkills)}; run \`node scripts/package-codex-plugin.js\` to generate the package before checking`,
+    );
   }
   const skillFiles = findSkillFiles(packageSkills);
   if (skillFiles.length === 0) {
