@@ -3,8 +3,32 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, and the phase-skip safety hardening in v2.2.1.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, and the phase-skip safety hardening in v2.2.1, and the Codex native layout migration in v2.2.2.
 </overview>
+
+## v2.2.2 — Codex Native Layout Migration (2026-06-09)
+
+Migrates the Codex plugin (Tier 1d) from a non-standard `.agents/codex/` layout to Codex-native discovery paths, fully aligning with the official Codex plugin manifest and agent TOML specifications. Agent definitions move from `skills = ["name"]` references to inline `[[developer_instructions]]` content blocks, non-standard manifest fields are removed, and pipeline artifacts relocate to `.codex/superpipelines/`. Skills move to a cross-platform `.agents/skills/` directory shared by all tiers.
+
+<release_entry version="2.2.2" status="STABLE">
+
+### Added
+
+- **Design spec for Codex native layout** — `docs/superpowers/specs/2026-06-09-codex-native-layout-design.md` documents the migration rationale, path mapping, and scope root changes.
+
+### Changed
+
+- **Agent TOMLs** (parity-test-e, parity-test-f) — replaced `skills = ["name"]` with inline `[[developer_instructions]]` per Codex spec; removed non-standard `version`/`plugin_version` fields.
+- **Codex plugin manifest** (`.codex-plugin/plugin.json`) — removed `"agents"` and `"commands"` fields (not part of the Codex manifest spec); `"skills"` path updated to `"../.agents/skills/"`.
+- **Codex scope root** — migrated from `.agents/codex/` to `.codex/`; all pipeline artifacts, registry, and agent TOMLs relocated accordingly.
+- **Skills directory** — moved from `.agents/codex/skills/` to `.agents/skills/` (cross-platform tier-agnostic skill discovery).
+- **All path references updated** — `protocol_skill` paths in topology.json, entry-skill protocol references (`{ROOT}/skills/` → `{ROOT}/../.agents/skills/`), and launcher-document scope descriptions updated to reflect the new layout.
+
+### Documentation
+
+- **Design spec** — `docs/superpowers/specs/2026-06-09-codex-native-layout-design.md` (design rationale, path mapping, and scope root migration).
+
+</release_entry>
 
 ## v2.2.1 — Phase-Skip Safety Hardening (2026-06-04)
 

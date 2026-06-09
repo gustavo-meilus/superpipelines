@@ -17,6 +17,26 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.2.2 — Codex Native Layout Migration (2026-06-09)
+
+### Changed
+
+- **Codex plugin layout migrated to Codex-native discovery paths** (#52) — the Codex (Tier 1d) plugin no longer uses the non-standard `.agents/codex/` directory layout. All Codex platform files now reside at platform-native locations:
+  - **Agent TOMLs**: moved from `.agents/codex/agents/` to `.codex/agents/` — Codex auto-discovers `.toml` agent files from this directory without needing an `agents` manifest field.
+  - **Agent format**: replaced `skills = ["name"]` references with inline `[[developer_instructions]]` content blocks per the Codex TOML agent specification; removed non-standard `version`/`plugin_version` fields.
+  - **Skills**: moved from `.agents/codex/skills/` to `.agents/skills/` — a cross-platform shared skill discovery directory, referenced by `plugin.json` `"skills": "../.agents/skills/"`.
+  - **Pipeline artifacts**: moved from `.agents/codex/superpipelines/` to `.codex/superpipelines/` — registry, pipeline topologies, launchers, specs/plans/tasks.
+  - **`plugin.json`**: removed non-standard `"agents"` and `"commands"` manifest fields; `"skills"` updated to point to `"../.agents/skills/"`.
+  - **Path references**: all `protocol_skill`, entry-skill, and launcher-document references updated from `{ROOT}/skills/...` to `{ROOT}/../.agents/skills/...`; scope root references changed from `.agents/codex` to `.codex`.
+
+### Fixed
+
+- **Non-standard Codex plugin manifest fields removed** — the `.codex-plugin/plugin.json` no longer declares `"agents"` or `"commands"` fields, which are not part of the official Codex plugin manifest specification. Codex auto-discovers agents from `.codex/agents/` without explicit manifest registration.
+
+### Documentation
+
+- **Design spec** — `docs/superpowers/specs/2026-06-09-codex-native-layout-design.md`.
+
 ## 2.2.1 — Phase-Skip Safety Hardening (2026-06-04)
 
 ### Fixed
