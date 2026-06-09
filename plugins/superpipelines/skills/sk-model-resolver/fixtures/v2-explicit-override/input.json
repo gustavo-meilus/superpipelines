@@ -1,0 +1,21 @@
+{
+  "_comment": "Q4: legitimate v2 escape hatch. `model:` is present AND `plugin_version: 2.0.0` is stamped, signaling the user intentionally chose a concrete model. RESOLVE Step 1 returns source='frontmatter_override' (the documented v2 escape hatch). Discriminates this case from the v1-legacy case (see v1-legacy-blocked fixture).",
+  "agent": {
+    "name": "any-step",
+    "model": "claude-opus-4-7",
+    "effort_tier": "high",
+    "plugin_version": "2.0.0"
+  },
+  "profile": {
+    "tier": "tier_1",
+    "capabilities": {
+      "dynamic_subagents": false,
+      "model_field_format": "shorthand",
+      "effort_field_name": null
+    },
+    "model_tiers": {
+      "medium": { "model": "claude-sonnet-4-6", "effort": "medium" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}

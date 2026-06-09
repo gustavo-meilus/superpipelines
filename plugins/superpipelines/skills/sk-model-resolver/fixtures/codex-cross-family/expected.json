@@ -1,0 +1,8 @@
+{
+  "model": "gpt-5.4-mini",
+  "effort": "minimal",
+  "effort_field_name": "model_reasoning_effort",
+  "model_field_format": "toml_split",
+  "source": "profile_default",
+  "warnings": []
+}

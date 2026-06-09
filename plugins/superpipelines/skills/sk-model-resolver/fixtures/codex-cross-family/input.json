@@ -1,0 +1,22 @@
+{
+  "agent": {
+    "name": "triage-router",
+    "model_tier": "triage",
+    "effort_tier": "low"
+  },
+  "profile": {
+    "tier": "tier_1d",
+    "capabilities": {
+      "dynamic_subagents": false,
+      "model_field_format": "toml_split",
+      "effort_field_name": "model_reasoning_effort",
+      "effort_field_applies_to_providers": null,
+      "effort_emit_map": { "low": "minimal", "medium": "medium", "high": "high" },
+      "subagent_inherit_target": "session"
+    },
+    "model_tiers": {
+      "triage": { "model": "gpt-5.4-mini", "effort": "low" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}

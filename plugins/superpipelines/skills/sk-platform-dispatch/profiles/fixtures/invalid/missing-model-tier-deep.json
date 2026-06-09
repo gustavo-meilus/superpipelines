@@ -1,0 +1,33 @@
+{
+  "tier": "tier_x",
+  "name": "Missing deep tier",
+  "profile_version": "2.0.0",
+  "model_tiers_version": "2026-05-19",
+  "capabilities": {
+    "subagents": false,
+    "parallel_subagents": false,
+    "task_primitive": false,
+    "skill_tool": true,
+    "worktrees": false,
+    "reviewer_isolation": "convention",
+    "dispatch_mechanism": "inline",
+    "dynamic_subagents": false,
+    "model_field_format": "omit",
+    "effort_field_name": null,
+    "effort_field_applies_to_providers": null,
+    "subagent_env_override": null,
+    "subagent_inherit_target": "session",
+    "provider_families": []
+  },
+  "scope_root": {
+    "workspace": ".x",
+    "user": "~/.x"
+  },
+  "degradation_warnings": [],
+  "extensions": {},
+  "model_tiers": {
+    "triage": { "model": "x", "effort": "low" },
+    "fast":   { "model": "x", "effort": "medium" },
+    "medium": { "model": "x", "effort": "medium" }
+  }
+}

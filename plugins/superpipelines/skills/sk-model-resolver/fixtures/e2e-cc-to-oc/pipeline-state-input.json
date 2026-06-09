@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "source_tier": "tier_1",
+    "runtime_tier": "tier_1b",
+    "tier_changes": [
+      { "from": "tier_1", "to": "tier_1b", "at": "2026-05-24T10:00:00Z" }
+    ]
+  },
+  "topology": {
+    "steps": [
+      { "id": "architect",  "agent_frontmatter": { "name": "architect",  "model_tier": "deep" } },
+      { "id": "coder",      "agent_frontmatter": { "name": "coder",      "model_tier": "medium" } },
+      { "id": "formatter",  "agent_frontmatter": { "name": "formatter",  "model_tier": "fast" } }
+    ]
+  }
+}

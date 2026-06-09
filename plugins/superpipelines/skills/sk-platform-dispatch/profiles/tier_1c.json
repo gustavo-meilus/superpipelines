@@ -1,0 +1,46 @@
+{
+  "$schema": "./profile.schema.json",
+  "tier": "tier_1c",
+  "name": "Antigravity",
+  "profile_version": "2.1.3",
+  "model_tiers_version": "2026-05-19",
+  "aspirational": true,
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": true,
+    "task_primitive": false,
+    "skill_tool": true,
+    "skill_tool_name": "activate_skill",
+    "skill_tool_requires_extension_installed": true,
+    "worktrees": false,
+    "reviewer_isolation": "convention",
+    "dispatch_mechanism": "model_driven",
+    "dynamic_subagents": true,
+    "model_field_format": "omit",
+    "effort_field_name": null,
+    "effort_field_applies_to_providers": null,
+    "subagent_env_override": null,
+    "subagent_inherit_target": "orchestrator",
+    "provider_families": ["google"]
+  },
+  "scope_root": {
+    "workspace": ".agents/antigravity",
+    "user": "~/.antigravity"
+  },
+  "degradation_warnings": [
+    "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
+  ],
+  "extensions": {
+    "version_manifest_path": "gemini-extension.json",
+    "default_orchestrator_model": "gemini-3.5-flash",
+    "subagent_model_control": "orchestrator-only",
+    "installation_note": "skill_tool is only available when the superpipelines AGY extension is installed in AGY's extension registry. Without it, running-a-pipeline Phase 0.25 falls back to INLINE-DETECT().",
+    "version_manifest_path_note": "gemini-extension.json is retained as the version manifest until Gemini CLI retirement (2026-06-18). Post-retirement, replace with antigravity-native manifest path."
+  },
+  "model_tiers": {
+    "triage": { "model": "gemini-3.5-flash", "effort": "low" },
+    "fast":   { "model": "gemini-3.5-flash", "effort": "medium" },
+    "medium": { "model": "gemini-3.5-pro",   "effort": "medium" },
+    "deep":   { "model": "gemini-3.5-pro",   "effort": "high" }
+  }
+}

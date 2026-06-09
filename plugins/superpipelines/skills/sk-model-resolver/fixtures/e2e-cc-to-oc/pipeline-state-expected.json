@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "source_tier": "tier_1",
+    "runtime_tier": "tier_1b",
+    "tier_changes": [
+      { "from": "tier_1", "to": "tier_1b", "at": "2026-05-24T10:00:00Z" }
+    ],
+    "resolved_models": {
+      "architect": {
+        "model": "opencode-go/kimi-k2.6",
+        "effort": "high",
+        "effort_field_name": "reasoningEffort",
+        "model_field_format": "provider_prefixed",
+        "source": "profile_default",
+        "warnings": []
+      },
+      "coder": {
+        "model": "opencode-go/qwen3.6-plus",
+        "effort": "medium",
+        "effort_field_name": "reasoningEffort",
+        "model_field_format": "provider_prefixed",
+        "source": "profile_default",
+        "warnings": []
+      },
+      "formatter": {
+        "model": "opencode-go/deepseek-v4-flash",
+        "effort": "medium",
+        "effort_field_name": "reasoningEffort",
+        "model_field_format": "provider_prefixed",
+        "source": "profile_default",
+        "warnings": []
+      }
+    }
+  }
+}
