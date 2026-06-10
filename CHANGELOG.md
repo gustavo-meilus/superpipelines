@@ -17,6 +17,26 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.2.3 — Codex Marketplace Packaging (2026-06-10)
+
+### Fixed
+
+- **Codex user-level marketplace package now bundles skills** (#52) — `plugins/superpipelines/` is now a self-contained Codex plugin package with `.codex-plugin/`, `skills/`, `README.md`, and `LICENSE`, matching Codex's `./...` plugin-root path requirements. User-level Codex installs no longer cache a manifest-only plugin with no bundled `SKILL.md` files.
+- **Packaged Codex manifest path corrected** (#52) — `plugins/superpipelines/.codex-plugin/plugin.json` now declares `"skills": "./skills/"` and no longer declares unsupported top-level `"agents"` or `"commands"` fields.
+- **Codex package version cache-busted** — root and packaged Codex manifests are bumped to `2.2.3` so Codex installs use a new cache version instead of reusing the stale `2.1.3` manifest-only package.
+
+### Added
+
+- **Codex package sync/check tooling** (#52) — `scripts/package-codex-plugin.js` and npm scripts `package:codex` / `check:codex-plugin` sync root `skills/` into the packaged plugin and validate the package before release.
+
+### Safety
+
+- **Packaged skills mirror validation** (#52) — `check:codex-plugin` now compares root `skills/` and `plugins/superpipelines/skills/` by relative file list and file contents, failing on missing, extra, or stale packaged files.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-09-codex-marketplace-packaging-design.md` and `docs/superpowers/plans/2026-06-09-codex-marketplace-packaging.md`.
+
 ## 2.2.2 — Codex Native Layout Migration (2026-06-09)
 
 ### Changed
