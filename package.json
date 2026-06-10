@@ -5,6 +5,10 @@
   "bin": {
     "superpipelines-install": "./bin/install.js"
   },
+  "scripts": {
+    "package:codex": "node scripts/package-codex-plugin.js",
+    "check:codex-plugin": "node scripts/package-codex-plugin.js --check"
+  },
   "engines": {
     "node": ">=18"
   }

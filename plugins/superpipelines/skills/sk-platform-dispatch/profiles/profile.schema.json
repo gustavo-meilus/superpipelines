@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "profile.schema.json",
+  "title": "Platform Profile",
+  "description": "Capability descriptor for a superpipelines execution tier. Each field is an independent atomic claim.",
+  "type": "object",
+  "required": ["tier", "name", "profile_version", "model_tiers_version", "capabilities", "scope_root", "degradation_warnings", "extensions", "model_tiers"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "tier": {
+      "type": "string",
+      "pattern": "^tier_[a-z0-9]+$"
+    },
+    "name": { "type": "string" },
+    "profile_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "model_tiers_version": { "type": "string" },
+    "aspirational": { "type": "boolean" },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "subagents",
+        "parallel_subagents",
+        "task_primitive",
+        "skill_tool",
+        "worktrees",
+        "reviewer_isolation",
+        "dispatch_mechanism",
+        "dynamic_subagents",
+        "model_field_format",
+        "effort_field_name",
+        "effort_field_applies_to_providers",
+        "subagent_env_override",
+        "subagent_inherit_target",
+        "provider_families"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "subagents": { "type": "boolean" },
+        "parallel_subagents": { "type": "boolean" },
+        "task_primitive": { "type": "boolean" },
+        "skill_tool": { "type": "boolean" },
+        "skill_tool_name": { "type": "string" },
+        "skill_tool_requires_extension_installed": { "type": "boolean" },
+        "worktrees": { "type": "boolean" },
+        "reviewer_isolation": {
+          "type": "string",
+          "enum": ["structural", "convention"]
+        },
+        "dispatch_mechanism": {
+          "type": "string",
+          "enum": ["native_task", "native_subagent", "model_driven", "inline"]
+        },
+        "dynamic_subagents": { "type": "boolean" },
+        "model_field_format": {
+          "type": "string",
+          "enum": ["shorthand", "provider_prefixed", "toml_split", "omit"]
+        },
+        "effort_field_name": { "type": ["string", "null"] },
+        "effort_field_applies_to_providers": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "effort_emit_map": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "subagent_env_override": { "type": ["string", "null"] },
+        "subagent_inherit_target": {
+          "type": "string",
+          "enum": ["session", "orchestrator", "primary"]
+        },
+        "provider_families": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "scope_root": {
+      "type": "object",
+      "required": ["workspace", "user"],
+      "additionalProperties": false,
+      "properties": {
+        "workspace": { "type": "string" },
+        "user": { "type": "string" }
+      }
+    },
+    "degradation_warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "model_tiers": {
+      "type": "object",
+      "required": ["triage", "fast", "medium", "deep"],
+      "additionalProperties": false,
+      "properties": {
+        "triage":  { "$ref": "#/$defs/model_tier_entry" },
+        "fast":    { "$ref": "#/$defs/model_tier_entry" },
+        "medium":  { "$ref": "#/$defs/model_tier_entry" },
+        "deep":    { "$ref": "#/$defs/model_tier_entry" }
+      }
+    }
+  },
+  "$defs": {
+    "model_tier_entry": {
+      "type": "object",
+      "required": ["model", "effort"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string" },
+        "effort": { "type": ["string", "null"] },
+        "free_tier": { "type": "boolean" },
+        "quota_class": { "type": "string" }
+      }
+    }
+  }
+}

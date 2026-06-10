@@ -1,0 +1,19 @@
+{
+  "_comment": "Q4: v1-legacy agent frontmatter. `model:` is present but no `plugin_version` (stamping was introduced in v2.0). RESOLVE Step 1 MUST return source='blocked' rather than treating as frontmatter_override. Phase 0.4 (migration) is responsible for migrating before Phase 0.45 (resolution) runs.",
+  "agent": {
+    "name": "any-step",
+    "model": "claude-sonnet-4-6"
+  },
+  "profile": {
+    "tier": "tier_1",
+    "capabilities": {
+      "dynamic_subagents": false,
+      "model_field_format": "shorthand",
+      "effort_field_name": null
+    },
+    "model_tiers": {
+      "medium": { "model": "claude-sonnet-4-6", "effort": "medium" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}

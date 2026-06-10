@@ -1,0 +1,8 @@
+{
+  "model": "claude-opus-4-7",
+  "effort": null,
+  "effort_field_name": null,
+  "model_field_format": "shorthand",
+  "source": "user_prefs",
+  "warnings": []
+}

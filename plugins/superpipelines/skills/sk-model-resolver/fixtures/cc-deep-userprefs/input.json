@@ -1,0 +1,30 @@
+{
+  "agent": {
+    "name": "architect",
+    "model_tier": "deep",
+    "effort_tier": "high"
+  },
+  "profile": {
+    "tier": "tier_1",
+    "capabilities": {
+      "dynamic_subagents": false,
+      "model_field_format": "shorthand",
+      "effort_field_name": null,
+      "effort_field_applies_to_providers": null,
+      "subagent_inherit_target": "session"
+    },
+    "model_tiers": {
+      "deep": { "model": "claude-opus-4-7", "effort": "high" }
+    }
+  },
+  "prefs": {
+    "user": {
+      "platforms": {
+        "tier_1": {
+          "tiers": { "deep": "claude-opus-4-7" }
+        }
+      }
+    },
+    "workspace": { "platforms": {} }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "source_tier": "tier_1",
+    "runtime_tier": "tier_1d"
+  },
+  "topology": {
+    "steps": [
+      { "id": "triage",     "agent_frontmatter": { "name": "triage",     "model_tier": "triage", "effort_tier": "low" } },
+      { "id": "architect",  "agent_frontmatter": { "name": "architect",  "model_tier": "deep" } }
+    ]
+  }
+}

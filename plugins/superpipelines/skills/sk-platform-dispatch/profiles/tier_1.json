@@ -1,0 +1,37 @@
+{
+  "$schema": "./profile.schema.json",
+  "tier": "tier_1",
+  "name": "Claude Code",
+  "profile_version": "2.1.3",
+  "model_tiers_version": "2026-05-29",
+  "capabilities": {
+    "subagents": true,
+    "parallel_subagents": true,
+    "task_primitive": true,
+    "skill_tool": true,
+    "worktrees": true,
+    "reviewer_isolation": "structural",
+    "dispatch_mechanism": "native_task",
+    "dynamic_subagents": false,
+    "model_field_format": "shorthand",
+    "effort_field_name": null,
+    "effort_field_applies_to_providers": null,
+    "subagent_env_override": "CLAUDE_CODE_SUBAGENT_MODEL",
+    "subagent_inherit_target": "session",
+    "provider_families": ["anthropic"]
+  },
+  "scope_root": {
+    "workspace": ".claude",
+    "user": "~/.claude"
+  },
+  "degradation_warnings": [],
+  "extensions": {
+    "version_manifest_path": ".claude-plugin/plugin.json"
+  },
+  "model_tiers": {
+    "triage": { "model": "claude-haiku-4-5-20251001", "effort": "low" },
+    "fast":   { "model": "claude-haiku-4-5-20251001", "effort": "medium" },
+    "medium": { "model": "claude-sonnet-4-6",         "effort": "medium" },
+    "deep":   { "model": "claude-opus-4-8",           "effort": "high" }
+  }
+}

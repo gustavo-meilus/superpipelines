@@ -1,0 +1,20 @@
+{
+  "agent": {
+    "name": "implementer",
+    "model_tier": "medium"
+  },
+  "profile": {
+    "tier": "tier_1b",
+    "capabilities": {
+      "dynamic_subagents": false,
+      "model_field_format": "provider_prefixed",
+      "effort_field_name": "reasoningEffort",
+      "effort_field_applies_to_providers": ["opencode", "opencode-go"],
+      "subagent_inherit_target": "primary"
+    },
+    "model_tiers": {
+      "medium": { "model": "opencode-go/qwen3.6-plus", "effort": "medium" }
+    }
+  },
+  "prefs": { "user": { "platforms": {} }, "workspace": { "platforms": {} } }
+}
