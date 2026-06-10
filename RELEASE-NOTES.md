@@ -3,8 +3,34 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, and the phase-skip safety hardening in v2.2.1, and the Codex native layout migration in v2.2.2.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, and the self-contained Codex marketplace package in v2.2.3.
 </overview>
+
+## v2.2.3 — Codex Marketplace Packaging (2026-06-10)
+
+Makes the Codex marketplace package self-contained for user-level installs. The packaged plugin now ships its own `skills/`, `README.md`, and `LICENSE`, uses a Codex-valid `"skills": "./skills/"` manifest path, and includes release checks that prove packaged skills mirror the root source tree before publishing.
+
+<release_entry version="2.2.3" status="STABLE">
+
+### Added
+
+- **Self-contained Codex package** — `plugins/superpipelines/` now contains `.codex-plugin/`, `skills/`, `README.md`, and `LICENSE`, so Codex caches bundled skills from the plugin root instead of a manifest-only package.
+- **Packaging guard** — `scripts/package-codex-plugin.js` plus npm scripts `package:codex` and `check:codex-plugin` sync and validate the packaged Codex plugin.
+
+### Fixed
+
+- **Codex marketplace skills loading** (#52) — packaged manifest paths no longer escape the plugin root. `plugins/superpipelines/.codex-plugin/plugin.json` uses `"skills": "./skills/"` and omits unsupported `agents`/`commands` fields.
+- **Codex cache version** — Codex manifests are bumped to `2.2.3`, ensuring the fixed marketplace package installs under a new cache version rather than reusing the stale `2.1.3` cache.
+
+### Safety
+
+- **Source/package mirror validation** — `check:codex-plugin` compares root `skills/` and packaged `plugins/superpipelines/skills/` by relative file list and file contents, failing on missing, extra, or stale packaged files.
+
+### Documentation
+
+- **Design spec + implementation plan** — `docs/superpowers/specs/2026-06-09-codex-marketplace-packaging-design.md` and `docs/superpowers/plans/2026-06-09-codex-marketplace-packaging.md`.
+
+</release_entry>
 
 ## v2.2.2 — Codex Native Layout Migration (2026-06-09)
 
