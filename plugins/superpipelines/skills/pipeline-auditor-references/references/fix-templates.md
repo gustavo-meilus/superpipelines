@@ -15,6 +15,7 @@ Canonical fixes for common findings. Use as Edit templates when the user request
 9. Missing capability contract
 10. Per-agent Bash hook with global allow
 11. Data-agent worktree artifact loss
+12. Frontmatter ↔ protocol capability split-brain
 
 ---
 
@@ -198,3 +199,48 @@ skills:
 **Applied by** `pipeline-architect` under `/superpipelines:audit-steps` with a
 git checkpoint and explicit user authorization (auditor is read-only; SEV-0/1
 fixes route to the architect).
+
+## Fix 12 — Frontmatter ↔ protocol capability split-brain
+
+**Symptom (compliance criterion #25):** an agent's companion protocol describes a
+**primary action** that uses a tool the agent's frontmatter forbids — the tool is
+absent from a present `tools:` allowlist, listed in `disallowedTools:`, or
+write-blocked by `permissionMode: plan`. The primary path is dead at runtime
+(SEV-1). A weaker variant: `permissionMode` contradicts the protocol's stated
+intent while the tool is still granted (SEV-2). Origin: issue #34, generalizing
+the #33 auditor/architect/skill-architect fixes.
+
+> **Resolve the contradiction — never just silence the detector.** Decide which
+> side is correct: does the agent legitimately perform the action, or not?
+
+**Case A — the agent SHOULD perform the action** (frontmatter is wrong):
+Add the tool to the allowlist / remove it from `disallowedTools:` / raise
+`permissionMode` (e.g. `plan` → `acceptEdits` for a writer).
+
+```yaml
+# Before — protocol writes a report, frontmatter forbids it
+tools: Read, Glob, Grep
+disallowedTools: Write
+# After
+tools: Read, Write, Glob, Grep
+```
+
+**Case B — the agent should NOT perform the action** (protocol is wrong):
+Rewrite the primary action so the capability is delegated, and add an explicit
+self-citation that the agent does not perform it (this also satisfies the
+criterion's false-positive guard). Mirror the auditor protocol's pattern:
+
+```markdown
+- The auditor is read-only (`disallowedTools: Write`) and NEVER writes the
+  report file. Persistence is the orchestrator's responsibility.
+```
+
+**Case C — it is a legitimate tier-conditional fallback** (no defect): guard the
+mention with conditional language ("if `Write` unavailable", "on Tier N",
+"fallback", "otherwise") so the detector reads it as a documented fallback, not
+the primary path. No frontmatter change.
+
+**After any frontmatter change:** re-stamp the agent's `plugin_version`.
+
+**Applied by** `pipeline-architect` (auditor is read-only; SEV-1 routes to the
+architect, SEV-2 surfaces to the user).
