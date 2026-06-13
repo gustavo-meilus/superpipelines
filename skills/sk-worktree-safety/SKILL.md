@@ -1,6 +1,6 @@
 ---
 name: sk-worktree-safety
-description: Enforces a mandatory 4-step safety protocol (Ignore, Setup, Baseline, Commit) for creating, managing, and destroying git worktrees in pipeline isolation contexts. Use when a pipeline step declares `isolation: worktree`, when parallel pattern tasks require branch isolation, or when the iterative or spec-driven patterns require atomic rollback capability.
+description: "Enforces a mandatory 4-step safety protocol (Ignore, Setup, Baseline, Commit) for creating, managing, and destroying git worktrees in pipeline isolation contexts. Use when a pipeline step declares `isolation: worktree`, when parallel pattern tasks require branch isolation, or when the iterative or spec-driven patterns require atomic rollback capability."
 disable-model-invocation: true
 user-invocable: false
 ---
