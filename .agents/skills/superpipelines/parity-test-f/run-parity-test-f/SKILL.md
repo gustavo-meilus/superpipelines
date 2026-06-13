@@ -135,6 +135,8 @@ Wait for terminal status from reviewer:
 
 ### PHASE 3: DISPATCH REPORTER (model_driven)
 
+Only dispatched if the reviewer verdict is `approved` or `approved_with_concerns`.
+
 DISPATCH via model_driven orchestration:
 
 ```
@@ -177,6 +179,7 @@ Wait for terminal status from reporter:
 - NEVER hardcode platform paths (`.codex/`, `.claude/`, etc.) — always use `{ROOT}` resolved via `sk-pipeline-paths`.
 - NEVER pass file contents in dispatch prompts — pass file paths only (anti-pattern #3 Context Dumping).
 - ALWAYS update `pipeline-state.json` after each phase completes.
+- NEVER dispatch the reporter if the reviewer verdict is `rejected` or the reviewer emits `BLOCKED`.
 - NEVER advance past a `BLOCKED` or `NEEDS_CONTEXT` status without human input.
 - ALWAYS apply the C20 cleanup contract: delete temp dir on DONE/DONE_WITH_CONCERNS, preserve on BLOCKED/NEEDS_CONTEXT.
 - NEVER pass write-capable context to the reviewer dispatch — `sandbox_mode = "read-only"` is enforced by the host; the entry skill must not attempt to circumvent it. The reviewer writes no files; its verdict arrives via terminal output only.
