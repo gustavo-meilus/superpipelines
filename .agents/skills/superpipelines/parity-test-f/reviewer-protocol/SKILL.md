@@ -8,7 +8,7 @@ user-invocable: false
 # Reviewer — Operational Protocol
 
 <overview>
-The reviewer agent reads the structured findings JSON produced by the analyzer, validates completeness and correctness of the findings across all three issue categories (null checks, error handling, naming), and writes a verdict JSON file to the pipeline temp directory. It is the second step of the parity-test-f Sequential pipeline (Pattern 1) on Tier 1d (Codex CLI). This agent operates under structural write-deny: `sandbox_mode = "read-only"` in `reviewer.toml` prevents any file writes except to the designated verdict output path permitted by the orchestrator context. The quality bar is: the verdict must provide a clear signal (approved / approved_with_concerns / rejected) with actionable notes for the reporter.
+The reviewer agent reads the structured findings JSON produced by the analyzer, validates completeness and correctness of the findings across all three issue categories (null checks, error handling, naming), and emits a verdict via terminal output text (no file write). It is the second step of the parity-test-f Sequential pipeline (Pattern 1) on Tier 1d (Codex CLI). This agent operates under structural write-deny: `sandbox_mode = "read-only"` in `reviewer.toml` prevents ALL file writes via the Codex host; the verdict is communicated exclusively through the terminal-output REVIEWER VERDICT block, which the orchestrator parses. The quality bar is: the verdict must provide a clear signal (approved / approved_with_concerns / rejected) with actionable notes for the reporter.
 </overview>
 
 ## Protocol
@@ -19,8 +19,6 @@ The reviewer agent reads the structured findings JSON produced by the analyzer, 
 
 1. Read inputs from the orchestrator dispatch context:
    - `findings_path`: path to `findings.json` written by the analyzer.
-   - `verdict_output_path`: path where `verdict.json` must be written.
-   - `state_path`: path to `pipeline-state.json` for status updates.
    - `run_id`: current run identifier.
    - `root`: resolved scope root.
 2. Verify `findings_path` exists and is valid JSON. If the file does not exist: emit `BLOCKED` with message: "Analyzer findings not found at `{findings_path}`. The analyzer step may have failed."
@@ -62,25 +60,29 @@ Validate the findings for completeness and correctness:
 }
 ```
 
-### 3. DELIVER
+### 3. RENDER VERDICT
 
-1. Write `verdict.json` to `verdict_output_path` using the Write tool.
-2. Update `pipeline-state.json`:
-   - Set `phases[1].status` = `"completed"` (or `"completed_with_concerns"` if verdict is `approved_with_concerns` or `rejected`).
-   - Set `phases[1].outputs` = `[verdict_output_path]`.
-3. Emit terminal status:
-   - `DONE` — verdict written; verdict is `"approved"`.
-   - `DONE_WITH_CONCERNS` — verdict written; verdict is `"approved_with_concerns"` or `"rejected"` (surface the verdict and reviewer_notes to the orchestrator).
-   - `BLOCKED` — findings file missing or malformed; verdict not written.
+1. Render the verdict as a terminal-output block (NO file write — this agent is read-only). The orchestrator parses this block:
+
+```
+REVIEWER VERDICT: {verdict}
+COMPLETENESS_SCORE: {completeness_score}
+MISSING_CATEGORIES: {comma-separated categories, or "none"}
+REVIEWER_NOTES: {summary of any concerns or notes, or "none"}
+```
+
+2. Emit terminal status:
+   - `DONE` — verdict is `"approved"`.
+   - `DONE_WITH_CONCERNS` — verdict is `"approved_with_concerns"` or `"rejected"` (the orchestrator surfaces the verdict and reviewer_notes).
+   - `BLOCKED` — findings file missing or malformed; no verdict rendered.
 
 </protocol>
 
 <invariants>
-- THIS AGENT IS READ-ONLY. `sandbox_mode = "read-only"` in `reviewer.toml` enforces structural write-deny via the Codex host. The ONLY permitted write is `verdict.json` to `verdict_output_path` as supplied by the orchestrator.
-- NEVER write any file other than `verdict.json` to `verdict_output_path`.
-- NEVER write to `{ROOT}/output/` or any path outside the designated temp directory.
-- NEVER pass file contents to the orchestrator in the status message — pass only the verdict file path and the verdict value.
+- THIS AGENT IS READ-ONLY. `sandbox_mode = "read-only"` in `reviewer.toml` enforces structural write-deny via the Codex host. This agent writes NO files; the verdict is communicated exclusively via the terminal-output REVIEWER VERDICT block.
+- NEVER attempt to write `verdict.json`, `pipeline-state.json`, or any other file — the read-only sandbox denies it and the step would fail. State persistence is the orchestrator's responsibility.
+- NEVER pass file contents to the orchestrator — render the REVIEWER VERDICT block and emit a terminal status.
 - NEVER hardcode platform paths — use only the `root` value supplied in the dispatch context.
-- ALWAYS update `pipeline-state.json` after writing the verdict.
+- ALWAYS render the REVIEWER VERDICT block before emitting terminal status.
 - Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / BLOCKED.
 </invariants>

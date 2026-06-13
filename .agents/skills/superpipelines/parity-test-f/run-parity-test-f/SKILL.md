@@ -3,7 +3,7 @@ name: run-parity-test-f
 description: Use when the user wants to run the parity-test-f pipeline on Tier 1d (Codex CLI) to analyze a pull request diff for code issues and produce a validated review report.
 disable-model-invocation: true
 user-invocable: true
-plugin_version: "2.0.0"
+plugin_version: "2.2.3"
 ---
 
 # run-parity-test-f — Entry Skill
@@ -116,18 +116,22 @@ Agent: reviewer  (reviewer.toml — sandbox_mode = "read-only")
 Protocol: {ROOT}/../.agents/skills/superpipelines/parity-test-f/reviewer-protocol/SKILL.md
 Context to pass:
   - findings_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json
-  - verdict_output_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json
-  - state_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/pipeline-state.json
   - run_id: {runId}
   - root: {ROOT}
 ```
 
-NOTE: The reviewer agent has `sandbox_mode = "read-only"`. The Codex host enforces structural write-deny. Do NOT pass any write-capable context beyond `verdict_output_path`.
+NOTE: The reviewer agent has `sandbox_mode = "read-only"`. The Codex host enforces structural write-deny — the reviewer writes NO files and emits its verdict via terminal output text only. Do NOT pass any write-capable context (no `verdict_output_path`, no writable `state_path`); the orchestrator owns all persistence.
+
+After the reviewer completes:
+1. Capture the `REVIEWER VERDICT` block from the reviewer's terminal output. Record as `{REVIEWER_OUTPUT}`.
+2. Parse from the block: `{reviewer_verdict}` (`approved` / `approved_with_concerns` / `rejected`), `{reviewer_completeness_score}`, `{reviewer_missing_categories}`, `{reviewer_notes}`.
+3. Update `pipeline-state.json`:
+   - `phases[1].outputs` → `[{ "verdict": "{reviewer_verdict}", "completeness_score": "{reviewer_completeness_score}", "missing_categories": "{reviewer_missing_categories}", "reviewer_notes": "{reviewer_notes}" }]`
 
 Wait for terminal status from reviewer:
 - `DONE` → update `pipeline-state.json` phases[1].status = "completed"; advance to Phase 3.
 - `DONE_WITH_CONCERNS` → update phases[1].status = "completed_with_concerns"; surface concerns to user; advance to Phase 3.
-- `BLOCKED` → update phases[1].status = "blocked"; update top-level status = "blocked"; surface message to user; GO TO CLEANUP (preserve).
+- `BLOCKED` → update phases[1].status = "blocked"; update top-level status = "blocked"; surface message to user; GO TO CLEANUP (preserve). DO NOT dispatch reporter.
 
 ### PHASE 3: DISPATCH REPORTER (model_driven)
 
@@ -138,7 +142,10 @@ Agent: reporter  (reporter.toml)
 Protocol: {ROOT}/../.agents/skills/superpipelines/parity-test-f/reporter-protocol/SKILL.md
 Context to pass:
   - findings_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json
-  - verdict_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json
+  - reviewer_verdict: {reviewer_verdict}
+  - reviewer_completeness_score: {reviewer_completeness_score}
+  - reviewer_missing_categories: {reviewer_missing_categories}
+  - reviewer_notes: {reviewer_notes}
   - output_path: {ROOT}/output/parity-test-f-review-report.md
   - state_path: {ROOT}/superpipelines/temp/parity-test-f/{runId}/pipeline-state.json
   - run_id: {runId}
@@ -172,6 +179,7 @@ Wait for terminal status from reporter:
 - ALWAYS update `pipeline-state.json` after each phase completes.
 - NEVER advance past a `BLOCKED` or `NEEDS_CONTEXT` status without human input.
 - ALWAYS apply the C20 cleanup contract: delete temp dir on DONE/DONE_WITH_CONCERNS, preserve on BLOCKED/NEEDS_CONTEXT.
-- NEVER pass write-capable context to the reviewer dispatch — `sandbox_mode = "read-only"` is enforced by the host; the entry skill must not attempt to circumvent it.
+- NEVER pass write-capable context to the reviewer dispatch — `sandbox_mode = "read-only"` is enforced by the host; the entry skill must not attempt to circumvent it. The reviewer writes no files; its verdict arrives via terminal output only.
+- ALWAYS capture and parse the `REVIEWER VERDICT` block from the reviewer's terminal output before advancing, and pass the parsed verdict fields inline to the reporter dispatch (the reporter no longer reads a `verdict.json` file).
 - Emit exactly one terminal status at the end of this skill's own execution: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
 </invariants>

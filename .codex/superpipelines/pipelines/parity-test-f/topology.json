@@ -1,6 +1,6 @@
 {
   "schema_version": "2.0.0",
-  "plugin_version": "2.0.0",
+  "plugin_version": "2.2.3",
   "pipeline_id": "parity-test-f",
   "name": "parity-test-f",
   "pattern": "1",
@@ -46,11 +46,9 @@
       "inputs": [
         "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json"
       ],
-      "outputs": [
-        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json"
-      ],
+      "outputs": [],
       "depends_on": ["analyzer"],
-      "description": "Reads analyzer findings, validates completeness and correctness, writes a verdict JSON to the temp directory. READ-ONLY: sandbox_mode = \"read-only\" enforces structural write-deny via Codex host."
+      "description": "Reads analyzer findings, validates completeness and correctness, emits the verdict via terminal output text. READ-ONLY: sandbox_mode = \"read-only\" enforces structural write-deny via Codex host; the agent writes no files and the orchestrator parses the REVIEWER VERDICT block."
     },
     {
       "step_id": "reporter",
@@ -62,14 +60,13 @@
       "model_reasoning_effort": "medium",
       "sandbox_mode": "workspace-write",
       "inputs": [
-        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json",
-        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json"
+        "{ROOT}/superpipelines/temp/parity-test-f/{runId}/findings.json"
       ],
       "outputs": [
         "{ROOT}/output/parity-test-f-review-report.md"
       ],
       "depends_on": ["analyzer", "reviewer"],
-      "description": "Reads findings and verdict from temp directory, renders the final markdown code review report with issues and verdict sections, writes the output file."
+      "description": "Reads findings from the temp directory and the reviewer verdict from dispatch context, renders the final markdown code review report with issues and verdict sections, writes the output file."
     }
   ]
 }
