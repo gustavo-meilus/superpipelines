@@ -387,6 +387,15 @@ This gate is best-effort prose: at Tier 1 the orchestrator is the model, so ther
 - `model_driven` (Antigravity): set orchestrator model only; subagent model selection is owned by Antigravity.
 - `inline` (Tier 2): no-op — host IDE controls the model.
 
+**Telemetry env export (#41):** Before dispatching each step, the orchestrator MUST export two env vars into the dispatch environment so the opt-in `subagent-telemetry` SubagentStop hook (ships disabled — `hooks/README-telemetry.md`) can locate the active run and tag each row:
+
+- `SUPERPIPELINES_RUN_DIR` = the resolved `<scope-root>/superpipelines/temp/{P}/{runId}/` path (already known to the orchestrator from Phase 2).
+- `SUPERPIPELINES_STEP_ID` = the `step.id` currently being dispatched (re-set per step, since one run dispatches many steps).
+
+Applies to the dispatch mechanisms that spawn a subagent the hook can observe: `native_task`, `native_subagent`, `model_driven`. On `inline` (Tier 2) there is no subagent boundary — the SubagentStop hook never fires — so the export is a no-op and may be skipped. `SUPERPIPELINES_RUN_DIR` is constant for the run; `SUPERPIPELINES_STEP_ID` MUST be updated before each step's dispatch so rows carry the correct `step_id` rather than a stale or null value.
+
+<HARD-GATE>This export is purely additive and changes NO behavior when telemetry is disabled (the default): with the hook unregistered nothing reads the vars, and with `SUPERPIPELINES_RUN_DIR` set but the hook absent the vars are inert. NEVER gate dispatch, fail a step, or alter ordering on the basis of telemetry env state — the hook contract is "never fail the run" and this export inherits it.</HARD-GATE>
+
 ### PHASE 4: COMPLETION & CLEANUP
 - Read final state from `pipeline-state.json`.
 - **Defensive finalization backstop (E.a).** The entry skill is the primary finalizer (compliance criterion #20: it writes `status: completed` on success). As a backstop only: IF the state shows EVERY topology step with `status == "completed"` (or `phases[*].status` all `completed`) BUT the top-level `status != "completed"`, the orchestrator MUST stamp `status: "completed"` via the atomic write BEFORE evaluating cleanup below. This recovers already-created pipelines whose entry skill predates the criterion #20 contract, so a fully-finished run is never left labeled `running` to confuse the next Phase 1 resume scan. Do NOT stamp `completed` if any step is `pending`/`running`/`failed`. (Shares the same `all-steps-completed → atomic stamp` predicate as the Phase 1 finalize option.)
