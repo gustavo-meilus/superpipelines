@@ -81,25 +81,24 @@ run-parity-test-f (entry skill, model_driven dispatch)
 }
 ```
 
-### Reviewer output (written to pipeline-state.json phases[1].outputs)
+### Reviewer output (terminal-output text — NO file write; orchestrator parses into pipeline-state.json phases[1].outputs)
 
-```json
-{
-  "verdict_path": "{ROOT}/superpipelines/temp/parity-test-f/{runId}/verdict.json",
-  "verdict": "approved_with_concerns",
-  "missing_categories": [],
-  "completeness_score": 0.92
-}
+The reviewer is read-only (`sandbox_mode = "read-only"`) and writes no files. It emits a `REVIEWER VERDICT` block to terminal output; the orchestrator parses it and records the parsed fields into `phases[1].outputs`:
+
+```
+REVIEWER VERDICT: approved_with_concerns
+COMPLETENESS_SCORE: 0.92
+MISSING_CATEGORIES: none
+REVIEWER_NOTES: Findings are complete and actionable. One medium issue may warrant higher severity.
 ```
 
-### verdict.json schema
+Parsed into state:
 
 ```json
 {
-  "findings_path": "{path-to-findings-file}",
-  "verdict": "approved | approved_with_concerns | rejected",
+  "verdict": "approved_with_concerns",
   "completeness_score": 0.92,
-  "missing_categories": [],
+  "missing_categories": "none",
   "reviewer_notes": "Findings are complete and actionable. One medium issue may warrant higher severity."
 }
 ```
@@ -121,7 +120,7 @@ run-parity-test-f (entry skill, model_driven dispatch)
 | `run-parity-test-f` (entry skill) | Platform dispatch | Orchestrator (host) |
 | `analyzer` agent | `run-parity-test-f` dispatch | Codex model_driven |
 | `reviewer` agent | `analyzer` findings in temp | Codex model_driven |
-| `reporter` agent | `analyzer` findings + `reviewer` verdict in temp | Codex model_driven |
+| `reporter` agent | `analyzer` findings in temp + `reviewer` verdict from dispatch context | Codex model_driven |
 | `output/parity-test-f-review-report.md` | `reporter` agent | reporter |
 
 ## Risks & mitigations
@@ -131,8 +130,8 @@ run-parity-test-f (entry skill, model_driven dispatch)
 | Diff file not found | medium | analyzer emits `NEEDS_CONTEXT` with clear path advisory |
 | Diff file contains no changed lines | low | analyzer emits `DONE_WITH_CONCERNS` with zero-issue output |
 | findings.json malformed | low | reviewer validates JSON before processing; emits `BLOCKED` if invalid |
-| verdict.json malformed | low | reporter validates JSON before rendering; emits `BLOCKED` if invalid |
-| reviewer writes files (sandbox violation) | prevented | `sandbox_mode = "read-only"` in `reviewer.toml` enforced by Codex host |
+| reviewer verdict not supplied to reporter | low | orchestrator parses the `REVIEWER VERDICT` block before dispatching reporter; reporter emits `BLOCKED` if `reviewer_verdict` absent |
+| reviewer writes files (sandbox violation) | prevented | `sandbox_mode = "read-only"` in `reviewer.toml` enforced by Codex host; verdict emitted via terminal output only |
 
 ## Rollout plan
 

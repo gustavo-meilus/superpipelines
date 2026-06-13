@@ -13,7 +13,7 @@ This pipeline verifies that Superpipelines v2.0.0 scaffolding on Tier 1d (Codex 
 - [ ] AC-1: `output/parity-test-f-review-report.md` exists and is non-empty after a successful run.
 - [ ] AC-2: The report contains a `## Issues Found` section and a `## Review Verdict` section.
 - [ ] AC-3: The analyzer agent emits `DONE` or `DONE_WITH_CONCERNS` with structured findings JSON written to the temp directory.
-- [ ] AC-4: The reviewer agent emits `DONE` or `DONE_WITH_CONCERNS` with a verdict JSON written to the temp directory. The reviewer agent MUST use `sandbox_mode = "read-only"` (structural isolation).
+- [ ] AC-4: The reviewer agent emits `DONE` or `DONE_WITH_CONCERNS` with the verdict rendered as a `REVIEWER VERDICT` terminal-output block (NO file write). The reviewer agent MUST use `sandbox_mode = "read-only"` (structural isolation), which structurally denies all file writes; the orchestrator parses the verdict block from terminal output and passes it inline to the reporter.
 - [ ] AC-5: The reporter agent emits `DONE` and writes the final markdown report file.
 - [ ] AC-6: `pipeline-state.json` reflects `status: completed` at run end.
 - [ ] AC-7: `reviewer.toml` has `sandbox_mode = "read-only"` — confirmed by structural inspection.

@@ -25,8 +25,8 @@ analyzer → reviewer (read-only) → reporter
 ```
 
 - **analyzer** (`analyzer.toml`): Reads the pull request diff file, identifies null check, error handling, and naming issues, writes `findings.json` to the temp directory. Model: `gpt-5.4-mini` / effort: `medium`.
-- **reviewer** (`reviewer.toml`): Reads `findings.json`, validates completeness and correctness, writes `verdict.json` to the temp directory. Model: `gpt-5.5` / effort: `high`. **READ-ONLY**: `sandbox_mode = "read-only"` enforces structural write-deny via the Codex host.
-- **reporter** (`reporter.toml`): Reads `findings.json` + `verdict.json`, renders the final markdown code review report, writes `{ROOT}/output/parity-test-f-review-report.md`. Model: `gpt-5.4-mini` / effort: `medium`.
+- **reviewer** (`reviewer.toml`): Reads `findings.json`, validates completeness and correctness, emits the verdict via terminal output text (no file write). Model: `gpt-5.5` / effort: `high`. **READ-ONLY**: `sandbox_mode = "read-only"` enforces structural write-deny via the Codex host; the orchestrator parses the REVIEWER VERDICT block.
+- **reporter** (`reporter.toml`): Reads `findings.json` and the reviewer verdict from dispatch context, renders the final markdown code review report, writes `{ROOT}/output/parity-test-f-review-report.md`. Model: `gpt-5.4-mini` / effort: `medium`.
 
 ## Registry Entry
 
