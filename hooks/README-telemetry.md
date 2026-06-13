@@ -66,5 +66,6 @@ and **never fails the run** (any error → writes nothing, exits 0).
    ```
 
 The hook locates the active run via the `SUPERPIPELINES_RUN_DIR` environment
-variable (set by the running pipeline). Outside a pipeline run it is a silent
-no-op.
+variable and tags each row's `step_id` from `SUPERPIPELINES_STEP_ID`. Both are
+exported by `running-a-pipeline` Phase 3 before each subagent dispatch (#41).
+Outside a pipeline run (`SUPERPIPELINES_RUN_DIR` unset) it is a silent no-op.
