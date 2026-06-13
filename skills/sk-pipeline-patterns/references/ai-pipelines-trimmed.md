@@ -168,7 +168,7 @@ See `sk-rationalization-resistance` for tag conventions and authoring rules.
 
 ## 8. Strict conventions essentials
 
-- `MODEL_SELECTION: DYNAMIC_DEFAULT_SONNET` — pipeline agents default to `model: sonnet`; non-default models require user opt-in documented in the companion `{agent-name}-protocol` skill or Architect's Brief. Scale via `effort: low | medium | high | xhigh | max`.
+- `MODEL_SELECTION: TIER_BASED_RUNTIME_RESOLVED` — agent frontmatter declares `model_tier:` (triage | fast | medium | deep | inherit); concrete model IDs resolved at runtime via `sk-model-resolver`. Scale via `effort: low | medium | high | xhigh | max`.
 - `PERMISSION_MODE: PER_AGENT` — each pipeline agent may declare `permissionMode: default | acceptEdits | plan | bypassPermissions`. Never use `bypassPermissions` without explicit user justification documented in the companion `{agent-name}-protocol` skill.
 - `STATE_MANAGEMENT: STRUCTURED_JSON` — `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json` only. No `memory: project`. `memory: local` is allowed for agents that persist learned heuristics.
 - `AUTO_MEMORY: DISABLED` — `autoMemoryEnabled: false` in settings; `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` env var. Reclaims 658+ tokens.

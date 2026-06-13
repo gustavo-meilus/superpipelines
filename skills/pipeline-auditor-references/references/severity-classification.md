@@ -16,7 +16,6 @@ Findings classified into four severity tiers.
 - Subagent attempts to spawn children (`SUB_AGENT_SPAWNING: FALSE` violated).
 - `memory: project` in agent frontmatter.
 - `permissionMode: bypassPermissions` without inline justification in the companion `{agent-name}-protocol` skill.
-- `memory: local` on a reviewer agent (reviewers must not persist heuristics).
 - Tool churn mid-session (skills list mutated, tools added/removed).
 - Missing required-field in plugin manifest.
 - Reviewer agent has `Write` or `Edit` enabled (write/review isolation broken).
