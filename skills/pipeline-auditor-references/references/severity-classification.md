@@ -36,6 +36,7 @@ Findings classified into four severity tiers.
 - Pattern 3 used without max-iterations cap.
 - `tasks.md` missing acceptance criteria for some tasks.
 - Pure data agent (reads/fetches/emits artifacts; no tracked-code writes) declares `isolation: worktree`. Unnecessary worktree overhead plus auto-teardown risk; data agents must omit `isolation` (issue #31).
+- Frontmatter ↔ protocol split-brain: the protocol's primary action assumes a tool the agent permanently forbids (`tools:` allowlist omits it, or `disallowedTools:` / `permissionMode: plan` blocks it). The primary path is dead at runtime (criterion 25, issue #34).
 
 ## SEV-2 examples
 
@@ -46,6 +47,7 @@ Findings classified into four severity tiers.
 - References nested >1 level deep from SKILL.md.
 - Reference file >100 lines without ToC.
 - Description + `when_to_use` combined >1536 chars (truncation).
+- `permissionMode` contradicts the protocol's stated write intent while the tool is still granted (criterion 25 intent-only contradiction — runs today, signals confused authoring).
 
 ## SEV-3 examples
 

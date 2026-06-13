@@ -8,7 +8,7 @@ user-invocable: false
 # Pipeline Auditor — Operational Protocol
 
 <glossary>
-  <term name="Compliance Matrix">The full checklist in `compliance-matrix.md` covering layout, frontmatter, topology, runtime safety, and resolver consolidation (PR-01..PR-05, PR-07..PR-10).</term>
+  <term name="Compliance Matrix">The full checklist in `compliance-matrix.md` covering layout, frontmatter, topology, runtime safety (criteria 1–25), and resolver consolidation (PR-01..PR-05, PR-07..PR-10).</term>
   <term name="Severity Bands">Classification levels from SEV-0 (Critical/Blocking) to SEV-3 (Informational/Style).</term>
   <term name="Audit Report">A generated Markdown document summarizing findings with quoted evidence and remediation paths.</term>
 </glossary>
@@ -37,7 +37,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - **SCOPE-WIDE**: Iterate through all scope roots and registered pipelines.
 
 ### 2. AUDIT
-- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–24 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07..PR-10 per ADR-0001 and ADR-0002).
+- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–25 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07..PR-10 per ADR-0001 and ADR-0002). Criterion 25 (frontmatter ↔ protocol capability coherence) flags any agent/protocol pair whose primary action assumes a tool the agent forbids; distinguish a blocked primary path (SEV-1) from a documented tier-conditional fallback (PASS).
 - **Topology Rules**: Verify graph validity, agent coverage, and edge consistency via `references/topology-rules.md`.
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 
