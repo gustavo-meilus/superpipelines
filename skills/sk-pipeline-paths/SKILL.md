@@ -75,29 +75,43 @@ PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
   target_root = per-tier table[target_tier][workspace_or_user]
   return artifact_path.replace(source_root, target_root, count=1)
 
-// Discovery & resume: DATA-ROOT FIRST, then legacy multi-root as back-compat tail.
-// v2.x discovery (running-a-pipeline Phase 0) and resume scanning (Phase 1) read the
-// single DATA_ROOT registries FIRST, then fall through to the 5 per-tier scope roots
-// to list/resume pre-v2 old-root pipelines (read-only — design spec §8).
+// Discovery & resume: DATA-ROOT FIRST, legacy multi-root as a self-gating back-compat
+// tail. The DEFAULT cost is two REGISTRY reads (workspace + user `.superpipelines/`);
+// the §4 "no per-tier loop" win is about registry enumeration — registries are read
+// (in running-a-pipeline Phase 0) ONLY for the roots returned here. The legacy tail is
+// a profile-driven `dir_exists` sweep that parses NO registries and returns [] on an
+// all-data workspace, so a workspace with only data-only pipelines reads exactly two
+// registries. Legacy back-compat (design spec §8) is preserved for any workspace that
+// still holds a pre-v2 old-root dir, with the per-tier dir names sourced from the
+// profiles (DEPENDENCY_INVERSION: PROFILE_DRIVEN) — never duplicated in this body.
 ENUMERATE_PIPELINE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
   roots = []
-  // (1) Data-only roots — canonical, tier-independent. Two reads, no per-tier loop.
+  // (1) Data-only roots — canonical, tier-independent. Two dir checks, no per-tier loop.
   IF dir_exists(RESOLVE_DATA_ROOT(project)): roots.append({tier: "data", scope: "workspace", root: RESOLVE_DATA_ROOT(project), layout: "data"})
   IF dir_exists(RESOLVE_DATA_ROOT(user)):    roots.append({tier: "data", scope: "user",      root: RESOLVE_DATA_ROOT(user),    layout: "data"})
-  // (2) Legacy per-tier roots — read-only back-compat tail (old-root pipelines only).
-  roots += ENUMERATE_ALL_SCOPE_ROOTS(workspace)   // each annotated layout: "legacy"
+  // (2) Legacy per-tier roots — read-only back-compat tail; ENUMERATE_ALL_SCOPE_ROOTS
+  //     returns [] when no legacy root dir exists (the common all-data case), so this
+  //     adds no registry I/O and is its own gate.
+  roots += ENUMERATE_ALL_SCOPE_ROOTS(workspace)   // each annotated layout: "legacy"; [] on all-data workspace
   return roots
 
-// Legacy multi-root enumeration — RETAINED as the back-compat tail above.
-// Old-root pipelines (pre-v2) still list/resume via these 5 per-tier scope roots.
+// Legacy multi-root enumeration — RETAINED as the self-gating back-compat tail above.
+// Old-root pipelines (pre-v2) still list/resume via these 5 per-tier scope roots. Reads
+// the per-tier scope-root dir names from the profile JSONs (single source of truth) and
+// does `dir_exists` only — it parses NO registries, so on an all-data workspace it
+// returns [] cheaply (small profile reads + dir stats, no per-pipeline I/O).
 ENUMERATE_ALL_SCOPE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
   roots = []
   FOR tier IN [tier_1, tier_1b, tier_1c, tier_1d, tier_2]:
     profile = READ(skills/sk-platform-dispatch/profiles/{tier}.json)
     workspace_root = workspace + "/" + profile.scope_root.workspace
     user_root      = expand(profile.scope_root.user)
-    IF dir_exists(workspace_root): roots.append({tier, scope: "workspace", root: workspace_root, layout: "legacy"})
-    IF dir_exists(user_root):      roots.append({tier, scope: "user",      root: user_root,      layout: "legacy"})
+    // A legacy old-root pipeline lives under the scope root's `superpipelines/` subdir
+    // (path templates below). tier_2's scope root IS the data root, so its legacy
+    // old-root pipelines are the ones whose registry sits at `<root>/superpipelines/...`,
+    // distinct from the data-only `<root>/registry.json` — no double-count.
+    IF dir_exists(workspace_root + "/superpipelines"): roots.append({tier, scope: "workspace", root: workspace_root, layout: "legacy"})
+    IF dir_exists(user_root + "/superpipelines"):      roots.append({tier, scope: "user",      root: user_root,      layout: "legacy"})
   return roots
 </protocol>
 
@@ -167,7 +181,7 @@ scaffolds (design spec §8: old-root writes removed immediately, old-root reads 
 
 ## Collision Semantics
 
-When `ENUMERATE_ALL_SCOPE_ROOTS` returns multiple registry entries with the same pipeline name across different scopes or tiers, the resolution contract is:
+When discovery (`ENUMERATE_PIPELINE_ROOTS`, which merges the data roots with the gated legacy `ENUMERATE_ALL_SCOPE_ROOTS` tail) returns multiple registry entries with the same pipeline name across different scopes or tiers, the resolution contract is:
 
 **Precedence rule (highest wins):**
 1. `workspace/project` > `workspace/local` > `user/global`

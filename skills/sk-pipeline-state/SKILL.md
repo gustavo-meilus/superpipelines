@@ -34,7 +34,7 @@ State must be persisted to `<scope-root>/superpipelines/temp/{P}/{runId}/pipelin
   "pipeline_id": "<uuid>",
   "pipeline_name": "<P>",
   "plugin_version": "<semver — copied at run start from platform_profile.extensions.version_manifest_path (per-tier; see Q12)>",
-  "scope_root_dir": "<directory NAME from platform_profile.scope_root.workspace, e.g. '.claude' or '.superpipelines' — NOT an absolute path (Q12 portability fix)>",
+  "scope_root_dir": "<directory NAME, NOT an absolute path (Q12 portability fix). For layout:data pipelines this is the CONSTANT '.superpipelines' (tier-independent, #64 collapse); for layout:legacy (pre-v2 old-root) pipelines it is the dir NAME from platform_profile.scope_root.workspace, e.g. '.claude'>",
   "run_id": "<uuid>",
   "started_at": "<iso8601>",
   "pattern": "1 | 2 | 2b | 3 | 4 | 5",
@@ -145,7 +145,11 @@ od -An -tx1 -N1 pipeline-state.json
 - **Explicit Resumption**: NEVER auto-resume from an `escalated` or `failed` state without explicit user confirmation.
 - **Backward Compatibility**: Pre-v2.0.0 state files carry `metadata.tier` (single field). On resume of an old state file: treat `metadata.tier` as `source_tier` when `metadata.source_tier` is absent; set `runtime_tier` to the re-detected current tier. New state writes MUST use `source_tier` and `runtime_tier`; never write `metadata.tier` in new state.
 - **Version Stamping (Q12)**: `plugin_version` MUST be set at state initialization by reading the `version` field from the per-tier manifest at `platform_profile.extensions.version_manifest_path`. The Tier 1 manifest is `.claude-plugin/plugin.json`; other tiers point to their own manifest (Codex `.codex-plugin/plugin.json`, Cursor `.cursor-plugin/plugin.json`, OpenCode `opencode-plugin.json`, Antigravity `gemini-extension.json` until retirement). It is read-only after init and used by `running-a-pipeline` for compatibility advisory.
-- **Portable scope_root (Q12)**: State files store `scope_root_dir` (the directory NAME like `.claude`) instead of the previous absolute path. On resume, the active scope_root absolute path is recomputed from the state file's own location: `scope_root = dirname^4(state_file_path)`. This survives workspace moves between machines, between WSL and native Windows, and between drives. The stored `scope_root_dir` is a sanity check — if `basename(dirname^4(state_file_path)) != scope_root_dir`, the state file has been moved out of a recognized scope and resume MUST surface the inconsistency.
+- **Portable scope_root (Q12 + #64 collapse)**: State files store `scope_root_dir` (the directory NAME) instead of the previous absolute path. On resume, the active scope_root absolute path is recomputed from the state file's own location. The recompute depth is **layout-dependent** because data-only drops the `superpipelines/` path infix:
+  - `layout:data` — state lives at `{scope_root}/temp/{P}/{runId}/pipeline-state.json` (`scope_root` = the `.superpipelines` DATA_ROOT). Recompute `scope_root = dirname^4(state_file_path)`; the sanity check `basename(scope_root) == scope_root_dir` yields `.superpipelines`.
+  - `layout:legacy` — state lives at `{scope_root}/superpipelines/temp/{P}/{runId}/pipeline-state.json` (`scope_root` = e.g. `.claude`). The extra `superpipelines/` infix puts `scope_root` one level higher than the data case: recompute `scope_root = dirname^5(state_file_path)` (vs `^4` for data); the sanity check `basename(scope_root) == scope_root_dir` yields e.g. `.claude`.
+  
+  This survives workspace moves between machines, between WSL and native Windows, and between drives. If the basename sanity check fails for the pipeline's layout, the state file has been moved out of a recognized scope and resume MUST surface the inconsistency.
 </invariants>
 
 ## Reference Files
