@@ -75,21 +75,44 @@ PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
   target_root = per-tier table[target_tier][workspace_or_user]
   return artifact_path.replace(source_root, target_root, count=1)
 
-// Discovery & resume: DATA-ROOT FIRST, then legacy multi-root as back-compat tail.
-// v2.x discovery (running-a-pipeline Phase 0) and resume scanning (Phase 1) read the
-// single DATA_ROOT registries FIRST, then fall through to the 5 per-tier scope roots
-// to list/resume pre-v2 old-root pipelines (read-only — design spec §8).
+// Discovery & resume: DATA-ROOT FIRST. The DEFAULT path is two reads (workspace +
+// user `.superpipelines/`) with NO per-tier loop (design spec §4). The legacy 5-root
+// enumeration is a GATED back-compat fallback (design spec §8) — it is consulted only
+// when a pre-v2 old-root dir is actually present, so a workspace with only data-only
+// pipelines (the common case) never runs the per-tier profile loop.
 ENUMERATE_PIPELINE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
   roots = []
   // (1) Data-only roots — canonical, tier-independent. Two reads, no per-tier loop.
   IF dir_exists(RESOLVE_DATA_ROOT(project)): roots.append({tier: "data", scope: "workspace", root: RESOLVE_DATA_ROOT(project), layout: "data"})
   IF dir_exists(RESOLVE_DATA_ROOT(user)):    roots.append({tier: "data", scope: "user",      root: RESOLVE_DATA_ROOT(user),    layout: "data"})
-  // (2) Legacy per-tier roots — read-only back-compat tail (old-root pipelines only).
-  roots += ENUMERATE_ALL_SCOPE_ROOTS(workspace)   // each annotated layout: "legacy"
+  // (2) Legacy per-tier roots — GATED read-only back-compat tail. Skipped entirely
+  //     (no per-tier profile READ) unless a legacy root is detectable (cheap arming
+  //     pre-check). Preserves resume/list of pre-v2 old-root pipelines without
+  //     re-deriving 5 tiers' locations on every run of an all-data workspace.
+  IF LEGACY_BACK_COMPAT_ARMED(workspace): roots += ENUMERATE_ALL_SCOPE_ROOTS(workspace)
   return roots
 
-// Legacy multi-root enumeration — RETAINED as the back-compat tail above.
+// Cheap arming pre-check: returns true iff at least one legacy per-tier root DIRECTORY
+// exists. Uses the static dir-name table below — NO profile JSON reads — so the common
+// all-data case short-circuits to false after at most a handful of dir_exists() stats.
+LEGACY_DIR_NAMES = {
+  tier_1:  {workspace: ".claude",            user: "~/.claude"},
+  tier_1b: {workspace: ".opencode",          user: "~/.opencode"},
+  tier_1c: {workspace: ".agents/antigravity", user: "~/.antigravity"},
+  tier_1d: {workspace: ".agents/codex",      user: "~/.codex"},
+  tier_2:  {workspace: ".superpipelines",    user: "~/.superpipelines"},  // shared root; legacy old-root layout lives under its `superpipelines/` subdir
+}
+LEGACY_BACK_COMPAT_ARMED(workspace) → bool:
+  FOR tier IN [tier_1, tier_1b, tier_1c, tier_1d]:   // tier_2 shares the data root; its legacy old-root pipelines surface via the `superpipelines/registry.json` subpath check below
+    IF dir_exists(workspace + "/" + LEGACY_DIR_NAMES[tier].workspace + "/superpipelines"): return true
+    IF dir_exists(expand(LEGACY_DIR_NAMES[tier].user) + "/superpipelines"):                return true
+  IF file_exists(RESOLVE_DATA_ROOT(project) + "/superpipelines/registry.json"): return true  // tier_2 old-root under shared .superpipelines/
+  IF file_exists(RESOLVE_DATA_ROOT(user)    + "/superpipelines/registry.json"): return true
+  return false
+
+// Legacy multi-root enumeration — RETAINED as the GATED back-compat tail above.
 // Old-root pipelines (pre-v2) still list/resume via these 5 per-tier scope roots.
+// Reached only when LEGACY_BACK_COMPAT_ARMED() is true.
 ENUMERATE_ALL_SCOPE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
   roots = []
   FOR tier IN [tier_1, tier_1b, tier_1c, tier_1d, tier_2]:
