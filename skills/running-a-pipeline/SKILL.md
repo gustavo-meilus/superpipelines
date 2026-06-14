@@ -41,10 +41,10 @@ Mark a todo `completed` ONLY after its phase has actually run. A skipped or out-
   > ⚠️ SessionStart hook degraded (Git Bash not found on the previous session start). Auto-loading of `using-superpipelines` routing context was skipped. The plugin still works, but routing decisions may be less precise. To restore: install Git for Windows (Git Bash), then restart this session. To dismiss this advisory for the current session only: `del "%CLAUDE_PLUGIN_ROOT%\.session-hook-degraded"` (Windows) or `rm "${CLAUDE_PLUGIN_ROOT}/.session-hook-degraded"` (Unix).
   
   Do not delete the marker automatically — it is cleared by the next successful SessionStart hook.
-- **Q5 multi-root enumeration**: Call `sk-pipeline-paths.ENUMERATE_ALL_SCOPE_ROOTS(workspace)` to get every populated scope root across **all 5 tiers** (workspace + user). The result is a list of `{tier, scope, root}` entries.
-- For each enumerated root, read `<root>/superpipelines/registry.json` (if present). Merge all entries into a single registry view, annotating each entry with its `source_tier` (derived from which scope root it was found in) and `scope` (`project | local | user`).
-- Present available pipelines to the user; the listing MUST include the `source_tier` and `scope` per entry so cross-tier and cross-scope provenance is visible.
-- Capture the selection (`{ROOT}`, `{P}`, `pattern`, `source_tier`).
+- **Discovery: DATA-ROOT FIRST, legacy as back-compat tail (Q5).** Call `sk-pipeline-paths.ENUMERATE_PIPELINE_ROOTS(workspace)`. It returns the `.superpipelines/` DATA roots first (workspace + user, `layout: "data"`), then the 5 per-tier legacy scope roots (`layout: "legacy"`) as the read-only back-compat tail.
+- For each `layout: "data"` root, read `<root>/registry.json`. For each `layout: "legacy"` root, read `<root>/superpipelines/registry.json` (if present). Merge all entries into a single registry view, annotating each with `layout`, `scope` (`project | local | user`), and — for legacy entries only — `source_tier` (derived from the scope root). Data-only entries are tier-independent (no `source_tier` path divergence); their `runtime_tier` is set at Phase 0.25.
+- Present available pipelines to the user; the listing MUST include `layout` (and `source_tier`/`scope` for legacy) so provenance is visible.
+- Capture the selection (`{P}`, `layout`, `pattern`; `DATA_ROOT` for data pipelines or `{ROOT}`+`source_tier` for legacy).
 
 ### PHASE 0.25: TIER DETECT & DISPATCH LOAD
 
@@ -169,7 +169,7 @@ Once v1-legacy candidates are identified, migration is mandatory before dispatch
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
 - `entries = []`
 - FOR each agent in `topology.json` steps (no exceptions — iterate every node):
-  - Read frontmatter from the agent's `agent` path in topology.
+  - Read frontmatter: data-only pipeline → read the CAD at `DATA_ROOT + "/" + step.agent_def` (its tool-neutral frontmatter carries `model_tier`/`effort_tier`); legacy pipeline → read the agent file at `step.agent`.
   - `resolved = RESOLVE(agent_frontmatter, platform_profile, prefs)`.
   - Cache to `state.metadata.resolved_models[step_id]` via atomic write.
   - Append `{ step_id, agent_name: agent.name, model_tier: agent.model_tier ?? "fast", resolved }` to `entries`.
@@ -201,7 +201,7 @@ LOAD_PREFS(workspace_root):
 - `DETECT_CATALOG_DRIFT(prefs, platform_profile)` — IF drifted, emit advisory (non-blocking).
 - `entries = []`
 - FOR each agent in `topology.json` steps (no exceptions — iterate every node):
-  - Read agent frontmatter from the agent file path recorded in topology.
+  - Read agent frontmatter: data-only → CAD at `DATA_ROOT + "/" + step.agent_def`; legacy → the agent file path recorded in topology.
   - Execute `RESOLVE(agent_frontmatter, platform_profile, prefs)` — **full algorithm, all branches** (including Step 4 dynamic_subagents gate and Step 5 model_field_format:omit gate).
   - Cache `resolved` to `state.metadata.resolved_models[step_id]` via atomic write.
   - Append `{ step_id, agent_name: agent.name, model_tier: agent.model_tier ?? "fast", resolved }` to `entries`.
@@ -243,8 +243,9 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - **Advisory only — never blocks execution.** The user's confirmation is required only on a major mismatch.
 
 ### PHASE 0.6: PORTABILITY VALIDATION
-- IF `metadata.runtime_tier == metadata.source_tier`: skip silently.
-- ELSE:
+- IF the selected pipeline is `layout: "data"` (data-only under `.superpipelines/`): skip the path-rewrite and OC-frontmatter checks — data-only paths are tier-independent (relative to DATA_ROOT), so there is no scope-root path to rewrite (`PORTABILITY_REWRITE` retires for these, design spec §4). STILL evaluate the **Q7 pattern-vs-worktrees abort** (last bullet below) for data pipelines, then proceed to Phase 0.7.
+- ELSE IF `metadata.runtime_tier == metadata.source_tier`: skip silently.
+- ELSE (legacy old-root pipeline on a foreign tier):
   - **OC frontmatter check**: IF `metadata.source_tier == "tier_1b"` AND `metadata.runtime_tier != "tier_1b"`:
     - Emit: `"⚠️ Cross-tier incompatibility: pipeline was scaffolded on OpenCode (tier_1b). OC agent files use 'mode: subagent' frontmatter that is not recognized by other tiers. This is a frontmatter incompatibility, not a path problem — the Auto-rewrite below cannot fix it. Re-scaffolding on the current platform is required. Abort recommended."`
     - Offer: `[Abort] [Proceed as advisory (expect dispatch failures)]`
@@ -321,7 +322,7 @@ RESOLVE MUST be called once per agent — never per pipeline. The orchestrator M
 - ELSE (`armed` but `tripped` empty): proceed to Phase 1 silently.
 
 ### PHASE 1: RESUME CHECK
-- **Q5 multi-root resume scan**: For every populated scope root from the Phase 0 `ENUMERATE_ALL_SCOPE_ROOTS` result (not just the runtime tier's), check `<root>/superpipelines/temp/{P}/` for existing run directories. This finds state files written under a different tier's scope root (e.g., CC-scaffolded pipeline being resumed from Cursor).
+- **Resume scan: DATA-ROOT FIRST, legacy tail (Q5)**: For a `layout: "data"` pipeline, check `DATA_ROOT/temp/{P}/` (workspace + user) for existing run directories. Then, for back-compat, scan every legacy scope root from the Phase 0 `ENUMERATE_PIPELINE_ROOTS` tail at `<root>/superpipelines/temp/{P}/` — this still finds old-root state files written under a different tier's scope root (e.g., a CC-scaffolded legacy pipeline resumed from Cursor).
 - **Valid run directory criteria**: name matches `{P}-{YYYYMMDD-HHMMSS}` AND contains `pipeline-state.json`.
   - Directories whose names begin with `edit-` are atomic-staging artifacts from `adding-a-pipeline-step` / `deleting-a-pipeline-step` mutations — **EXCLUDE** them from the resume list.
   - Directories without `pipeline-state.json` are incomplete or foreign — **EXCLUDE** them.
@@ -374,10 +375,10 @@ Do NOT dispatch, do NOT "run the missing phase now and continue" (out-of-order e
 This gate is best-effort prose: at Tier 1 the orchestrator is the model, so there is no structural enforcement. Phase 0.7 is the primary defense; this gate is the runtime backstop for any deviation the tripwire did not arm on.
 </HARD-GATE>
 
-- Invoke the pipeline's entry skill (`run-{P}`).
-- **Context Handoff**: Pass absolute paths to the scope root, state file, topology, AND `metadata.runtime_tier` from Phase 0.25. All paths handed to subagents on a non-CC tier MUST be resolved through `sk-pipeline-paths` first; raw `.claude/`-prefixed strings are a portability defect (see PORTABILITY_REWRITE invariant in `sk-platform-dispatch`).
-- **Tier branch**: Entry skill MUST call `sk-platform-dispatch` DISPATCH for each step rather than hardcoding `Task()`. Entry skills generated under Tier 1 may keep direct `Task()` calls for backward compatibility, but new entry skills SHOULD route through DISPATCH for tier portability.
-- **Responsibility**: The entry skill owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup.
+- **Invoke the entry body**: data-only pipeline → `Read(DATA_ROOT/pipelines/{P}/entry.md)` and execute it as the orchestration body (there is no registered entry skill). Legacy pipeline → invoke the registered entry skill (`run-{P}`).
+- **Context Handoff**: Pass the state file path, topology, `metadata.runtime_tier` from Phase 0.25, AND `scope` + `DATA_ROOT` (data-only) so DISPATCH's MATERIALIZE can resolve the tier-1 materialization target. Data-only paths resolve against DATA_ROOT (tier-independent); legacy non-CC paths MUST route through `sk-pipeline-paths` (PORTABILITY_REWRITE).
+- **Tier branch**: The entry body MUST call `sk-platform-dispatch` DISPATCH for each step, passing `agent_def` (data-only) so the CAD is materialized at dispatch. Direct `Task()` is forbidden for new pipelines; legacy entry skills with direct `Task()` keep working via the BC3 fallback.
+- **Responsibility**: The entry body owns step dispatch, two-stage review (Stage 1 gates Stage 2), and cleanup (including `CLEANUP_MATERIALIZED` on DONE).
 
 **Model field at dispatch:** Every dispatch path MUST read `state.metadata.resolved_models[step_id]` rather than re-resolving:
 
@@ -389,7 +390,7 @@ This gate is best-effort prose: at Tier 1 the orchestrator is the model, so ther
 
 **Telemetry env export (#41):** Before dispatching each step, the orchestrator MUST export two env vars into the dispatch environment so the opt-in `subagent-telemetry` SubagentStop hook (ships disabled — `hooks/README-telemetry.md`) can locate the active run and tag each row:
 
-- `SUPERPIPELINES_RUN_DIR` = the resolved `<scope-root>/superpipelines/temp/{P}/{runId}/` path (already known to the orchestrator from Phase 2).
+- `SUPERPIPELINES_RUN_DIR` = the resolved run dir (`DATA_ROOT/temp/{P}/{runId}/` for data-only, or `<scope-root>/superpipelines/temp/{P}/{runId}/` for legacy) — already known to the orchestrator from Phase 2.
 - `SUPERPIPELINES_STEP_ID` = the `step.id` currently being dispatched (re-set per step, since one run dispatches many steps).
 
 Applies to the dispatch mechanisms that spawn a subagent the hook can observe: `native_task`, `native_subagent`, `model_driven`. On `inline` (Tier 2) there is no subagent boundary — the SubagentStop hook never fires — so the export is a no-op and may be skipped. `SUPERPIPELINES_RUN_DIR` is constant for the run; `SUPERPIPELINES_STEP_ID` MUST be updated before each step's dispatch so rows carry the correct `step_id` rather than a stale or null value.
@@ -399,8 +400,8 @@ Applies to the dispatch mechanisms that spawn a subagent the hook can observe: `
 ### PHASE 4: COMPLETION & CLEANUP
 - Read final state from `pipeline-state.json`.
 - **Defensive finalization backstop (E.a).** The entry skill is the primary finalizer (compliance criterion #20: it writes `status: completed` on success). As a backstop only: IF the state shows EVERY topology step with `status == "completed"` (or `phases[*].status` all `completed`) BUT the top-level `status != "completed"`, the orchestrator MUST stamp `status: "completed"` via the atomic write BEFORE evaluating cleanup below. This recovers already-created pipelines whose entry skill predates the criterion #20 contract, so a fully-finished run is never left labeled `running` to confuse the next Phase 1 resume scan. Do NOT stamp `completed` if any step is `pending`/`running`/`failed`. (Shares the same `all-steps-completed → atomic stamp` predicate as the Phase 1 finalize option.)
-- **Status: `completed`**: Delete the temporary run directory and summarize outputs.
-- **Status: `escalated/failed`**: **PRESERVE** the temporary directory and state path for debugging and recovery.
+- **Status: `completed`**: Delete the temporary run directory and summarize outputs. For data-only pipelines, ALSO call `sk-platform-dispatch` `CLEANUP_MATERIALIZED(P, scope)` to remove the ephemeral materialized-agent cache under `RESOLVE_SCOPE_ROOT(scope, tier_1)/agents/superpipelines/{P}/` (scoped to `{P}` only — never the parent). The cache is regenerated next run, so its removal is safe.
+- **Status: `escalated/failed`**: **PRESERVE** the temporary directory and state path for debugging and recovery. Leave the materialized cache too (regenerated next run regardless).
 </protocol>
 
 <invariants>
