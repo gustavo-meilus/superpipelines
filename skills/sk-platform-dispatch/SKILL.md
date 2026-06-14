@@ -185,7 +185,9 @@ IF resolved.effort != null
    AND provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers:
   {profile.capabilities.effort_field_name}: resolved.effort   // e.g. reasoningEffort: high
 // capability intent → OC enforcement primitive (structural); emit only the DENY keys:
-permission:                               // omit the whole block if no key denies
+permission:                               // omit the whole block ONLY if no key denies below;
+                                          // a writer (write_files:true) still emits permission
+                                          // when run_shell/network deny (e.g. webfetch: deny)
   IF cad.capabilities.write_files == false: edit: deny        // reviewer write-deny (structural)
   IF cad.capabilities.run_shell   == false: bash: deny
   IF cad.capabilities.network     == false: webfetch: deny

@@ -40,7 +40,11 @@ isolation degrades. The warning text is NOT written into the materialized agent 
 
 ## Notes
 
-- Tool names are normalized to OpenCode's lowercase ids (`Read`→`read`, etc.). `permission` is the
-  authoritative structural gate; `tools` is the capability-consistent allow-list.
+- Tool names are normalized to OpenCode's lowercase ids (`Read`→`read`, etc.) and the permission
+  vocabulary (`edit` / `bash` / `webfetch`, value `deny`) follows the OpenCode agent config schema
+  (OpenCode agent/permission docs, read 2026-06-14). These key names are the tier_1b materialization
+  recipe; AC3's live OC run is the confirmation gate — if OC's actual permission keys differ, the
+  golden outputs and `TRANSLATE_CAD_TO_OC` change together. `permission` is the authoritative
+  structural gate; `tools` is the capability-consistent allow-list.
 - The materialized file is disposable cache: regenerated every run, never read as source. The CAD
   under `.superpipelines/pipelines/{P}/agents/` is the single source of truth.
