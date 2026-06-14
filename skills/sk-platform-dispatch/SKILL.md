@@ -228,7 +228,9 @@ returns the whole file (`body_inlined: true`):
 ```
 name  = cad.name
 model = resolved.model                    # e.g. "gpt-5.4"
-IF resolved.effort != null:
+IF resolved.effort != null
+   AND (profile.capabilities.effort_field_applies_to_providers == null              # null = all providers
+        OR provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers):
   model_reasoning_effort = resolved.effort  # ALREADY mapped by sk-model-resolver (low→minimal); emit verbatim
 # capability intent → Codex sandbox primitive (structural):
 sandbox_mode = cad.capabilities.write_files ? "workspace-write" : "read-only"
