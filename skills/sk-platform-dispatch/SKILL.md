@@ -104,15 +104,32 @@ tool's native agent dir as an ephemeral file, dispatches natively, then treats t
 disposable cache. The CAD is the single source of truth; the native file is regenerated every
 run and **never read as source**. Schema + translation table: `pipeline-auditor-references/references/canonical-agent-def.md`.
 
+MATERIALIZE is tier-neutral: it selects the native-agent dir and the translator from the
+profile — never from a hardcoded tier string or path (per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`).
+Adding a new subagent-capable tier = adding its `extensions.native_agent_dir` + a `TRANSLATE_CAD_TO_*`
+branch; no other MATERIALIZE edit.
+
 ```
 MATERIALIZE(agent_def_path, resolved, profile, P, scope) → subagent_name:
   cad = READ(RESOLVE_DATA_ROOT(scope) + "/" + agent_def_path)   // tool-neutral frontmatter + inline body
   assert cad.schema_version supported            // else BLOCKED: unsupported CAD schema
-  target = RESOLVE_SCOPE_ROOT(scope, tier_1) + "/agents/superpipelines/" + P + "/" + cad.name + ".md"
+  // native agent dir is a per-tier fact, sourced from the profile:
+  target = RESOLVE_SCOPE_ROOT(scope, profile.tier) + "/" + profile.extensions.native_agent_dir
+           + "/" + P + "/" + cad.name + ".md"
   ensure_dir(dirname(target))
-  yaml = TRANSLATE_CAD_TO_CC(cad, resolved)
-  WRITE(target, yaml + "\n\n" + cad.body)        // CC agent = native frontmatter + inline protocol
-  return cad.name                                 // used as subagent_type
+  // translator is selected by dispatch_mechanism — NOT by tier string:
+  SWITCH profile.capabilities.dispatch_mechanism:
+    "native_task"     → frontmatter = TRANSLATE_CAD_TO_CC(cad, resolved)
+    "native_subagent" → frontmatter = TRANSLATE_CAD_TO_OC(cad, resolved, profile)
+    // model_driven (Codex/Antigravity) materialization tracked separately; not reachable here yet
+  // Filesystem isolation degrades on tiers without a worktree primitive (reviewer isolation is
+  // unaffected — it is enforced structurally in the translated frontmatter, not by the worktree):
+  IF cad.isolation_required == true AND profile.capabilities.worktrees == false
+     AND profile.extensions.isolation_unavailable_warning present:
+       w = profile.extensions.isolation_unavailable_warning with "{name}" → cad.name
+       surface w to the user; append w to metadata.isolation_warning (atomic)
+  WRITE(target, frontmatter + "\n\n" + cad.body) // native agent = native frontmatter + inline protocol
+  return cad.name                                 // used as subagent_type (CC) / subagent name (OC)
 ```
 
 **Runtime registration assumption (load-bearing for Option A).** `Task(subagent_type=cad.name)`
@@ -150,16 +167,64 @@ canonical source for reviewer write-deny; MATERIALIZE emits real `permissionMode
 structural on `native_task`, not convention. This preserves `WRITE_REVIEW_ISOLATION:
 STRUCTURAL_ON_TIER1_1B_1D` under the data-only model.
 
+### OpenCode (Tier 1b) materialization
+
+`TRANSLATE_CAD_TO_OC(cad, resolved, profile)` emits OpenCode `mode: subagent` YAML per the
+canonical-agent-def §3 table. Provider-prefixed model + provider-gated `reasoningEffort` come
+from the resolved object; the effort key name and the providers it applies to are read from the
+profile (never hardcoded):
+
+```
+mode:        subagent
+name:        cad.name
+description: cad.description
+model:       resolved.model               // provider-prefixed, e.g. opencode-go/qwen3.6-plus
+maxTurns:    cad.turn_budget
+// effort is provider-gated — emit only for providers the profile lists:
+IF resolved.effort != null
+   AND provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers:
+  {profile.capabilities.effort_field_name}: resolved.effort   // e.g. reasoningEffort: high
+// capability intent → OC enforcement primitive (structural); emit only the DENY keys:
+permission:                               // omit the whole block if no key denies
+  IF cad.capabilities.write_files == false: edit: deny        // reviewer write-deny (structural)
+  IF cad.capabilities.run_shell   == false: bash: deny
+  IF cad.capabilities.network     == false: webfetch: deny
+tools:  concrete OC tool list from cad.tool_hints.allow (capability-consistent); omit if empty
+// isolation_required has NO OC worktree primitive → handled by MATERIALIZE degradation guard
+```
+
+**Reviewer isolation stays STRUCTURAL on OC.** `capabilities.write_files: false` emits a real
+`permission: { edit: deny }` — the writer cannot mutate tracked source. This is the
+`extensions.reviewer_isolation_recipe` for tier_1b and upholds `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D`. OC has no worktree primitive, so a writer's `isolation_required`
+degrades to a surfaced warning (filesystem isolation only) — the write/review boundary itself
+never degrades to convention on OC.
+
+**Runtime registration assumption (load-bearing for Option A on OC).** A subagent dispatched by
+`name` resolves the `mode: subagent` agent file MATERIALIZE wrote under the active scope root's
+`agent/superpipelines/{P}/` dir. OpenCode discovers agent files present on disk under the active
+scope root at dispatch time. IF a materialized OC subagent fails to resolve by name at dispatch,
+DISPATCH MUST return `BLOCKED` with: *"Materialized OC agent '{name}' did not resolve as a
+subagent on this host — Option A requires same-session agent-file discovery. Verify OpenCode
+picks up agent files written under `.opencode/agent/superpipelines/{P}/` at dispatch time."*
+NEVER silently fall back to a generic subagent (that would drop the structural isolation the CAD
+encodes).
+
 ## Materialized-Cache Cleanup
 
 The materialized native agent dir is disposable cache, owned by DISPATCH:
 
 ```
 CLEANUP_MATERIALIZED(P, scope):     // called by orchestrator at Phase 4 on `completed`
-  delete_dir(RESOLVE_SCOPE_ROOT(scope, tier_1) + "/agents/superpipelines/" + P + "/")  // scoped to {P} ONLY
+  profile = metadata.platform_profile          // cached in pipeline-state.json by DETECT()
+  // native agent dir + scope-root tier are profile-sourced — same dir MATERIALIZE wrote to:
+  delete_dir(RESOLVE_SCOPE_ROOT(scope, profile.tier) + "/" + profile.extensions.native_agent_dir
+             + "/" + P + "/")                 // scoped to {P} ONLY
 ```
 
-- Delete ONLY the `{P}` subdir — never the parent `agents/superpipelines/` (other pipelines' caches).
+- Delete ONLY the `{P}` subdir — never the parent `{native_agent_dir}/` (other pipelines' caches).
+- The signature stays 2-arg (`P`, `scope`): every architect-emitted `entry.md` calls it that way;
+  the profile is read from cached run state, keeping native dirs portable across tiers.
 - On `escalated`/`failed`/`blocked`: leave the dir for debugging; it is regenerated next run regardless.
 - DISPATCH ALWAYS re-reads the CAD and re-materializes each run — the cache is never authoritative.
 
@@ -177,10 +242,12 @@ SWITCH mechanism:
                       ELSE:                                             // BC3: legacy old-root pipeline
                         Task(subagent_type=step.agent, model=resolved_models[step.id].model,
                              prompt=build_prompt(step, inputs))         // agent already registered; no materialize
-  "native_subagent" → IF step.agent_def present: BLOCKED — data-only materialization for OpenCode
-                        is not yet implemented (tracked separately). Emit: "Data-only pipelines
-                        require OC materialization (mode: subagent + permission: edit:deny from CAD),
-                        not yet available on tier_1b. Run on Claude Code, or scaffold legacy for OC."
+  "native_subagent" → IF step.agent_def present:                       // data-only pipeline
+                        name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                        dispatch OC native subagent (mode: subagent) by `name`, passing
+                          resolved_models[step.id].model + reasoningEffort (when set) in the payload,
+                          prompt=build_prompt(step, inputs)
+                        if it fails to resolve by name → BLOCKED per OC registration assumption
                       ELSE: OC native mode:subagent dispatch via step.agent file (legacy)
   "model_driven"    → IF step.agent_def present: BLOCKED — data-only materialization for Codex/Antigravity
                         is not yet implemented (tracked separately). Emit: "Data-only pipelines require

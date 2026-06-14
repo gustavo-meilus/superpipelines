@@ -1,0 +1,18 @@
+{
+  "doc-writer": {
+    "model": "opencode-go/qwen3.6-plus",
+    "effort": "medium",
+    "effort_field_name": "reasoningEffort",
+    "model_field_format": "provider_prefixed",
+    "source": "profile_default",
+    "warnings": []
+  },
+  "doc-reviewer": {
+    "model": "opencode-go/qwen3.6-plus",
+    "effort": "medium",
+    "effort_field_name": "reasoningEffort",
+    "model_field_format": "provider_prefixed",
+    "source": "profile_default",
+    "warnings": []
+  }
+}
