@@ -1,0 +1,12 @@
+name = "doc-writer"
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+turn_limit = 30
+instructions = """
+Read the input file. Produce `doc.md` summarizing it. Use shell only for file checks. Emit a
+terminal status: DONE on success.
+"""
+
+[sandbox_workspace_write]
+network_access = false

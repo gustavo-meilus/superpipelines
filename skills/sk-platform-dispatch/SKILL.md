@@ -113,23 +113,29 @@ branch; no other MATERIALIZE edit.
 MATERIALIZE(agent_def_path, resolved, profile, P, scope) → subagent_name:
   cad = READ(RESOLVE_DATA_ROOT(scope) + "/" + agent_def_path)   // tool-neutral frontmatter + inline body
   assert cad.schema_version supported            // else BLOCKED: unsupported CAD schema
-  // native agent dir is a per-tier fact, sourced from the profile:
+  // native agent dir + file extension are per-tier facts, sourced from the profile:
   target = RESOLVE_SCOPE_ROOT(scope, profile.tier) + "/" + profile.extensions.native_agent_dir
-           + "/" + P + "/" + cad.name + ".md"
+           + "/" + P + "/" + cad.name + profile.extensions.native_agent_ext   // .md (CC/OC) | .toml (Codex)
   ensure_dir(dirname(target))
-  // translator is selected by dispatch_mechanism — NOT by tier string:
+  // translator is selected by dispatch_mechanism — NOT by tier string. Each translator returns
+  // { content, body_inlined }: YAML tiers return frontmatter (body appended below); the TOML tier
+  // returns the complete file with the protocol embedded as an `instructions` string.
   SWITCH profile.capabilities.dispatch_mechanism:
-    "native_task"     → frontmatter = TRANSLATE_CAD_TO_CC(cad, resolved)
-    "native_subagent" → frontmatter = TRANSLATE_CAD_TO_OC(cad, resolved, profile)
-    // model_driven (Codex/Antigravity) materialization tracked separately; not reachable here yet
+    "native_task"     → t = { content: TRANSLATE_CAD_TO_CC(cad, resolved),          body_inlined: false }
+    "native_subagent" → t = { content: TRANSLATE_CAD_TO_OC(cad, resolved, profile), body_inlined: false }
+    "model_driven"    → IF profile.capabilities.model_field_format == "toml_split":  // Codex
+                          t = { content: TRANSLATE_CAD_TO_CODEX(cad, resolved, profile), body_inlined: true }
+                        ELSE: BLOCKED — no CAD materializer for this model_driven tier
+                          (Antigravity dynamic subagents are dispatched without a materialized file)
   // Filesystem isolation degrades on tiers without a worktree primitive (reviewer isolation is
-  // unaffected — it is enforced structurally in the translated frontmatter, not by the worktree):
+  // unaffected — it is enforced structurally in the translated agent file, not by the worktree):
   IF cad.isolation_required == true AND profile.capabilities.worktrees == false
      AND profile.extensions.isolation_unavailable_warning present:
        w = profile.extensions.isolation_unavailable_warning with "{name}" → cad.name
        surface w to the user; append w to metadata.isolation_warning (atomic)
-  WRITE(target, frontmatter + "\n\n" + cad.body) // native agent = native frontmatter + inline protocol
-  return cad.name                                 // used as subagent_type (CC) / subagent name (OC)
+  file = t.body_inlined ? t.content : (t.content + "\n\n" + cad.body)
+  WRITE(target, file)                             // native agent = native config + inline protocol
+  return cad.name                                 // subagent_type (CC) / subagent name (OC) / agent name (Codex)
 ```
 
 **Runtime registration assumption (load-bearing for Option A).** `Task(subagent_type=cad.name)`
@@ -212,6 +218,52 @@ picks up agent files written under `.opencode/agent/superpipelines/{P}/` at disp
 NEVER silently fall back to a generic subagent (that would drop the structural isolation the CAD
 encodes).
 
+### Codex (Tier 1d) materialization
+
+`TRANSLATE_CAD_TO_CODEX(cad, resolved, profile)` emits a complete Codex agent **TOML** document
+per the canonical-agent-def §3 table. Unlike the YAML tiers, the protocol body is embedded as a
+triple-quoted `instructions` string (TOML has no frontmatter/body split), so the translator
+returns the whole file (`body_inlined: true`):
+
+```
+name  = cad.name
+model = resolved.model                    # e.g. "gpt-5.4"
+IF resolved.effort != null
+   AND (profile.capabilities.effort_field_applies_to_providers == null              # null = all providers
+        OR provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers):
+  model_reasoning_effort = resolved.effort  # ALREADY mapped by sk-model-resolver (low→minimal); emit verbatim
+# capability intent → Codex sandbox primitive (structural):
+sandbox_mode = cad.capabilities.write_files ? "workspace-write" : "read-only"
+IF cad.turn_budget != null: turn_limit = cad.turn_budget   # Codex per-agent turn cap
+instructions = """<cad.body verbatim>"""
+# read-only ALSO denies shell-exec writes + network, so a reviewer (run_shell:false,
+# network:false) is fully covered by sandbox_mode alone. For a WRITER that denies network, emit a
+# [sandbox_workspace_write] table — and ONLY after all top-level keys (TOML table-ordering rule):
+IF cad.capabilities.write_files == true AND cad.capabilities.network == false:
+  [sandbox_workspace_write]
+  network_access = false
+```
+
+**Reviewer isolation stays STRUCTURAL on Codex.** `capabilities.write_files: false` emits
+`sandbox_mode = "read-only"` — the writer cannot mutate tracked source or shell-write. This is
+the `extensions.reviewer_isolation_recipe` for tier_1d and upholds `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D`. Codex has no per-subagent worktree primitive (`worktrees: false`); it
+isolates per-thread at the app level, so a writer's `isolation_required` carries no additional
+materialized primitive (no degradation warning is configured for tier_1d — app-level threading
+covers it).
+
+**Concurrency.** Codex fans subagents out per `topology.json`, capped at
+`profile.extensions.max_concurrent_subagents` (6). The orchestrator must not dispatch more than
+that many parallel branch workers at once; excess steps queue.
+
+**Runtime registration assumption (load-bearing for Option A on Codex).** A subagent named
+`cad.name` resolves the TOML agent file MATERIALIZE wrote under the active scope root's
+`agents/superpipelines/{P}/` dir. IF a materialized Codex agent fails to resolve by name at
+dispatch, DISPATCH MUST return `BLOCKED` with: *"Materialized Codex agent '{name}' did not
+resolve on this host — Option A requires same-session agent-file discovery. Verify Codex picks up
+agent TOML written under `.agents/codex/agents/superpipelines/{P}/` at dispatch time."* NEVER
+silently fall back to a generic subagent (that would drop the structural isolation the CAD encodes).
+
 ## Materialized-Cache Cleanup
 
 The materialized native agent dir is disposable cache, owned by DISPATCH:
@@ -251,10 +303,17 @@ SWITCH mechanism:
                           prompt=build_prompt(step, inputs)
                         if it fails to resolve by name → BLOCKED per OC registration assumption
                       ELSE: OC native mode:subagent dispatch via step.agent file (legacy)
-  "model_driven"    → IF step.agent_def present: BLOCKED — data-only materialization for Codex/Antigravity
-                        is not yet implemented (tracked separately). Emit: "Data-only pipelines require
-                        Codex TOML / Antigravity materialization from CAD, not yet available on this tier.
-                        Run on Claude Code, or scaffold legacy."
+  "model_driven"    → IF step.agent_def present:                       // data-only pipeline
+                        IF profile.capabilities.model_field_format == "toml_split":   // Codex
+                          name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                          dispatch Codex native subagent by `name` (model + model_reasoning_effort
+                            + sandbox_mode already in the materialized TOML); Codex fans out per
+                            topology.json, capped at extensions.max_concurrent_subagents
+                          if it fails to resolve by name → BLOCKED per Codex registration assumption
+                        ELSE: BLOCKED — data-only materialization for Antigravity dynamic subagents
+                          is not yet implemented (tracked separately). Emit: "Data-only pipelines
+                          require Antigravity materialization from CAD, not yet available on this tier.
+                          Run on Claude Code, or scaffold legacy."
                       ELSE: Emit orchestration prompt; Codex model fans out per topology.json (legacy)
   "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)   // data-only handled: reads CAD body
   DEFAULT (unknown) → fallback to "inline" + emit:

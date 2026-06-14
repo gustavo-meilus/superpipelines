@@ -1,0 +1,9 @@
+name = "doc-reviewer"
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+turn_limit = 15
+instructions = """
+Read `doc.md` and the spec. Compare requirement by requirement. Emit a Stage 1 verdict: PASS only
+if the output matches the spec exactly — under-build AND over-build FAIL.
+"""
