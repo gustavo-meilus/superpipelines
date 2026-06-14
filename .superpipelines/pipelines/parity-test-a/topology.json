@@ -1,0 +1,52 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.3.0",
+  "pipeline_id": "parity-test-a",
+  "name": "parity-test-a",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "layout": "data",
+  "source_tier": "tier_1",
+  "entry": "entry.md",
+  "metadata": {
+    "goal": "Read a YAML file and produce a flat key-value summary of its top-level entries, written to output/ as a text file",
+    "migrated_from": {
+      "tier": "tier_1",
+      "root": ".claude",
+      "at": "2026-06-14T16:11:46Z"
+    }
+  },
+  "steps": [
+    {
+      "id": "reader",
+      "order": 1,
+      "agent": "reader",
+      "agent_def": "pipelines/parity-test-a/agents/reader.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "depends_on": [],
+      "inputs": [],
+      "outputs": [
+        { "key": "kv_data", "path": "key-value-data.json", "kind": "file" }
+      ],
+      "description": "Reads the input YAML file, extracts each top-level key and its string-rendered value, writes structured JSON to the run dir."
+    },
+    {
+      "id": "summarizer",
+      "order": 2,
+      "agent": "summarizer",
+      "agent_def": "pipelines/parity-test-a/agents/summarizer.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "depends_on": ["reader"],
+      "inputs": [
+        { "key": "kv_data", "from_step": "reader", "kind": "file" }
+      ],
+      "outputs": [
+        { "key": "summary", "path": "parity-test-a-summary.txt", "kind": "file" }
+      ],
+      "description": "Reads key-value JSON from the run dir, renders a human-readable aligned summary table, writes the final text file to the data-root output/ directory."
+    }
+  ]
+}

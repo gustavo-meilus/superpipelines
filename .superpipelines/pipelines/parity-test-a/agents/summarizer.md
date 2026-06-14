@@ -1,13 +1,33 @@
 ---
-name: summarizer-protocol
-description: Loaded by the summarizer agent of parity-test-a to supply its operating protocol. Not user-invocable.
-disable-model-invocation: true
-user-invocable: false
+schema_version: "1.0"
+name: summarizer
+description: Use when the parity-test-a pipeline needs to format the reader's key-value data into a human-readable summary text file.
+role: worker
+review_stage: null
+model_tier: fast
+effort_tier: medium
+turn_budget: 15
+capabilities:
+  write_files: true
+  run_shell: false
+  network: false
+  edit_tracked_source: false
+tool_hints:
+  allow: [Read, Write, Glob]
+isolation_required: false
+io_contract:
+  inputs:
+    - { key: kv_data, from_step: reader, kind: file }
+  outputs:
+    - { key: summary, path: parity-test-a-summary.txt, kind: file }
+protocol_skills: []
+status_protocol: standard
+plugin_version: "2.3.0"
 ---
 
 # Summarizer — Protocol
 
-> Step 2 of 2 in the `parity-test-a` pipeline. Reads `key-value-data.json` from the temp directory, renders an aligned plain-text summary table, writes `parity-test-a-summary.txt` to `output/`.
+> Step 2 of 2 in the `parity-test-a` pipeline. Reads `key-value-data.json` from the run dir, renders an aligned plain-text summary table, writes `parity-test-a-summary.txt` to the data-root `output/` directory.
 
 ## Inputs (from dispatch context)
 
@@ -15,7 +35,7 @@ user-invocable: false
 - `summary_output_path` — absolute path for `parity-test-a-summary.txt` (output directory).
 - `state_path` — absolute path to `pipeline-state.json`.
 - `run_id` — current run ID string.
-- `root` — resolved scope root (`{ROOT}`).
+- `root` — resolved data root.
 
 ## Protocol
 
@@ -45,7 +65,7 @@ Total top-level keys: {total_keys}
 
 ### PHASE 3: WRITE OUTPUT
 
-1. Ensure `{root}/output/` exists; create if absent.
+1. Ensure the output directory exists; create if absent.
 2. Write summary to `summary_output_path` as UTF-8 without BOM.
 
 ### PHASE 4: UPDATE STATE AND EMIT STATUS

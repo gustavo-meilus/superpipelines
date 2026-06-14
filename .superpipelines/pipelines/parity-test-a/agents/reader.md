@@ -1,21 +1,41 @@
 ---
-name: reader-protocol
-description: Loaded by the reader agent of parity-test-a to supply its operating protocol. Not user-invocable.
-disable-model-invocation: true
-user-invocable: false
+schema_version: "1.0"
+name: reader
+description: Use when the parity-test-a pipeline needs to read a YAML file and extract each top-level key and its string-rendered value.
+role: worker
+review_stage: null
+model_tier: fast
+effort_tier: medium
+turn_budget: 15
+capabilities:
+  write_files: true
+  run_shell: false
+  network: false
+  edit_tracked_source: false
+tool_hints:
+  allow: [Read, Write, Glob]
+isolation_required: false
+io_contract:
+  inputs:
+    - { key: input_yaml, path: "{INPUT_PATH}", kind: file }
+  outputs:
+    - { key: kv_data, path: key-value-data.json, kind: file }
+protocol_skills: []
+status_protocol: standard
+plugin_version: "2.3.0"
 ---
 
 # Reader — Protocol
 
-> Step 1 of 2 in the `parity-test-a` pipeline. Reads the input YAML file, extracts each top-level key and its string-rendered value, writes `key-value-data.json` to the temp directory.
+> Step 1 of 2 in the `parity-test-a` pipeline. Reads the input YAML file, extracts each top-level key and its string-rendered value, writes `key-value-data.json` to the run dir.
 
 ## Inputs (from dispatch context)
 
 - `input_path` — absolute path to the input YAML file.
-- `kv_output_path` — absolute path for `key-value-data.json` (temp directory).
+- `kv_output_path` — absolute path for `key-value-data.json` (run dir).
 - `state_path` — absolute path to `pipeline-state.json`.
 - `run_id` — current run ID string.
-- `root` — resolved scope root (`{ROOT}`).
+- `root` — resolved data root.
 
 ## Protocol
 
