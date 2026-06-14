@@ -1,0 +1,19 @@
+{
+  "pipeline_id": "doc-legacy",
+  "pattern": 1,
+  "version": "1.5",
+  "steps": [
+    {
+      "id": "doc-writer",
+      "agent": "doc-writer",
+      "inputs": [],
+      "outputs": [{ "key": "doc", "path": "doc.md", "kind": "file" }]
+    },
+    {
+      "id": "doc-reviewer",
+      "agent": "doc-reviewer",
+      "inputs": [{ "key": "doc", "from_step": "doc-writer", "kind": "file" }],
+      "outputs": [{ "key": "verdict", "path": "review/stage1-verdict.md", "kind": "file" }]
+    }
+  ]
+}

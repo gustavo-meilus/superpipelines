@@ -37,7 +37,8 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 - **SCOPE-WIDE**: Iterate through all scope roots and registered pipelines.
 
 ### 2. AUDIT
-- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–25 including 10a, plus resolver consolidation criteria PR-01..PR-05, PR-07..PR-10 per ADR-0001 and ADR-0002). Criterion 25 (frontmatter ↔ protocol capability coherence) flags any agent/protocol pair whose primary action assumes a tool the agent forbids; distinguish a blocked primary path (SEV-1) from a documented tier-conditional fallback (PASS).
+- **Detect layout FIRST**: determine whether the bundle is **data-only** (CAD agents + `entry.md` under `.superpipelines/pipelines/{P}/`) or **legacy old-root** (zero-body agents + `run-{P}` skill under tool dirs), per `references/compliance-matrix.md` § "Pipeline layout & criterion applicability". Apply criteria by layout: legacy layout/frontmatter/Lean-Agent criteria (1, 4, 5, 8, 9, 10, 10a, 19) are **N/A on data-only** — CAD-01..CAD-05 govern there instead. Never FAIL a conformant CAD against a legacy-only criterion.
+- **Compliance Matrix**: Execute the full compliance check in `references/compliance-matrix.md` (criteria 1–25 including 10a, resolver consolidation criteria PR-01..PR-05, PR-07..PR-10 per ADR-0001 and ADR-0002, plus canonical agent-def criteria CAD-01..CAD-05), honoring the layout applicability table. Criterion 25 (frontmatter ↔ protocol capability coherence) flags any agent/protocol pair whose primary action assumes a tool the agent forbids; distinguish a blocked primary path (SEV-1) from a documented tier-conditional fallback (PASS). CAD-01..CAD-05 validate tool-neutral canonical agent defs under `superpipelines/pipelines/{P}/agents/` (capability-intent consistency, relative io_contract paths, version stamping, reviewer write-deny).
 - **Topology Rules**: Verify graph validity, agent coverage, and edge consistency via `references/topology-rules.md`.
 - Assign severity per `references/severity-classification.md` and select fixes from `references/fix-templates.md`.
 
@@ -84,6 +85,7 @@ The Auditor is strictly read-only; it cannot modify files. Remediation must be r
 ## Reference Files
 
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-auditor-references/references/compliance-matrix.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-auditor-references/references/canonical-agent-def.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-auditor-references/references/topology-rules.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-auditor-references/references/severity-classification.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-auditor-references/references/audit-report-template.md`

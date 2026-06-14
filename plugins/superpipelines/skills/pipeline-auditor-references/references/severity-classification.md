@@ -37,6 +37,9 @@ Findings classified into four severity tiers.
 - `tasks.md` missing acceptance criteria for some tasks.
 - Pure data agent (reads/fetches/emits artifacts; no tracked-code writes) declares `isolation: worktree`. Unnecessary worktree overhead plus auto-teardown risk; data agents must omit `isolation` (issue #31).
 - Frontmatter ↔ protocol split-brain: the protocol's primary action assumes a tool the agent permanently forbids (`tools:` allowlist omits it, or `disallowedTools:` / `permissionMode: plan` blocks it). The primary path is dead at runtime (criterion 25, issue #34).
+- Canonical def `tool_hints.allow` grants a capability that `capabilities.*` denies — the advisory allow-list silently widens the security boundary at materialization (criterion CAD-01).
+- Canonical def declares `isolation_required: true` without `capabilities.edit_tracked_source: true` — writer isolation requested for a non-writer (criterion CAD-02).
+- Canonical def `io_contract` path is absolute, scope-root-prefixed, or contains `..` — breaks copy-paste portability (criterion CAD-03).
 
 ## SEV-2 examples
 
@@ -48,6 +51,8 @@ Findings classified into four severity tiers.
 - Reference file >100 lines without ToC.
 - Description + `when_to_use` combined >1536 chars (truncation).
 - `permissionMode` contradicts the protocol's stated write intent while the tool is still granted (criterion 25 intent-only contradiction — runs today, signals confused authoring).
+- Canonical def missing `schema_version` or `plugin_version` — cannot be schema- or retro-compatibility-checked (criterion CAD-04).
+- Canonical def with `role: reviewer` AND `capabilities.write_files: true` — a writing reviewer breaks the write/review isolation boundary (criterion CAD-05).
 
 ## SEV-3 examples
 

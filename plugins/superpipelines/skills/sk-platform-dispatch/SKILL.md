@@ -82,8 +82,11 @@ Before DISPATCH executes any step, callers MUST load `sk-model-resolver` and cal
 <schema>
 Inputs to DISPATCH(step, inputs, profile):
 - `step.id`             — string, topology node id
-- `step.agent`          — string, agent name (used by Tier 1 / 1b / 1d)
-- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (used by Tier 2 and inline)
+- `step.agent`          — string, agent name (= CAD `name`; becomes the materialized `subagent_type`)
+- `step.agent_def`      — string, path to the canonical agent def (CAD) RELATIVE to DATA_ROOT
+                          (`pipelines/{P}/agents/{agent}.md`). Present for data-only pipelines.
+                          Absent for legacy old-root pipelines → no materialization (BC3 fallback).
+- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (LEGACY old-root pipelines only)
 - `step.output_paths`   — array of absolute paths the step is expected to produce
 - `inputs`              — object, key/value inputs resolved from upstream step outputs
 - `profile`             — platform profile object from DETECT()
@@ -92,6 +95,193 @@ Returns:
 - `{ status: "DONE" | "DONE_WITH_CONCERNS" | "NEEDS_CONTEXT" | "BLOCKED", outputs: [path...], concerns?: string, missing_context?: string, blocker?: string }`
 </schema>
 
+## Option A — Materialize-at-Runtime (CAD → native)
+
+Data-only pipelines store each agent as a tool-neutral **canonical agent def (CAD)** under
+`DATA_ROOT/pipelines/{P}/agents/{agent}.md` (frontmatter + inline protocol body). Before a
+subagent-capable tier dispatches a step, the orchestrator MATERIALIZES that CAD into the
+tool's native agent dir as an ephemeral file, dispatches natively, then treats the file as
+disposable cache. The CAD is the single source of truth; the native file is regenerated every
+run and **never read as source**. Schema + translation table: `pipeline-auditor-references/references/canonical-agent-def.md`.
+
+MATERIALIZE is tier-neutral: it selects the native-agent dir and the translator from the
+profile — never from a hardcoded tier string or path (per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`).
+Adding a new subagent-capable tier = adding its `extensions.native_agent_dir` + a `TRANSLATE_CAD_TO_*`
+branch; no other MATERIALIZE edit.
+
+```
+MATERIALIZE(agent_def_path, resolved, profile, P, scope) → subagent_name:
+  cad = READ(RESOLVE_DATA_ROOT(scope) + "/" + agent_def_path)   // tool-neutral frontmatter + inline body
+  assert cad.schema_version supported            // else BLOCKED: unsupported CAD schema
+  // native agent dir + file extension are per-tier facts, sourced from the profile:
+  target = RESOLVE_SCOPE_ROOT(scope, profile.tier) + "/" + profile.extensions.native_agent_dir
+           + "/" + P + "/" + cad.name + profile.extensions.native_agent_ext   // .md (CC/OC) | .toml (Codex)
+  ensure_dir(dirname(target))
+  // translator is selected by dispatch_mechanism — NOT by tier string. Each translator returns
+  // { content, body_inlined }: YAML tiers return frontmatter (body appended below); the TOML tier
+  // returns the complete file with the protocol embedded as an `instructions` string.
+  SWITCH profile.capabilities.dispatch_mechanism:
+    "native_task"     → t = { content: TRANSLATE_CAD_TO_CC(cad, resolved),          body_inlined: false }
+    "native_subagent" → t = { content: TRANSLATE_CAD_TO_OC(cad, resolved, profile), body_inlined: false }
+    "model_driven"    → IF profile.capabilities.model_field_format == "toml_split":  // Codex
+                          t = { content: TRANSLATE_CAD_TO_CODEX(cad, resolved, profile), body_inlined: true }
+                        ELSE: BLOCKED — no CAD materializer for this model_driven tier
+                          (Antigravity dynamic subagents are dispatched without a materialized file)
+  // Filesystem isolation degrades on tiers without a worktree primitive (reviewer isolation is
+  // unaffected — it is enforced structurally in the translated agent file, not by the worktree):
+  IF cad.isolation_required == true AND profile.capabilities.worktrees == false
+     AND profile.extensions.isolation_unavailable_warning present:
+       w = profile.extensions.isolation_unavailable_warning with "{name}" → cad.name
+       surface w to the user; append w to metadata.isolation_warning (atomic)
+  file = t.body_inlined ? t.content : (t.content + "\n\n" + cad.body)
+  WRITE(target, file)                             // native agent = native config + inline protocol
+  return cad.name                                 // subagent_type (CC) / subagent name (OC) / agent name (Codex)
+```
+
+**Runtime registration assumption (load-bearing for Option A).** `Task(subagent_type=cad.name)`
+resolves the agent file MATERIALIZE just wrote under the workspace/user `.claude/agents/`
+directory. Claude Code resolves agent files present on disk under the active scope root at
+dispatch time, so a file written earlier in the same session is dispatchable. IF a materialized
+`subagent_type` fails to resolve at `Task()` time on a given host, DISPATCH MUST return
+`BLOCKED` with: *"Materialized agent '{name}' did not resolve as a subagent_type on this host —
+Option A requires same-session agent-file discovery. Verify CC picks up agent files written
+under `.claude/agents/superpipelines/{P}/` at dispatch time."* NEVER silently fall back to a
+generic subagent (that would drop the structural isolation the CAD encodes).
+
+`TRANSLATE_CAD_TO_CC(cad, resolved)` emits CC YAML per the canonical-agent-def §3 table:
+
+```
+name:        cad.name
+model_tier:  cad.model_tier          // resolved.model is passed at the Task() call, not the file
+maxTurns:    cad.turn_budget
+// capability intent → CC enforcement primitive (structural):
+IF cad.capabilities.write_files == false:
+  tools:           (Read/Glob/Grep + cad.tool_hints.allow ∩ read-class)   // excludes Write/Edit/Bash
+  disallowedTools: Write, Edit, Bash
+  permissionMode:  plan
+ELSE:
+  tools:           Read, Write, Edit[, Bash if run_shell][, web tools if network] (+ tool_hints.allow)
+  permissionMode:  acceptEdits
+IF cad.capabilities.run_shell  == false AND write_files == true: omit Bash from tools
+IF cad.isolation_required == true: isolation: worktree
+skills:  cad.protocol_skills          // bundle skills, still tier-discovered; omit if empty
+```
+
+**Reviewer isolation stays STRUCTURAL.** `capabilities.write_files: false` is the single
+canonical source for reviewer write-deny; MATERIALIZE emits real `permissionMode: plan` +
+`disallowedTools: Write, Edit, Bash` (and `isolation: worktree` for writers) — enforcement is
+structural on `native_task`, not convention. This preserves `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D` under the data-only model.
+
+### OpenCode (Tier 1b) materialization
+
+`TRANSLATE_CAD_TO_OC(cad, resolved, profile)` emits OpenCode `mode: subagent` YAML per the
+canonical-agent-def §3 table. Provider-prefixed model + provider-gated `reasoningEffort` come
+from the resolved object; the effort key name and the providers it applies to are read from the
+profile (never hardcoded):
+
+```
+mode:        subagent
+name:        cad.name
+description: cad.description
+model:       resolved.model               // provider-prefixed, e.g. opencode-go/qwen3.6-plus
+maxTurns:    cad.turn_budget
+// effort is provider-gated — emit only for providers the profile lists:
+IF resolved.effort != null
+   AND provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers:
+  {profile.capabilities.effort_field_name}: resolved.effort   // e.g. reasoningEffort: high
+// capability intent → OC enforcement primitive (structural); emit only the DENY keys:
+permission:                               // omit the whole block ONLY if no key denies below;
+                                          // a writer (write_files:true) still emits permission
+                                          // when run_shell/network deny (e.g. webfetch: deny)
+  IF cad.capabilities.write_files == false: edit: deny        // reviewer write-deny (structural)
+  IF cad.capabilities.run_shell   == false: bash: deny
+  IF cad.capabilities.network     == false: webfetch: deny
+tools:  concrete OC tool list from cad.tool_hints.allow (capability-consistent); omit if empty
+// isolation_required has NO OC worktree primitive → handled by MATERIALIZE degradation guard
+```
+
+**Reviewer isolation stays STRUCTURAL on OC.** `capabilities.write_files: false` emits a real
+`permission: { edit: deny }` — the writer cannot mutate tracked source. This is the
+`extensions.reviewer_isolation_recipe` for tier_1b and upholds `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D`. OC has no worktree primitive, so a writer's `isolation_required`
+degrades to a surfaced warning (filesystem isolation only) — the write/review boundary itself
+never degrades to convention on OC.
+
+**Runtime registration assumption (load-bearing for Option A on OC).** A subagent dispatched by
+`name` resolves the `mode: subagent` agent file MATERIALIZE wrote under the active scope root's
+`agent/superpipelines/{P}/` dir. OpenCode discovers agent files present on disk under the active
+scope root at dispatch time. IF a materialized OC subagent fails to resolve by name at dispatch,
+DISPATCH MUST return `BLOCKED` with: *"Materialized OC agent '{name}' did not resolve as a
+subagent on this host — Option A requires same-session agent-file discovery. Verify OpenCode
+picks up agent files written under `.opencode/agent/superpipelines/{P}/` at dispatch time."*
+NEVER silently fall back to a generic subagent (that would drop the structural isolation the CAD
+encodes).
+
+### Codex (Tier 1d) materialization
+
+`TRANSLATE_CAD_TO_CODEX(cad, resolved, profile)` emits a complete Codex agent **TOML** document
+per the canonical-agent-def §3 table. Unlike the YAML tiers, the protocol body is embedded as a
+triple-quoted `instructions` string (TOML has no frontmatter/body split), so the translator
+returns the whole file (`body_inlined: true`):
+
+```
+name  = cad.name
+model = resolved.model                    # e.g. "gpt-5.4"
+IF resolved.effort != null
+   AND (profile.capabilities.effort_field_applies_to_providers == null              # null = all providers
+        OR provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers):
+  model_reasoning_effort = resolved.effort  # ALREADY mapped by sk-model-resolver (low→minimal); emit verbatim
+# capability intent → Codex sandbox primitive (structural):
+sandbox_mode = cad.capabilities.write_files ? "workspace-write" : "read-only"
+IF cad.turn_budget != null: turn_limit = cad.turn_budget   # Codex per-agent turn cap
+instructions = """<cad.body verbatim>"""
+# read-only ALSO denies shell-exec writes + network, so a reviewer (run_shell:false,
+# network:false) is fully covered by sandbox_mode alone. For a WRITER that denies network, emit a
+# [sandbox_workspace_write] table — and ONLY after all top-level keys (TOML table-ordering rule):
+IF cad.capabilities.write_files == true AND cad.capabilities.network == false:
+  [sandbox_workspace_write]
+  network_access = false
+```
+
+**Reviewer isolation stays STRUCTURAL on Codex.** `capabilities.write_files: false` emits
+`sandbox_mode = "read-only"` — the writer cannot mutate tracked source or shell-write. This is
+the `extensions.reviewer_isolation_recipe` for tier_1d and upholds `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D`. Codex has no per-subagent worktree primitive (`worktrees: false`); it
+isolates per-thread at the app level, so a writer's `isolation_required` carries no additional
+materialized primitive (no degradation warning is configured for tier_1d — app-level threading
+covers it).
+
+**Concurrency.** Codex fans subagents out per `topology.json`, capped at
+`profile.extensions.max_concurrent_subagents` (6). The orchestrator must not dispatch more than
+that many parallel branch workers at once; excess steps queue.
+
+**Runtime registration assumption (load-bearing for Option A on Codex).** A subagent named
+`cad.name` resolves the TOML agent file MATERIALIZE wrote under the active scope root's
+`agents/superpipelines/{P}/` dir. IF a materialized Codex agent fails to resolve by name at
+dispatch, DISPATCH MUST return `BLOCKED` with: *"Materialized Codex agent '{name}' did not
+resolve on this host — Option A requires same-session agent-file discovery. Verify Codex picks up
+agent TOML written under `.agents/codex/agents/superpipelines/{P}/` at dispatch time."* NEVER
+silently fall back to a generic subagent (that would drop the structural isolation the CAD encodes).
+
+## Materialized-Cache Cleanup
+
+The materialized native agent dir is disposable cache, owned by DISPATCH:
+
+```
+CLEANUP_MATERIALIZED(P, scope):     // called by orchestrator at Phase 4 on `completed`
+  profile = metadata.platform_profile          // cached in pipeline-state.json by DETECT()
+  // native agent dir + scope-root tier are profile-sourced — same dir MATERIALIZE wrote to:
+  delete_dir(RESOLVE_SCOPE_ROOT(scope, profile.tier) + "/" + profile.extensions.native_agent_dir
+             + "/" + P + "/")                 // scoped to {P} ONLY
+```
+
+- Delete ONLY the `{P}` subdir — never the parent `{native_agent_dir}/` (other pipelines' caches).
+- The signature stays 2-arg (`P`, `scope`): every architect-emitted `entry.md` calls it that way;
+  the profile is read from cached run state, keeping native dirs portable across tiers.
+- On `escalated`/`failed`/`blocked`: leave the dir for debugging; it is regenerated next run regardless.
+- DISPATCH ALWAYS re-reads the CAD and re-materializes each run — the cache is never authoritative.
+
 ## Tier-Specific DISPATCH Behavior
 
 Skills branch on `profile.capabilities` flags — NOT on `profile.tier` string. This ensures unknown future platforms with familiar capabilities route correctly without skill edits.
@@ -99,10 +289,38 @@ Skills branch on `profile.capabilities` flags — NOT on `profile.tier` string. 
 ```
 mechanism = profile.capabilities.dispatch_mechanism
 SWITCH mechanism:
-  "native_task"     → Task(subagent_type=step.agent, prompt=build_prompt(step, inputs))
-  "native_subagent" → OC native mode:subagent dispatch via step.agent file
-  "model_driven"    → Emit orchestration prompt; Codex model fans out per topology.json
-  "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)
+  "native_task"     → IF step.agent_def present:                       // data-only pipeline
+                        name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                        Task(subagent_type=name, model=resolved_models[step.id].model,
+                             prompt=build_prompt(step, inputs))
+                      ELSE:                                             // BC3: legacy old-root pipeline
+                        Task(subagent_type=step.agent, model=resolved_models[step.id].model,
+                             prompt=build_prompt(step, inputs))         // agent already registered; no materialize
+  "native_subagent" → IF step.agent_def present:                       // data-only pipeline
+                        name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                        dispatch OC native subagent (mode: subagent) by `name`, passing
+                          resolved_models[step.id].model + reasoningEffort (when set) in the payload,
+                          prompt=build_prompt(step, inputs)
+                        if it fails to resolve by name → BLOCKED per OC registration assumption
+                      ELSE: OC native mode:subagent dispatch via step.agent file (legacy)
+  "model_driven"    → IF step.agent_def present:                       // data-only pipeline
+                        IF profile.capabilities.model_field_format == "toml_split":   // Codex
+                          name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                          dispatch Codex native subagent by `name` (model + model_reasoning_effort
+                            + sandbox_mode already in the materialized TOML); Codex fans out per
+                            topology.json, capped at extensions.max_concurrent_subagents
+                          if it fails to resolve by name → BLOCKED per Codex registration assumption
+                        ELSE:                                          // Antigravity dynamic subagents
+                          // No materialized file: AGY auto-manages dynamic subagents at the
+                          // orchestrator tier (dynamic_subagents:true, model_field_format:"omit").
+                          surface profile.degradation_warnings        // orchestrator-tier-only model + convention isolation
+                          body = READ(RESOLVE_DATA_ROOT(scope) + "/" + step.agent_def).body
+                          dispatch dynamic subagent with task = build_prompt(step, inputs) + body;
+                            OMIT per-step model (host orchestrator owns subagent model selection)
+                          // reviewer isolation is CONVENTION here — review output is a self-check
+                          //   (the surfaced degradation says so); no structural write-deny exists
+                      ELSE: Emit orchestration prompt; Codex model fans out per topology.json (legacy)
+  "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)   // data-only handled: reads CAD body
   DEFAULT (unknown) → fallback to "inline" + emit:
                       "⚠️ Unknown dispatch_mechanism '{mechanism}'. Falling back to inline execution."
 ```
@@ -124,7 +342,7 @@ The orchestrator (the model running the entry skill) executes every step using i
 
 For each step in `topology.json` (dependency order):
 
-1. **Load protocol**: `Skill(step.protocol_skill)` — loads the agent's full protocol into the orchestrator's context.
+1. **Load protocol**: data-only pipeline → `Read(RESOLVE_DATA_ROOT(scope) + "/" + step.agent_def)` and execute the CAD's inline protocol body as data (no subagent boundary on Tier 2). Legacy old-root pipeline (no `agent_def`) → `Skill(step.protocol_skill)`. Either way the agent's full protocol enters the orchestrator's context.
 2. **Resolve inputs**: read upstream step outputs from disk using paths recorded in `pipeline-state.json[phases][upstream].outputs`.
 3. **Execute inline**: the orchestrator performs the protocol's actions using `Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`. No `Task()` call.
 4. **Persist outputs**: write all output files to the paths declared in `step.output_paths`.

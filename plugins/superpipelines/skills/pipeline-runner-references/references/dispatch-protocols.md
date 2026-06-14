@@ -19,7 +19,12 @@ How `running-a-pipeline` dispatches workers and reviewers per pattern. Maps the 
 
 ```
 # Resolve the host-anchored artifact directory ONCE (sk-pipeline-paths.RESOLVE_HOST_WORKSPACE):
-HOST_TEMP = {RESOLVE_HOST_WORKSPACE()}/{scope_root_dir}/superpipelines/temp/{P}/{runId}
+# NOTE: this is the LEGACY (layout:legacy) shape with the `superpipelines/` infix.
+# For layout:data pipelines scope_root_dir is the constant `.superpipelines` and the
+# run dir is `{RESOLVE_HOST_WORKSPACE()}/.superpipelines/temp/{P}/{runId}` — NO extra
+# `superpipelines/` infix (do NOT double it; #64 collapse). Data-only dispatch resolves
+# this run dir via DATA_ROOT/temp in entry.md, not from this legacy template.
+HOST_TEMP = {RESOLVE_HOST_WORKSPACE()}/{scope_root_dir}/superpipelines/temp/{P}/{runId}   # layout:legacy only
 
 Task(
   subagent_type="pipeline-task-executor",

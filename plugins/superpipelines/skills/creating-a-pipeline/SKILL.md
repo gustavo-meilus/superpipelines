@@ -98,7 +98,7 @@ The pipeline creation workflow enforces a fixed sequence: tier detection, git pr
 - **Architect output rule for agent frontmatter**: every generated agent file MUST declare `model_tier:` (one of `triage | fast | medium | deep | inherit`) and MAY declare `effort_tier:` (`low | medium | high`). The architect MUST NOT write a concrete `model:` field — that resolves at runtime via `sk-model-resolver`. For preview-only display in Phase 5, the architect MAY call `sk-model-resolver.RESOLVE` and `EMIT` against the active profile, but the resolved string is for the approval table only, never written to agent files.
 - **Isolation classification rule**: For each generated step, the architect sets `isolation: worktree` ONLY if the step writes tracked code (source files git would track). Steps that only read sources, fetch/scrape, or emit coordination artifacts under `superpipelines/temp/` MUST OMIT `isolation` — they run in the host cwd. Rationale: Claude Code auto-cleans a worktree whose subagent made no tracked changes, destroying any gitignored artifact (issue #31). A pattern's worktree requirement (Patterns 2/3/5) binds the code-writer step(s), NOT every step in the topology.
 - **Hardened-brief hand-off**: The Architect dispatch payload MUST include the `hardened_brief` from Phase 2 — especially `captured_failure_modes` (the Architect designs build-time guardrails from them, per 4D Diagnose) and `pipeline_type` (the Architect uses it to decide whether generated steps may assume repo access).
-- **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder.
+- **Output Formatter Rule**: The Architect MUST append a specific `output-formatter` step as the final node in the topology, designed to transform the output into the deduced format and save it to the `<workspace-root>/output/` folder. **Minimal-pipeline exemption:** an explicitly minimal/tracer pipeline (≤2 steps, `minimal: true` in its registry entry) MAY omit the `output-formatter` node — its terminal step's declared output is the pipeline output.
 - **Dispatch Auditor** (same profile-driven branching as Architect above).
 - <HARD-GATE>The `pipeline-auditor` MUST be dispatched after the architect. Do NOT present the human gate without audit results. If any SEV-0 or SEV-1 findings are returned, re-dispatch the Architect to remediate before proceeding.</HARD-GATE>
 
@@ -111,24 +111,24 @@ The pipeline creation workflow enforces a fixed sequence: tier detection, git pr
 - <HARD-GATE>When the user approves, proceed DIRECTLY to Phase 6 (scaffold generation). Do NOT ask for runtime inputs (e.g., "what's the topic?"). The pipeline does not run here — it is scaffolded. Running is a separate command (`/superpipelines:run-pipeline`).</HARD-GATE>
 
 ### PHASE 6: FINALIZATION
-- <HARD-GATE>Write ALL of the following to disk before ending the session. Do NOT tell the user the pipeline is ready until every file is confirmed written:
-  1. `<scope-root>/superpipelines/pipelines/{P}/spec.md`
-  2. `<scope-root>/superpipelines/pipelines/{P}/plan.md`
-  3. `<scope-root>/superpipelines/pipelines/{P}/tasks.md`
-  4. `<scope-root>/superpipelines/pipelines/{P}/topology.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0; AND `metadata.grilling = { completed: true, pipeline_type, captured_failure_modes: [...] }` from the Phase 2 hardened brief)
-  5. `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Run Launcher — single-page launcher document referencing the entry skill, registry entry, topology, and last-run state. Required artifact. NOTE: on Claude Code this is a documentation/discovery file only; CC does NOT auto-register it as a `/superpipelines:{P}` slash command. On OpenCode the same artifact is auto-routed by OC's scope-aware command resolver. Cross-platform `/superpipelines:{P}` direct invocation is OC-only in v2.0.0.)
-  6. `<scope-root>/skills/superpipelines/{P}/run-{P}/SKILL.md` (entry skill, `user-invocable: true`)
-  7. All step agents under `<scope-root>/agents/superpipelines/{P}/` — each MUST be zero-body (frontmatter only); and all companion `{agent-name}-protocol` skills under `<scope-root>/skills/superpipelines/{P}/` (with `plugin_version` stamped in agent frontmatter; `disable-model-invocation: true` and `user-invocable: false` in protocol skills)
-  8. Updated `<scope-root>/superpipelines/registry.json` (with `plugin_version` AND `source_tier` stamped — `source_tier` = `platform_profile.tier` from Phase 0)
+- <HARD-GATE>Write ALL of the following as DATA to disk before ending the session. DATA_ROOT = `sk-pipeline-paths.RESOLVE_DATA_ROOT(scope)` (the single `.superpipelines/` root). Do NOT tell the user the pipeline is ready until every file is confirmed written. **Data-only invariant:** scaffolding writes ONLY under `.superpipelines/`. Writing any generated artifact to `<scope-root>/skills/superpipelines/...` or `<scope-root>/agents/superpipelines/...` as source is FORBIDDEN — those tool dirs hold only the ephemeral materialization cache that DISPATCH owns at run time.
+  1. `DATA_ROOT/pipelines/{P}/spec.md`
+  2. `DATA_ROOT/pipelines/{P}/plan.md`
+  3. `DATA_ROOT/pipelines/{P}/tasks.md`
+  4. `DATA_ROOT/pipelines/{P}/topology.json` (with `plugin_version` stamped; AND `metadata.grilling = { completed: true, pipeline_type, captured_failure_modes: [...] }` from the Phase 2 hardened brief). Each step node carries `agent_def: "pipelines/{P}/agents/{agent}.md"` (relative to DATA_ROOT) so DISPATCH can locate the CAD. Record `runtime_tier` at run; data-only paths are tier-independent.
+  5. `DATA_ROOT/pipelines/{P}/{P}.md` (Run Launcher — single-page launcher document referencing the entry body, registry entry, topology, and last-run state. Required artifact. Documentation/discovery only.)
+  6. `DATA_ROOT/pipelines/{P}/entry.md` (entry orchestration body, DATA — NOT a registered skill. The bundle's `running-a-pipeline` reads and runs it. It dispatches every step via `sk-platform-dispatch` DISPATCH passing `agent_def`.)
+  7. All step agents as CAD files at `DATA_ROOT/pipelines/{P}/agents/{agent-name}.md` — each is ONE file: tool-neutral frontmatter (`schema_version`, `capabilities.*`, `model_tier`, `plugin_version`, …) PLUS inline protocol body. Do NOT write zero-body agents or companion `-protocol` skills. (For minimal/tracer pipelines, stamp `minimal: true` in the registry entry.)
+  8. Updated `DATA_ROOT/registry.json` (with `plugin_version` stamped; entry carries `scope`; `minimal: true` for tracer pipelines)
   9. **Preference bootstrap check**: IF `~/.superpipelines/model-preferences.json` does NOT contain an entry for `platform_profile.tier`, emit advisory: "No model preferences configured for `<platform_profile.name>`. Run `/superpipelines:change-models` Mode E to set them, or accept profile defaults at first run." This is non-blocking — scaffolding completes either way.
 </HARD-GATE>
-- Confirm to the user: "Pipeline `{P}` scaffolded. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `<scope-root>/superpipelines/pipelines/{P}/{P}.md` (Claude Code: this is a documentation/discovery file ONLY — it is NOT registered as a `/superpipelines:{P}` slash command). On OpenCode the same launcher IS auto-routed as `/superpipelines:{P}` direct invocation."
+- Confirm to the user: "Pipeline `{P}` scaffolded as data under `.superpipelines/pipelines/{P}/`. Use `/superpipelines:run-pipeline` to execute it. Launcher reference at `.superpipelines/pipelines/{P}/{P}.md`."
 </protocol>
 
 <invariants>
 - NEVER hardcode paths; always resolve via `sk-pipeline-paths`.
-- NEVER generate the entry skill before human approval of the `tasks.md` and `topology.json`.
-- All internal step skills MUST be marked `user-invocable: false`.
+- NEVER generate the entry body (`entry.md`) before human approval of the `tasks.md` and `topology.json`.
+- Generated pipelines are DATA-ONLY: no generated agent, step protocol, or entry is written to a tool dir (`skills/superpipelines/...`, `agents/superpipelines/...`) as source. Those dirs hold only DISPATCH-owned ephemeral materialization cache.
 - Any modification to the design MUST trigger a re-audit for SEV-0/1 issues.
 - ALWAYS stamp `plugin_version` in `topology.json`, the registry entry, and agent frontmatter to the current superpipelines version.
 - NEVER use `Task()` directly in Phase 4 without checking `platform_profile.capabilities.task_primitive`; use profile-driven dispatch branching.
