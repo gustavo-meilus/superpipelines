@@ -16,6 +16,28 @@ consolidation (PR-*), canonical agent-def (CAD-*).
 
 ---
 
+## Pipeline layout & criterion applicability (read first)
+
+A bundle is one of two layouts. Detect it before walking criteria:
+
+- **Data-only (v2.x):** the pipeline lives entirely under `<DATA_ROOT>/.superpipelines/pipelines/{P}/` — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline body), the entry is `pipelines/{P}/entry.md` (data), step protocols are `pipelines/{P}/skills/{step}/SKILL.md` (data). Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
+- **Legacy old-root (pre-v2):** agents at `agents/superpipelines/{P}/` (zero-body + companion `-protocol` skill), entry skill at `skills/superpipelines/{P}/run-{P}/SKILL.md`.
+
+**Criterion applicability by layout:**
+
+| Criteria | Data-only | Legacy |
+|---|---|---|
+| 1 (scope-root layout), 4 (entry skill flags), 5 (internal skills suppressed) | **N/A** — replaced by the data layout; verify CAD files exist under `pipelines/{P}/agents/` and `entry.md` is present | Apply |
+| 8, 9, 10, 10a (CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-05 govern instead** | Apply |
+| 19 (reviewer `disallowedTools`) | **N/A** — reviewer write-deny is expressed as `capabilities.write_files: false`; **CAD-05 governs** | Apply |
+| 6, 7, 11 (name, description, memory), 12–16 (topology), 17, 20, 21, 22, 23, 24, 25 | Apply to both | Apply |
+| PR-01..PR-10 (resolver/profiles) | Apply to both | Apply |
+| CAD-01..CAD-05 | **Apply** (the canonical-def contract) | N/A — no CAD files |
+
+When auditing a data-only pipeline, mark the layout-specific legacy criteria **N/A (data-only layout)** with a one-line reason rather than FAIL. A false FAIL on criterion 1/4/10a against a conformant CAD is itself a defect.
+
+---
+
 ## 1. Layout & registry
 
 | # | Criterion | PASS condition |
@@ -128,8 +150,8 @@ zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11
 
 ## How to use
 
-1. Read each target file with `Read`.
-2. Walk criteria 1–25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-05 (for canonical defs under `superpipelines/pipelines/{P}/agents/`) in order. Mark each PASS / FAIL / PARTIAL / N/A.
+1. **Detect the layout** (data-only vs legacy) per the applicability table above. Read each target file with `Read`.
+2. Walk criteria 1–25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-05 (for canonical defs under `pipelines/{P}/agents/`) in order, applying each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A — use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.
