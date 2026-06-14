@@ -1,7 +1,7 @@
 # Canonical Agent-Def Schema — Auditor Reference
 
 Normative reference for the tool-neutral canonical agent definition (CAD). Every generated
-pipeline agent is stored as data under `<scope-root>/superpipelines/pipelines/{P}/agents/{name}.md`
+pipeline agent is stored as data under `.superpipelines/pipelines/{P}/agents/{name}.md`
 in this format and materialized into each tier's native agent file at dispatch (Option A —
 materialize-at-runtime). The def expresses **capability intent**, not platform primitives, so a
 single portable field drives each tier's enforcement primitive — this is what makes the
@@ -23,7 +23,7 @@ rules themselves are enforced via criteria `CAD-01..CAD-05` in `compliance-matri
 
 ## 1. Canonical def — file shape
 
-`<scope-root>/superpipelines/pipelines/{P}/agents/{name}.md`: YAML frontmatter (tier-neutral) +
+`.superpipelines/pipelines/{P}/agents/{name}.md`: YAML frontmatter (tier-neutral) +
 inline protocol body (the agent's full operational protocol). One file per agent — the protocol
 body is stored inline, not in a companion skill, maximizing copy-paste portability.
 

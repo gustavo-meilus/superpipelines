@@ -115,6 +115,16 @@ MATERIALIZE(agent_def_path, resolved, profile, P, scope) → subagent_name:
   return cad.name                                 // used as subagent_type
 ```
 
+**Runtime registration assumption (load-bearing for Option A).** `Task(subagent_type=cad.name)`
+resolves the agent file MATERIALIZE just wrote under the workspace/user `.claude/agents/`
+directory. Claude Code resolves agent files present on disk under the active scope root at
+dispatch time, so a file written earlier in the same session is dispatchable. IF a materialized
+`subagent_type` fails to resolve at `Task()` time on a given host, DISPATCH MUST return
+`BLOCKED` with: *"Materialized agent '{name}' did not resolve as a subagent_type on this host —
+Option A requires same-session agent-file discovery. Verify CC picks up agent files written
+under `.claude/agents/superpipelines/{P}/` at dispatch time."* NEVER silently fall back to a
+generic subagent (that would drop the structural isolation the CAD encodes).
+
 `TRANSLATE_CAD_TO_CC(cad, resolved)` emits CC YAML per the canonical-agent-def §3 table:
 
 ```
@@ -167,9 +177,17 @@ SWITCH mechanism:
                       ELSE:                                             // BC3: legacy old-root pipeline
                         Task(subagent_type=step.agent, model=resolved_models[step.id].model,
                              prompt=build_prompt(step, inputs))         // agent already registered; no materialize
-  "native_subagent" → OC native mode:subagent dispatch via step.agent file
-  "model_driven"    → Emit orchestration prompt; Codex model fans out per topology.json
-  "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)
+  "native_subagent" → IF step.agent_def present: BLOCKED — data-only materialization for OpenCode
+                        is not yet implemented (tracked separately). Emit: "Data-only pipelines
+                        require OC materialization (mode: subagent + permission: edit:deny from CAD),
+                        not yet available on tier_1b. Run on Claude Code, or scaffold legacy for OC."
+                      ELSE: OC native mode:subagent dispatch via step.agent file (legacy)
+  "model_driven"    → IF step.agent_def present: BLOCKED — data-only materialization for Codex/Antigravity
+                        is not yet implemented (tracked separately). Emit: "Data-only pipelines require
+                        Codex TOML / Antigravity materialization from CAD, not yet available on this tier.
+                        Run on Claude Code, or scaffold legacy."
+                      ELSE: Emit orchestration prompt; Codex model fans out per topology.json (legacy)
+  "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)   // data-only handled: reads CAD body
   DEFAULT (unknown) → fallback to "inline" + emit:
                       "⚠️ Unknown dispatch_mechanism '{mechanism}'. Falling back to inline execution."
 ```

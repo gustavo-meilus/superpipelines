@@ -6,6 +6,10 @@ so each canonical def is materialized to a native agent at run time (Option A).
 
 ## 1. Dispatch (topology order)
 
+`<runDir>` below = `DATA_ROOT/temp/tracer-echo/{runId}/` (the active run dir resolved by
+`running-a-pipeline` Phase 2). The CADs declare run-dir-relative output names (`echo.txt`,
+`verdict.md`); the orchestrator resolves them against `<runDir>`.
+
 ```
 Skill("sk-platform-dispatch")
 
