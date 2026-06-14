@@ -28,8 +28,8 @@ plugin_version: "2.2.3"
 ---
 ```
 
-**Detection:** denied class from `write_files: false` ⇒ {Write, Edit}. `tool_hints.allow`
-contains `Write` ∈ denied class ⇒ FAIL. **Remediation:** drop `Write` from `tool_hints.allow`.
+**Detection:** denied class from `write_files: false` ⇒ {Write, Edit, NotebookEdit}.
+`tool_hints.allow` contains `Write` ∈ denied class ⇒ FAIL. **Remediation:** drop `Write` from `tool_hints.allow`.
 
 ---
 
