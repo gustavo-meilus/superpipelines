@@ -10,7 +10,7 @@ Templates for `spec.md`, `plan.md`, `tasks.md`, and the human gate prompt. Used 
 4. Task atomicity rules
 5. Human approval gate prompt
 6. `pipeline-state.json` initial entry
-7. Lean agent stub + protocol skill templates
+7. Canonical agent-def template
 
 ---
 
@@ -150,42 +150,42 @@ Wait for APPROVE. If REVISE arrives, route back per the 4D feedback table:
 
 ---
 
-## Lean agent stub + protocol skill templates
+## Canonical agent-def template
 
-Use these templates verbatim for every new agent in a pipeline. The agent file is frontmatter-only; all protocol goes into the companion skill.
+Use this template verbatim for every new agent in a data-only pipeline. It is ONE file (data):
+tool-neutral frontmatter + inline protocol body. No companion `-protocol` skill, no
+frontmatter-only tool-dir agent. The materializer (`sk-platform-dispatch` MATERIALIZE)
+translates the capability intent to native frontmatter at dispatch. Schema authority:
+`pipeline-auditor-references/references/canonical-agent-def.md`.
 
-### Agent stub — `agents/superpipelines/{P}/{agent-name}.md`
-
-```yaml
----
-name: {agent-name}
-description: Use when {triggering conditions in third-person, ≤1024 chars}.
-tools: Read, Write, Edit, Glob, Grep, Bash
-model: sonnet
-effort: medium
-maxTurns: 30
-version: "1.0"
-permissionMode: acceptEdits
-plugin_version: "{current-superpipelines-version}"
-skills:
-  - sk-4d-method
-  - {agent-name}-protocol
----
-```
-
-Notes:
-- `permissionMode`: use `acceptEdits` for workers/executors; `plan` for reviewers/architects.
-- `disallowedTools: Write, Edit` should be added for read-only reviewer agents.
-- No text may appear after the closing `---`.
-
-### Protocol skill — `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md`
+### CAD — `DATA_ROOT/pipelines/{P}/agents/{agent-name}.md`
 
 ```markdown
 ---
-name: {agent-name}-protocol
-description: Loaded by the {agent-name} agent to supply operating protocol and invariants. Not user-invocable.
-disable-model-invocation: true
-user-invocable: false
+schema_version: "1.0"
+name: {agent-name}
+description: Use when {triggering conditions in third-person, ≤1024 chars}.
+role: {worker | reviewer | analyzer | tester | fixer | architect | merger}
+review_stage: {null | 1 | 2}
+model_tier: {triage | fast | medium | deep | inherit}
+effort_tier: {low | medium | high | null}
+turn_budget: 30
+capabilities:
+  write_files: {true|false}          # false ⇒ reviewer/read-only ⇒ structural write-deny at materialization
+  run_shell: {true|false}
+  network: {true|false}
+  edit_tracked_source: {true|false}  # true ⇒ legitimate code writer
+tool_hints:                          # OPTIONAL; capability-consistent refinement only
+  allow: [Read, Glob, Grep]
+isolation_required: {true|false}     # true ONLY when edit_tracked_source: true
+io_contract:
+  inputs:
+    - { key: {input-key}, from_step: {upstream-step}, kind: file }
+  outputs:
+    - { key: {output-key}, path: {relative/to/run-dir.ext}, kind: file }
+protocol_skills: []                  # bundle skills to load; MAY be empty
+status_protocol: standard
+plugin_version: "{current-superpipelines-version}"
 ---
 
 # {Agent Display Name} — Operational Protocol
@@ -209,7 +209,13 @@ user-invocable: false
 
 <invariants>
 - {Non-negotiable rule 1.}
-- {Non-negotiable rule 2.}
 - Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
 </invariants>
 ```
+
+Notes:
+- Reviewers set `capabilities.write_files: false` — the materializer emits the structural
+  write-deny primitive per tier. A reviewer MAY still declare an `io_contract.output` (its
+  verdict); the orchestrator persists that from the reviewer's returned content, not an agent write.
+- `tool_hints.allow` MUST be a subset of what `capabilities` permits (auditor CAD-01).
+- `io_contract` paths are relative to the run dir — no absolute, no scope-root prefix, no `..`.
