@@ -310,10 +310,15 @@ SWITCH mechanism:
                             + sandbox_mode already in the materialized TOML); Codex fans out per
                             topology.json, capped at extensions.max_concurrent_subagents
                           if it fails to resolve by name → BLOCKED per Codex registration assumption
-                        ELSE: BLOCKED — data-only materialization for Antigravity dynamic subagents
-                          is not yet implemented (tracked separately). Emit: "Data-only pipelines
-                          require Antigravity materialization from CAD, not yet available on this tier.
-                          Run on Claude Code, or scaffold legacy."
+                        ELSE:                                          // Antigravity dynamic subagents
+                          // No materialized file: AGY auto-manages dynamic subagents at the
+                          // orchestrator tier (dynamic_subagents:true, model_field_format:"omit").
+                          surface profile.degradation_warnings        // orchestrator-tier-only model + convention isolation
+                          body = READ(RESOLVE_DATA_ROOT(scope) + "/" + step.agent_def).body
+                          dispatch dynamic subagent with task = build_prompt(step, inputs) + body;
+                            OMIT per-step model (host orchestrator owns subagent model selection)
+                          // reviewer isolation is CONVENTION here — review output is a self-check
+                          //   (the surfaced degradation says so); no structural write-deny exists
                       ELSE: Emit orchestration prompt; Codex model fans out per topology.json (legacy)
   "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)   // data-only handled: reads CAD body
   DEFAULT (unknown) → fallback to "inline" + emit:
