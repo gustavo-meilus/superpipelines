@@ -47,6 +47,13 @@ RESOLVE_SCOPE_ROOT(scope, tier):
   base = per-tier table above [tier] [scope-bucket]
   return absolute_path(base)
 
+RESOLVE_DATA_ROOT(scope):
+  // Data-only pipelines (v2.x+): the single artifact root for ALL generated
+  // pipeline DATA. Tier-INDEPENDENT — NOT the tier-1 scope root, a sibling of it.
+  // Only dispatch + model resolution remain tier-specific (design spec §4).
+  if scope in {project, local}: return RESOLVE_HOST_WORKSPACE() + "/.superpipelines"
+  if scope == user:             return expand("~/.superpipelines")
+
 RESOLVE_HOST_WORKSPACE():
   // The main-worktree root, NOT a linked worktree's cwd. Artifacts and state
   // MUST anchor here so they survive worktree teardown (issue #31).
@@ -58,24 +65,39 @@ RESOLVE_HOST_WORKSPACE():
 // resolves under RESOLVE_HOST_WORKSPACE(), never a linked worktree path. Code
 // edits stay isolated in the worktree; coordination artifacts land on the host.
 
+// LEGACY back-compat only. Data-only pipelines store paths relative to DATA_ROOT
+// (tier-independent), so PORTABILITY_REWRITE is a no-op for them and retires for paths
+// (design spec §4). It still rewrites old-root (pre-v2) cross-tier paths.
 PORTABILITY_REWRITE(artifact_path, source_tier, target_tier):
   if source_tier == target_tier: return artifact_path
+  if source_tier == "data" OR target_tier == "data": return artifact_path  // data paths are tier-independent
   source_root = per-tier table[source_tier][workspace_or_user]
   target_root = per-tier table[target_tier][workspace_or_user]
   return artifact_path.replace(source_root, target_root, count=1)
 
-// Multi-root enumeration for discovery and resume.
-// Discovery (running-a-pipeline Phase 0) and resume scanning (Phase 1) MUST
-// enumerate all 5 per-tier scope roots under both `<workspace>/` and `~/`,
-// returning merged results annotated with the source_tier per entry.
-ENUMERATE_ALL_SCOPE_ROOTS(workspace) → [{tier, scope, root}, ...]:
+// Discovery & resume: DATA-ROOT FIRST, then legacy multi-root as back-compat tail.
+// v2.x discovery (running-a-pipeline Phase 0) and resume scanning (Phase 1) read the
+// single DATA_ROOT registries FIRST, then fall through to the 5 per-tier scope roots
+// to list/resume pre-v2 old-root pipelines (read-only — design spec §8).
+ENUMERATE_PIPELINE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
+  roots = []
+  // (1) Data-only roots — canonical, tier-independent. Two reads, no per-tier loop.
+  IF dir_exists(RESOLVE_DATA_ROOT(project)): roots.append({tier: "data", scope: "workspace", root: RESOLVE_DATA_ROOT(project), layout: "data"})
+  IF dir_exists(RESOLVE_DATA_ROOT(user)):    roots.append({tier: "data", scope: "user",      root: RESOLVE_DATA_ROOT(user),    layout: "data"})
+  // (2) Legacy per-tier roots — read-only back-compat tail (old-root pipelines only).
+  roots += ENUMERATE_ALL_SCOPE_ROOTS(workspace)   // each annotated layout: "legacy"
+  return roots
+
+// Legacy multi-root enumeration — RETAINED as the back-compat tail above.
+// Old-root pipelines (pre-v2) still list/resume via these 5 per-tier scope roots.
+ENUMERATE_ALL_SCOPE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
   roots = []
   FOR tier IN [tier_1, tier_1b, tier_1c, tier_1d, tier_2]:
     profile = READ(skills/sk-platform-dispatch/profiles/{tier}.json)
     workspace_root = workspace + "/" + profile.scope_root.workspace
     user_root      = expand(profile.scope_root.user)
-    IF dir_exists(workspace_root): roots.append({tier, scope: "workspace", root: workspace_root})
-    IF dir_exists(user_root):      roots.append({tier, scope: "user",      root: user_root})
+    IF dir_exists(workspace_root): roots.append({tier, scope: "workspace", root: workspace_root, layout: "legacy"})
+    IF dir_exists(user_root):      roots.append({tier, scope: "user",      root: user_root,      layout: "legacy"})
   return roots
 </protocol>
 
@@ -84,6 +106,40 @@ Path resolution MUST consult `metadata.runtime_tier` from the pipeline state for
 </invariant>
 
 ## Path Templates
+
+### Data-Only Path Templates (v2.x — relative to DATA_ROOT)
+
+The canonical templates for new pipelines. DATA_ROOT = `RESOLVE_DATA_ROOT(scope)` (the
+`.superpipelines/` root). Everything a pipeline needs — including the entry orchestration body
+and the step protocols — is DATA here; nothing is written to a tool dir as source.
+
+<data_path_templates>
+| Artifact Type | Path Template (relative to DATA_ROOT) |
+| :--- | :--- |
+| **Registry** | `registry.json` |
+| **Spec/Plan/Tasks** | `pipelines/{P}/` |
+| **Topology Graph** | `pipelines/{P}/topology.json` |
+| **Audit Report** | `pipelines/{P}/audit/latest.md` |
+| **Canonical Agent Def (CAD)** | `pipelines/{P}/agents/{agent-name}.md` |
+| **Step Protocol (data)** | `pipelines/{P}/skills/{step}/SKILL.md` |
+| **Entry (data)** | `pipelines/{P}/entry.md` |
+| **Run Command (data)** | `pipelines/{P}/{P}.md` |
+| **Pipeline State** | `temp/{P}/{runId}/pipeline-state.json` |
+| **Staged Edits** | `temp/{P}/edit-{ts}/` |
+</data_path_templates>
+
+**Materialized CC Agent (ephemeral cache — Option A dispatch):**
+`RESOLVE_SCOPE_ROOT(scope, tier_1) + "/agents/superpipelines/{P}/{agent-name}.md"`. Written by
+`sk-platform-dispatch` MATERIALIZE just before native dispatch, translated from the CAD;
+regenerated every run; **never read as source**; cleaned at Phase 4 completion. This is the
+one place generated content lands in a tool dir, and it is disposable cache, not source.
+
+### Legacy Path Templates (READ-ONLY back-compat — old-root pipelines only)
+
+Pipelines scaffolded before v2.x persist under per-tier scope roots (`{ROOT}` =
+`RESOLVE_SCOPE_ROOT(scope, tier)`). These templates are a **read-only** back-compat path for
+discovery and resume of existing pipelines — they are **never a write target** for new
+scaffolds (design spec §8: old-root writes removed immediately, old-root reads kept one major).
 
 <path_templates>
 | Artifact Type | Path Template (relative to ROOT) |
