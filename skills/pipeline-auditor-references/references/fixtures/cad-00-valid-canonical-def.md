@@ -4,7 +4,7 @@
 any auditor change that flags this file has lost precision.
 
 This is a `spec-reviewer` canonical def as stored under
-`<scope-root>/superpipelines/pipelines/{P}/agents/spec-reviewer.md`.
+`.superpipelines/pipelines/{P}/agents/spec-reviewer.md`.
 
 ```yaml
 ---
