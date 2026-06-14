@@ -27,7 +27,8 @@
   "degradation_warnings": [],
   "extensions": {
     "version_manifest_path": ".claude-plugin/plugin.json",
-    "native_agent_dir": "agents/superpipelines"
+    "native_agent_dir": "agents/superpipelines",
+    "native_agent_ext": ".md"
   },
   "model_tiers": {
     "triage": { "model": "claude-haiku-4-5-20251001", "effort": "low" },

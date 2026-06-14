@@ -31,6 +31,7 @@
   "extensions": {
     "version_manifest_path": "opencode-plugin.json",
     "native_agent_dir": "agent/superpipelines",
+    "native_agent_ext": ".md",
     "isolation_unavailable_warning": "OpenCode exposes no worktree primitive — agent '{name}' declares isolation_required. Write/review isolation stays STRUCTURAL via permission:{edit:deny}; only filesystem worktree isolation is unavailable. Commit between steps to enable rollback."
   },
   "model_tiers": {

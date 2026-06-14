@@ -1,0 +1,8 @@
+name = "triage-probe"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "minimal"
+sandbox_mode = "read-only"
+turn_limit = 10
+instructions = """
+Skim the inputs and emit a one-line triage note. Read-only.
+"""
