@@ -1,0 +1,18 @@
+{
+  "pipelines": [
+    {
+      "name": "tracer-echo",
+      "scope": "project",
+      "layout": "data",
+      "minimal": true,
+      "pattern": "1",
+      "plugin_version": "2.2.3",
+      "entry": "pipelines/tracer-echo/entry.md",
+      "topology_path": "pipelines/tracer-echo/topology.json",
+      "agents": ["echo-writer", "echo-checker"],
+      "created_at": "2026-06-14",
+      "last_audit": null,
+      "note": "Data-only CC tracer fixture for issue #62."
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "name": "tracer-echo",
+  "pattern": "1",
+  "minimal": true,
+  "plugin_version": "2.2.3",
+  "metadata": {
+    "grilling": { "completed": true, "pipeline_type": "tracer", "captured_failure_modes": [] },
+    "note": "Data-only CC tracer for issue #62. Proves scaffold-as-data -> materialize-at-runtime -> run to completed."
+  },
+  "steps": [
+    {
+      "id": "echo-writer",
+      "agent": "echo-writer",
+      "agent_def": "pipelines/tracer-echo/agents/echo-writer.md",
+      "depends_on": [],
+      "inputs": [],
+      "outputs": [
+        { "key": "echo", "path": "echo.txt", "kind": "file" }
+      ]
+    },
+    {
+      "id": "echo-checker",
+      "agent": "echo-checker",
+      "agent_def": "pipelines/tracer-echo/agents/echo-checker.md",
+      "depends_on": ["echo-writer"],
+      "inputs": [
+        { "key": "echo", "from_step": "echo-writer", "kind": "file" }
+      ],
+      "outputs": [
+        { "key": "verdict", "path": "verdict.md", "kind": "file" }
+      ]
+    }
+  ]
+}
