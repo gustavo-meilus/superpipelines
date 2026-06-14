@@ -82,8 +82,11 @@ Before DISPATCH executes any step, callers MUST load `sk-model-resolver` and cal
 <schema>
 Inputs to DISPATCH(step, inputs, profile):
 - `step.id`             — string, topology node id
-- `step.agent`          — string, agent name (used by Tier 1 / 1b / 1d)
-- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (used by Tier 2 and inline)
+- `step.agent`          — string, agent name (= CAD `name`; becomes the materialized `subagent_type`)
+- `step.agent_def`      — string, path to the canonical agent def (CAD) RELATIVE to DATA_ROOT
+                          (`pipelines/{P}/agents/{agent}.md`). Present for data-only pipelines.
+                          Absent for legacy old-root pipelines → no materialization (BC3 fallback).
+- `step.protocol_skill` — string, the `{agent-name}-protocol` skill name (LEGACY old-root pipelines only)
 - `step.output_paths`   — array of absolute paths the step is expected to produce
 - `inputs`              — object, key/value inputs resolved from upstream step outputs
 - `profile`             — platform profile object from DETECT()
@@ -92,6 +95,64 @@ Returns:
 - `{ status: "DONE" | "DONE_WITH_CONCERNS" | "NEEDS_CONTEXT" | "BLOCKED", outputs: [path...], concerns?: string, missing_context?: string, blocker?: string }`
 </schema>
 
+## Option A — Materialize-at-Runtime (CAD → native)
+
+Data-only pipelines store each agent as a tool-neutral **canonical agent def (CAD)** under
+`DATA_ROOT/pipelines/{P}/agents/{agent}.md` (frontmatter + inline protocol body). Before a
+subagent-capable tier dispatches a step, the orchestrator MATERIALIZES that CAD into the
+tool's native agent dir as an ephemeral file, dispatches natively, then treats the file as
+disposable cache. The CAD is the single source of truth; the native file is regenerated every
+run and **never read as source**. Schema + translation table: `pipeline-auditor-references/references/canonical-agent-def.md`.
+
+```
+MATERIALIZE(agent_def_path, resolved, profile, P, scope) → subagent_name:
+  cad = READ(RESOLVE_DATA_ROOT(scope) + "/" + agent_def_path)   // tool-neutral frontmatter + inline body
+  assert cad.schema_version supported            // else BLOCKED: unsupported CAD schema
+  target = RESOLVE_SCOPE_ROOT(scope, tier_1) + "/agents/superpipelines/" + P + "/" + cad.name + ".md"
+  ensure_dir(dirname(target))
+  yaml = TRANSLATE_CAD_TO_CC(cad, resolved)
+  WRITE(target, yaml + "\n\n" + cad.body)        // CC agent = native frontmatter + inline protocol
+  return cad.name                                 // used as subagent_type
+```
+
+`TRANSLATE_CAD_TO_CC(cad, resolved)` emits CC YAML per the canonical-agent-def §3 table:
+
+```
+name:        cad.name
+model_tier:  cad.model_tier          // resolved.model is passed at the Task() call, not the file
+maxTurns:    cad.turn_budget
+// capability intent → CC enforcement primitive (structural):
+IF cad.capabilities.write_files == false:
+  tools:           (Read/Glob/Grep + cad.tool_hints.allow ∩ read-class)   // excludes Write/Edit/Bash
+  disallowedTools: Write, Edit, Bash
+  permissionMode:  plan
+ELSE:
+  tools:           Read, Write, Edit[, Bash if run_shell][, web tools if network] (+ tool_hints.allow)
+  permissionMode:  acceptEdits
+IF cad.capabilities.run_shell  == false AND write_files == true: omit Bash from tools
+IF cad.isolation_required == true: isolation: worktree
+skills:  cad.protocol_skills          // bundle skills, still tier-discovered; omit if empty
+```
+
+**Reviewer isolation stays STRUCTURAL.** `capabilities.write_files: false` is the single
+canonical source for reviewer write-deny; MATERIALIZE emits real `permissionMode: plan` +
+`disallowedTools: Write, Edit, Bash` (and `isolation: worktree` for writers) — enforcement is
+structural on `native_task`, not convention. This preserves `WRITE_REVIEW_ISOLATION:
+STRUCTURAL_ON_TIER1_1B_1D` under the data-only model.
+
+## Materialized-Cache Cleanup
+
+The materialized native agent dir is disposable cache, owned by DISPATCH:
+
+```
+CLEANUP_MATERIALIZED(P, scope):     // called by orchestrator at Phase 4 on `completed`
+  delete_dir(RESOLVE_SCOPE_ROOT(scope, tier_1) + "/agents/superpipelines/" + P + "/")  // scoped to {P} ONLY
+```
+
+- Delete ONLY the `{P}` subdir — never the parent `agents/superpipelines/` (other pipelines' caches).
+- On `escalated`/`failed`/`blocked`: leave the dir for debugging; it is regenerated next run regardless.
+- DISPATCH ALWAYS re-reads the CAD and re-materializes each run — the cache is never authoritative.
+
 ## Tier-Specific DISPATCH Behavior
 
 Skills branch on `profile.capabilities` flags — NOT on `profile.tier` string. This ensures unknown future platforms with familiar capabilities route correctly without skill edits.
@@ -99,7 +160,13 @@ Skills branch on `profile.capabilities` flags — NOT on `profile.tier` string. 
 ```
 mechanism = profile.capabilities.dispatch_mechanism
 SWITCH mechanism:
-  "native_task"     → Task(subagent_type=step.agent, prompt=build_prompt(step, inputs))
+  "native_task"     → IF step.agent_def present:                       // data-only pipeline
+                        name = MATERIALIZE(step.agent_def, resolved_models[step.id], profile, P, scope)
+                        Task(subagent_type=name, model=resolved_models[step.id].model,
+                             prompt=build_prompt(step, inputs))
+                      ELSE:                                             // BC3: legacy old-root pipeline
+                        Task(subagent_type=step.agent, model=resolved_models[step.id].model,
+                             prompt=build_prompt(step, inputs))         // agent already registered; no materialize
   "native_subagent" → OC native mode:subagent dispatch via step.agent file
   "model_driven"    → Emit orchestration prompt; Codex model fans out per topology.json
   "inline"          → Tier 2 inline loop (see Tier 2 Inline Loop below)
@@ -124,7 +191,7 @@ The orchestrator (the model running the entry skill) executes every step using i
 
 For each step in `topology.json` (dependency order):
 
-1. **Load protocol**: `Skill(step.protocol_skill)` — loads the agent's full protocol into the orchestrator's context.
+1. **Load protocol**: data-only pipeline → `Read(RESOLVE_DATA_ROOT(scope) + "/" + step.agent_def)` and execute the CAD's inline protocol body as data (no subagent boundary on Tier 2). Legacy old-root pipeline (no `agent_def`) → `Skill(step.protocol_skill)`. Either way the agent's full protocol enters the orchestrator's context.
 2. **Resolve inputs**: read upstream step outputs from disk using paths recorded in `pipeline-state.json[phases][upstream].outputs`.
 3. **Execute inline**: the orchestrator performs the protocol's actions using `Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`. No `Task()` call.
 4. **Persist outputs**: write all output files to the paths declared in `step.output_paths`.
