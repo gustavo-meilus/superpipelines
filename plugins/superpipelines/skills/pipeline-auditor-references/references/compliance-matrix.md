@@ -1,7 +1,9 @@
 # Compliance Matrix — Auditor Reference
 
-31-criterion checklist for `pipeline-auditor`. Applied to every file in a pipeline bundle.
-Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
+Compliance checklist for `pipeline-auditor`, applied to every file in a pipeline bundle.
+Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence. Criterion sets:
+layout (1–5), frontmatter (6–11), topology (12–16), runtime safety (17–25), resolver
+consolidation (PR-*), canonical agent-def (CAD-*).
 
 ## Table of contents
 
@@ -10,6 +12,30 @@ Each criterion: PASS / FAIL / PARTIAL / N/A with cited file:line evidence.
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–25)
 5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09, PR-10)
+6. Canonical agent-def (criteria CAD-01..CAD-05)
+
+---
+
+## Pipeline layout & criterion applicability (read first)
+
+A bundle is one of two layouts. Detect it before walking criteria:
+
+- **Data-only (v2.x):** the pipeline lives entirely under `DATA_ROOT/pipelines/{P}/` (DATA_ROOT = `.superpipelines`) — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline body), the entry is `pipelines/{P}/entry.md` (data), step protocols are `pipelines/{P}/skills/{step}/SKILL.md` (data). Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
+- **Legacy old-root (pre-v2):** agents at `agents/superpipelines/{P}/` (zero-body + companion `-protocol` skill), entry skill at `skills/superpipelines/{P}/run-{P}/SKILL.md`.
+
+**Criterion applicability by layout:**
+
+| Criteria | Data-only | Legacy |
+|---|---|---|
+| 1 (scope-root layout), 4 (entry skill flags), 5 (internal skills suppressed) | **N/A** — replaced by the data layout; verify CAD files exist under `pipelines/{P}/agents/` and `entry.md` is present | Apply |
+| 8, 9, 10, 10a (CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-05 govern instead** | Apply |
+| 19 (reviewer `disallowedTools`) | **N/A** — reviewer write-deny is expressed as `capabilities.write_files: false`; **CAD-05 governs** | Apply |
+| 6, 7, 11 (name, description, memory), 12–16 (topology), 17, 20, 21, 22, 25 | Apply to both | Apply |
+| 23, 24 (worktree artifact-loss / data-agent isolation) | **N/A — superseded by CAD-02.** These grep `isolation: worktree` on legacy agent files; a CAD never carries `isolation: worktree` (it declares `isolation_required`, translated only at materialization). CAD-02 governs the data-only equivalent (`isolation_required:true` without `edit_tracked_source:true`) | Apply |
+| PR-01..PR-10 (resolver/profiles) | Apply to both | Apply |
+| CAD-01..CAD-05 | **Apply** (the canonical-def contract) | N/A — no CAD files |
+
+When auditing a data-only pipeline, mark the layout-specific legacy criteria **N/A (data-only layout)** with a one-line reason rather than FAIL. A false FAIL on criterion 1/4/10a against a conformant CAD is itself a defect.
 
 ---
 
@@ -93,10 +119,40 @@ These criteria enforce ADR-0001 (one normative algorithm spec, two adapters) and
 
 ---
 
+## 6. Canonical agent-def
+
+These criteria validate the tool-neutral canonical agent definition (CAD) stored as data under
+`.superpipelines/pipelines/{P}/agents/{name}.md`. The def expresses **capability
+intent** (`capabilities.{write_files,run_shell,network,edit_tracked_source}`), so
+`write_files: false` is the single portable source for reviewer write-deny that materializes to
+each tier's enforcement primitive. Full schema + translation contract: `references/canonical-agent-def.md`.
+Fixture examples: `references/fixtures/cad-00-valid-canonical-def.md` (passing) and
+`references/fixtures/cad-contradictions.md` (one failing section per rule). Apply CAD-* to every
+file under `.superpipelines/pipelines/{P}/agents/`; these criteria are N/A to legacy
+zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11).
+
+| ID | Criterion | SEV | Detection |
+|---|---|---|---|
+| CAD-01 | `tool_hints.allow` is a subset of what `capabilities` permits | SEV-1 | For each canonical def, build the denied-capability set from `capabilities.*: false` and map it to its tool class: `write_files:false` ⇒ {Write, Edit, NotebookEdit}; `run_shell:false` ⇒ {Bash}; `network:false` ⇒ {WebFetch, WebSearch}. (`edit_tracked_source` shares the Write/Edit tool class with `write_files` — it has no distinct tool primitive — so tracked-source intent is enforced through the `write_files` mapping, not a separate one.) If any entry of `tool_hints.allow` falls in a denied class, FAIL: the advisory allow-list grants a capability the intent contract denies, silently widening the security boundary at materialization. Example: `capabilities.write_files: false` with `tool_hints.allow: [Read, Write]`. |
+| CAD-02 | `isolation_required` coherent with `edit_tracked_source` | SEV-1 | `isolation_required: true` requires `capabilities.edit_tracked_source: true`. A def with `isolation_required: true` AND `edit_tracked_source: false` (e.g. a reviewer or data agent requesting a worktree) = FAIL — incoherent intent that requests writer isolation for a non-writer, producing unnecessary worktree overhead plus auto-teardown data-loss risk (cf. criteria 23–24). Detection: for each def with `isolation_required: true`, confirm `capabilities.edit_tracked_source: true`; if `false` ⇒ FAIL. |
+| CAD-03 | `io_contract` paths are relative to the run dir | SEV-1 | Every path-bearing `io_contract` value MUST be relative to the active run dir: no absolute path, no leading scope-root name (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`), no `..` escape. The only path-bearing field is `outputs[].path` — `inputs` entries carry `{ key, from_step, kind }` and have no path to check. Any violation = FAIL — breaks the copy-paste-portability guarantee (the orchestrator resolves paths against the run dir at runtime). Carries criterion 22's PORTABILITY intent into the io_contract. Detection: scan each `outputs[].path` value for a leading `/`, a drive letter, a known scope-root prefix, or a `..` segment. |
+| CAD-04 | `schema_version` and `plugin_version` present | SEV-2 | Each canonical def MUST declare both `schema_version` (the CAD schema version, e.g. `"1.0"`) and `plugin_version` (current package version, per `PLUGIN_VERSION_STAMPING`). Missing either field = FAIL (SEV-2 drift risk — the def cannot be retro-compatibility-checked or schema-validated). Detection: `grep -L "^schema_version:" …/agents/*.md` and `grep -L "^plugin_version:" …/agents/*.md` return any file. |
+| CAD-05 | Reviewer roles do not write | SEV-2 | A def with `role: reviewer` MUST declare `capabilities.write_files: false`. A writing reviewer (`role: reviewer` AND `write_files: true`) = FAIL (SEV-2 — breaks the write/review isolation boundary; a reviewer that can edit the artifact it reviews is the canonical-def analogue of criterion 19). Detection: for each def with `role: reviewer`, confirm `capabilities.write_files: false`. |
+
+### Canonical agent-def remediation
+
+- CAD-01: Remove the offending tool(s) from `tool_hints.allow`, OR flip the corresponding `capabilities.*` flag to `true` if the agent genuinely needs that capability (and re-verify the security intent is correct). `tool_hints` must never widen `capabilities`.
+- CAD-02: Set `isolation_required: false` for non-writers, OR set `capabilities.edit_tracked_source: true` if the agent legitimately edits tracked source and needs a worktree.
+- CAD-03: Rewrite the path relative to the run dir (strip the scope-root prefix / absolute root / `..`). Let the orchestrator resolve it via `sk-pipeline-paths` at runtime.
+- CAD-04: Add the missing `schema_version: "1.0"` and/or `plugin_version: "<current>"` to the def frontmatter.
+- CAD-05: Set `capabilities.write_files: false` on the reviewer, OR change `role` if the agent is in fact a writer (e.g. `fixer`).
+
+---
+
 ## How to use
 
-1. Read each target file with `Read`.
-2. Walk criteria 1–25 (including 10a) then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10 in order. Mark each PASS / FAIL / PARTIAL / N/A.
+1. **Detect the layout** (data-only vs legacy) per the applicability table above. Read each target file with `Read`.
+2. Walk criteria 1–25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-05 (for canonical defs under `pipelines/{P}/agents/`) in order, applying each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A — use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

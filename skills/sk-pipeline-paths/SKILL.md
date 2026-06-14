@@ -7,26 +7,34 @@ user-invocable: false
 # Pipeline Path Resolver — Scope-Aware Layout
 
 <glossary>
-  <term name="Scope Root">The base directory (`.claude/` or `~/.claude/`) where artifacts are persisted.</term>
+  <term name="Data Root">The single tier-independent base directory (`<workspace>/.superpipelines/` or `~/.superpipelines/`) where all generated pipeline DATA is persisted (`RESOLVE_DATA_ROOT`).</term>
+  <term name="Scope Root">A per-tier base directory (`.claude/`, `.opencode/`, …) resolved by `RESOLVE_SCOPE_ROOT`. No longer the artifact location — used only for read-only legacy back-compat and as the native materialization target.</term>
   <term name="Pipeline Registry">A central `registry.json` file tracking all pipelines within a specific scope.</term>
   <term name="Staging Directory">A temporary `temp/{P}/edit-{ts}/` directory used for atomic mutations.</term>
 </glossary>
 
-## Scope Roots & Git Integration
+## Data Root & Git Integration
 
-<scope_roots_table>
+Generated pipelines (v2.x+) are **data** under the single tier-independent data root
+(`RESOLVE_DATA_ROOT`); the per-tier scope roots below are legacy/materialization only.
+
+<data_roots_table>
 | Scope | Physical Root | Git Status | Persistence |
 | :--- | :--- | :--- | :--- |
-| **Project** | `<workspace>/.claude/` | Committed | Shared with the team. |
-| **Local** | `<workspace>/.claude/` | Ignored | Machine-specific/temporary. |
-| **User** | `~/.claude/` | External | Global across all workspaces. |
-</scope_roots_table>
+| **Project** | `<workspace>/.superpipelines/` | Committed | Shared with the team. |
+| **Local** | `<workspace>/.superpipelines/` | Ignored | Machine-specific/temporary. |
+| **User** | `~/.superpipelines/` | External | Global across all workspaces. |
+</data_roots_table>
 
 <invariant>
-`project` and `local` scopes share the same physical directory; the distinction is managed via `.gitignore` entries for `.claude/`.
+`project` and `local` scopes share the same physical directory; the distinction is managed via `.gitignore` entries for `.superpipelines/`.
 </invariant>
 
-## Per-Tier Scope Roots (Multi-Platform v2.0.0+)
+## Per-Tier Scope Roots (legacy back-compat reads + native materialization target)
+
+These per-tier roots no longer locate generated pipeline data (see Data Root above). They are
+consumed only by (a) `ENUMERATE_ALL_SCOPE_ROOTS` read-only legacy back-compat and (b) `sk-platform-dispatch`
+MATERIALIZE, which writes the ephemeral native agent file into the host's own dir.
 
 <scope_roots_per_tier>
 | Tier | Workspace root | User root |
@@ -116,7 +124,7 @@ ENUMERATE_ALL_SCOPE_ROOTS(workspace) → [{tier, scope, root, layout}, ...]:
 </protocol>
 
 <invariant>
-Path resolution MUST consult `metadata.runtime_tier` from the pipeline state for any artifact read/write on a non-Tier-1 tier. CC-scaffolded pipelines running on Tier 2 invoke `PORTABILITY_REWRITE(path, "tier_1", "tier_2")` at every state-update site. The original (source-tier) path is stamped in `pipeline-state.json` `metadata.source_scope_root` for audit.
+For **data-only** pipelines (v2.x+), artifact and state paths are **tier-independent** — they resolve under the single `.superpipelines/` data root (`RESOLVE_DATA_ROOT`) regardless of runtime tier, so `PORTABILITY_REWRITE` is a **no-op for paths** and is not invoked at state-update sites. `PORTABILITY_REWRITE` survives only on the **legacy back-compat** path, where an old per-tier-rooted pipeline discovered via `ENUMERATE_ALL_SCOPE_ROOTS` is read/resumed on a different runtime tier; there it consults `metadata.runtime_tier` and stamps `metadata.source_scope_root` for audit.
 </invariant>
 
 ## Path Templates

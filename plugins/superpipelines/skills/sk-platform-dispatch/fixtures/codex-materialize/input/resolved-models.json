@@ -1,0 +1,26 @@
+{
+  "doc-writer": {
+    "model": "gpt-5.4",
+    "effort": "medium",
+    "effort_field_name": "model_reasoning_effort",
+    "model_field_format": "toml_split",
+    "source": "profile_default",
+    "warnings": []
+  },
+  "doc-reviewer": {
+    "model": "gpt-5.4",
+    "effort": "medium",
+    "effort_field_name": "model_reasoning_effort",
+    "model_field_format": "toml_split",
+    "source": "profile_default",
+    "warnings": []
+  },
+  "triage-probe": {
+    "model": "gpt-5.4-mini",
+    "effort": "minimal",
+    "effort_field_name": "model_reasoning_effort",
+    "model_field_format": "toml_split",
+    "source": "profile_default",
+    "warnings": []
+  }
+}

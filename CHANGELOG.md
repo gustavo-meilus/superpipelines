@@ -17,6 +17,25 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.3.0 — Unified Data-Only Pipelines (2026-06-14)
+
+### Added
+
+- **Single-root, data-only pipelines** (#61–#67, #69) — generated pipelines are now tool-neutral **data** under one `.superpipelines/` root (Canonical Agent Defs + step protocols + entry body), instead of per-tier native plugin directories. New ADR-0003 records the decision.
+- **Materialize-at-runtime dispatch** (#62, #64) — the orchestrator translates each Canonical Agent Def into the host's native agent dialect just before dispatch and treats it as disposable cache, preserving the structural `WRITE_REVIEW_ISOLATION` boundary on CC/OpenCode/Codex (convention-only with surfaced degradation on Antigravity/Tier 2).
+- **All-tier CAD translators** — `TRANSLATE_CAD_TO_CC/OC/CODEX` materialize the same canonical def structurally; Antigravity (#67) and Tier 2 run convention-only from the same data.
+- **`migrate-pipeline` command** (#68) — moves an existing per-tier pipeline's artifacts into `.superpipelines/` and rewrites its registry entry (legacy roots stay read-only for one major).
+
+### Changed
+
+- **Phase 0 collapse** (#64) — discovery is two `.superpipelines/` registry reads instead of a five-root per-tier enumeration; `PORTABILITY_REWRITE` retires for paths.
+- **`ARTIFACT_PORTABILITY` upgraded** (#66, #69) — the former `OC_NOT_PORTABLE` constraint is lifted; OpenCode pipelines now materialize structurally from the same CAD as every other Tier 1 host, so pipelines are copy-paste portable across tools and projects.
+- **`CLAUDE.md` invariants** (#69) — `STATE_MANAGEMENT`, Generated-Artifacts layout rule, and `ARTIFACT_PORTABILITY` updated for the single data root.
+
+### Migration
+
+- New pipelines scaffold data-only automatically. Existing per-tier pipelines keep listing/resuming via read-only back-compat; run `/superpipelines:migrate-pipeline` to move them under `.superpipelines/`. Minor bump — no breaking changes this major.
+
 ## 2.2.3 — Codex Marketplace Packaging (2026-06-10)
 
 ### Fixed

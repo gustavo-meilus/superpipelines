@@ -3,8 +3,32 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, and the self-contained Codex marketplace package in v2.2.3.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, and the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0.
 </overview>
+
+## v2.3.0 — Unified Data-Only Pipelines (2026-06-14)
+
+Re-architects generated pipelines as tool-neutral **data** under a single `.superpipelines/` root, replacing the per-tier native-plugin layout. The orchestrator materializes each Canonical Agent Def into the host's native agent dialect at dispatch time and treats it as disposable cache — preserving the structural write/review isolation boundary on Claude Code, OpenCode, and Codex, and running convention-only with surfaced degradation on Antigravity and Tier 2. Pipelines become copy-paste portable across tools and projects; the former `OC_NOT_PORTABLE` constraint is lifted. ADR-0003 records the single-root + materialize-at-runtime + dual-read rollout decision.
+
+<release_entry version="2.3.0" status="STABLE">
+
+### Added
+
+- **Single artifact root** — generated pipelines live under one `.superpipelines/` data root (Canonical Agent Defs, step protocols, entry body) resolved by `RESOLVE_DATA_ROOT`. Nothing generated is tool-registered.
+- **Materialize-at-runtime dispatch (Option A)** — `TRANSLATE_CAD_TO_CC/OC/CODEX` translate the same canonical def into native agent files just before dispatch, preserving structural `WRITE_REVIEW_ISOLATION`; the files are disposable cache (regenerated every run, cleaned on completion).
+- **`migrate-pipeline`** (#68) — one-shot move of an existing per-tier pipeline into `.superpipelines/` with registry rewrite.
+- **ADR-0003** — single-root, data-only pipelines with materialize-at-runtime dispatch.
+
+### Changed
+
+- **Phase 0 collapse** — two registry reads replace the five-root per-tier enumeration; `PORTABILITY_REWRITE` retires for paths.
+- **Portability upgrade** — OpenCode pipelines materialize structurally from the same CAD as every other Tier 1 host; `ARTIFACT_PORTABILITY` becomes `DATA_ONLY_PORTABLE_ALL_TIERS`.
+
+### Migration
+
+- Existing per-tier pipelines keep listing and resuming via a read-only back-compat path for one major. Old-root *writes* are removed now. Run `/superpipelines:migrate-pipeline` to relocate a pipeline under `.superpipelines/`. Minor bump — no breaking changes this major.
+
+</release_entry>
 
 ## v2.2.3 — Codex Marketplace Packaging (2026-06-10)
 

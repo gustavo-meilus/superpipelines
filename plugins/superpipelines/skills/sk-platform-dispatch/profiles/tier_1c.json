@@ -28,7 +28,8 @@
     "user": "~/.antigravity"
   },
   "degradation_warnings": [
-    "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator."
+    "Antigravity uses dynamic subagents — per-step model assignment is not supported. Only the orchestrator's model tier is user-configurable. Subagent model selection is owned by Antigravity's orchestrator.",
+    "Reviewer isolation is convention-only on Antigravity: dynamic subagents share the orchestrator context and carry no structural write-deny primitive. Review steps execute the reviewer protocol but cannot provide structural assumption-blindness defense. Treat review output as a self-check. For structurally verified review, run from Claude Code, OpenCode, or Codex."
   ],
   "extensions": {
     "version_manifest_path": "gemini-extension.json",
