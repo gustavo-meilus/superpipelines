@@ -1,0 +1,12 @@
+{
+  "pipelines": [
+    {
+      "name": "doc-legacy",
+      "scope": "project",
+      "source_tier": "tier_1",
+      "pattern": 1,
+      "version": "1.5",
+      "entry_skill": "run-doc-legacy"
+    }
+  ]
+}

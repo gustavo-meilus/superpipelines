@@ -1,0 +1,13 @@
+{
+  "name": "doc-legacy",
+  "scope": "project",
+  "layout": "data",
+  "source_tier": "tier_1",
+  "pattern": 1,
+  "plugin_version": "2.2.3",
+  "migrated_from": {
+    "tier": "tier_1",
+    "root": ".claude",
+    "at": "<iso8601 — stamped at migration>"
+  }
+}
