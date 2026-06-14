@@ -67,8 +67,14 @@ correct source profile (NOT a hardcoded `tier_1`).
 | `turn_budget` | `maxTurns:` | maxTurns equiv | turn limit |
 | `role` / `review_stage` | explicit marker if present (`review_stage:`, `*-reviewer` name); else infer worker/analyzer/tester/fixer from capabilities + name | same | same |
 
-**Lossy-risk field = `role`/`review_stage`.** Use an explicit marker when present; otherwise infer
-and flag as `review-required` in the report. Never silently guess role without disclosure.
+**Lossy-risk field = `role`/`review_stage`.** Classify by signal strength:
+- **Strong signal** (a `review_stage:`/`role:` marker in the legacy frontmatter, OR a name match like
+  `*-reviewer`/`*-tester` **plus** a corroborating description, e.g. "Stage 1 review … read-only"):
+  treat as `lossless-normalized` — the value is recovered, not guessed.
+- **Weak/absent signal** (role inferable only from a capability heuristic, no name or description
+  corroboration): set the best-guess value AND flag the agent `review-required`.
+
+Never silently guess role from a weak signal without disclosure at the PHASE 4 gate.
 
 ### Losslessness assertion per agent (reuse canonical-def §4)
 
