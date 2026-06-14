@@ -113,6 +113,23 @@ status_protocol: standard
 **Detection:** `grep -L "^schema_version:"` and `grep -L "^plugin_version:"` both match this
 file ⇒ FAIL. **Remediation:** add `schema_version: "1.0"` and `plugin_version: "2.2.3"`.
 
+**Asymmetric case (also FAIL).** Missing **either** stamp fails CAD-04, not only both. The
+more common real-world drift is one present, one absent — e.g. a def carrying
+`plugin_version: "2.2.3"` but no `schema_version`:
+
+```yaml
+---
+name: reporter
+plugin_version: "2.2.3"   # present
+# ↑ schema_version absent ⇒ CAD-04 FAIL (the `grep -L "^schema_version:"` arm matches)
+role: worker
+capabilities: { write_files: true, run_shell: false, network: false, edit_tracked_source: false }
+---
+```
+
+A detection that only checked one of the two `grep -L` arms would wrongly pass this def — both
+arms are load-bearing.
+
 ---
 
 ## CAD-05 — writing reviewer
