@@ -17,6 +17,21 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.3.1 — Codex Agent Schema Fix (2026-06-16)
+
+### Fixed
+
+- **Codex agent TOML schema** (#79) — the five checked-in parity-test Codex agent role files used `[[developer_instructions]]` (an array-of-tables), which Codex v0.139.0 rejected at startup with `invalid type: sequence, expected a string`, silently ignoring Superpipelines agent roles. They now use scalar `instructions = """..."""`; existing `name`, `description`, `model`, `model_reasoning_effort`, and `sandbox_mode` values are preserved.
+- **Source-of-truth drift in dispatch skill** (#66) — two tracked `sk-platform-dispatch/SKILL.md` files (root + `plugins/` marketplace mirror) still cited the retired `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2; OC_NOT_PORTABLE` invariant; both now read `DATA_ONLY_PORTABLE_ALL_TIERS` (see ADR-0003), aligning with `CLAUDE.md`.
+
+### Added
+
+- **Codex package guard** (#79) — `check:codex-plugin` now fails if any committed or materialized Codex agent TOML reintroduces `[[developer_instructions]]` or omits scalar `instructions`, guarding against regression.
+
+### Documentation
+
+- Corrected stale current-facing Codex schema/root docs to describe scalar `instructions` and `.codex`.
+
 ## 2.3.0 — Unified Data-Only Pipelines (2026-06-14)
 
 ### Added

@@ -3,8 +3,29 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, and the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, and the Codex agent TOML schema fix with regression guard in v2.3.1.
 </overview>
+
+## v2.3.1 — Codex Agent Schema Fix (2026-06-16)
+
+Corrects the Codex agent role schema so Codex v0.139.0 loads Superpipelines agents instead of rejecting them at startup. The checked-in Codex agent TOMLs now use a scalar `instructions` field rather than the `[[developer_instructions]]` array-of-tables that Codex parsed as `invalid type: sequence, expected a string`. A package guard fails on reintroduction of the bad shape. Also clears a source-of-truth drift where the dispatch skill still named the retired `OC_NOT_PORTABLE` invariant.
+
+<release_entry version="2.3.1" status="STABLE">
+
+### Fixed
+
+- **Codex agent TOML schema** (#79) — scalar `instructions = """..."""` replaces `[[developer_instructions]]`; metadata (`name`, `description`, `model`, `model_reasoning_effort`, `sandbox_mode`) preserved. Codex no longer ignores agent roles at startup.
+- **Invariant drift** (#66) — `sk-platform-dispatch/SKILL.md` (root + marketplace mirror) updated from the retired `CC_AND_CODEX_TO_TIER2; OC_NOT_PORTABLE` to `DATA_ONLY_PORTABLE_ALL_TIERS` (ADR-0003).
+
+### Safety
+
+- **Regression guard** (#79) — `check:codex-plugin` fails when committed or materialized Codex agent TOMLs reintroduce `[[developer_instructions]]` or omit scalar `instructions`.
+
+### Documentation
+
+- Stale current-facing Codex schema/root docs corrected to scalar `instructions` and `.codex`.
+
+</release_entry>
 
 ## v2.3.0 — Unified Data-Only Pipelines (2026-06-14)
 
