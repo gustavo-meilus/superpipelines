@@ -6,7 +6,7 @@ The Codex plugin (Tier 1d) uses a non-standard layout: agents, skills, and
 pipeline state live under `.agents/codex/` — a location Codex never scans
 natively. Agent TOML files use Claude Code's format (`skills = ["name"]`,
 `version`, `plugin_version`) instead of Codex-native fields
-(`developer_instructions`). The plugin manifest declares `"agents"` and
+(`instructions = """..."""`). The plugin manifest declares `"agents"` and
 `"commands"` fields that are not standard Codex `plugin.json` fields.
 
 ## Solution
@@ -24,7 +24,7 @@ Mirror the Claude Code platform layout onto Codex-native paths and formats.
 ### Agent TOML rewrite
 
 Remove: `version`, `plugin_version`, `skills = ["name"]`
-Add: `developer_instructions` (required by Codex, with protocol content inline)
+Add: scalar `instructions = """..."""` (required by Codex, with protocol content inline)
 
 ### Plugin manifest cleanup
 

@@ -9,6 +9,7 @@ const packageRoot = path.join(repoRoot, 'plugins', 'superpipelines');
 const sourceSkills = path.join(repoRoot, 'skills');
 const packageSkills = path.join(packageRoot, 'skills');
 const manifestPath = path.join(packageRoot, '.codex-plugin', 'plugin.json');
+const liveCodexAgents = path.join(repoRoot, '.codex', 'agents');
 
 const mode = process.argv.includes('--check') ? 'check' : 'sync';
 
@@ -141,9 +142,33 @@ function validateManifest(manifest) {
   }
 }
 
+function validateCodexAgentTomls() {
+  if (!fs.existsSync(liveCodexAgents) || !fs.statSync(liveCodexAgents).isDirectory()) {
+    fail(`missing live Codex agents directory: ${path.relative(repoRoot, liveCodexAgents)}`);
+  }
+
+  const tomlFiles = findFiles(liveCodexAgents).filter((file) => file.endsWith('.toml'));
+  const scalarDeveloperInstructions = /(?:^|\n)developer_instructions\s*=\s*"""/;
+
+  if (tomlFiles.length === 0) {
+    fail(`live Codex agents directory contains no TOML files: ${path.relative(repoRoot, liveCodexAgents)}`);
+  }
+
+  for (const file of tomlFiles) {
+    const content = fs.readFileSync(path.join(liveCodexAgents, file), 'utf8');
+    if (content.includes('[[developer_instructions]]')) {
+      fail(`Codex agent TOML must use scalar developer_instructions, not [[developer_instructions]]: .codex/agents/${file}`);
+    }
+    if (!scalarDeveloperInstructions.test(content)) {
+      fail(`Codex agent TOML is missing scalar developer_instructions = """...""": .codex/agents/${file}`);
+    }
+  }
+}
+
 function validatePackage() {
   const manifest = readManifest();
   validateManifest(manifest);
+  validateCodexAgentTomls();
   if (!fs.existsSync(packageSkills) || !fs.statSync(packageSkills).isDirectory()) {
     fail(
       `missing packaged skills directory: ${path.relative(repoRoot, packageSkills)}; run \`node scripts/package-codex-plugin.js\` to generate the package before checking`,

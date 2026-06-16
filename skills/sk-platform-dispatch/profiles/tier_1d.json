@@ -22,7 +22,7 @@
     "provider_families": ["openai"]
   },
   "scope_root": {
-    "workspace": ".agents/codex",
+    "workspace": ".codex",
     "user": "~/.codex"
   },
   "degradation_warnings": [],

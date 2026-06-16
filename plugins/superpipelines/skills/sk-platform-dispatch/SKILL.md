@@ -261,7 +261,7 @@ that many parallel branch workers at once; excess steps queue.
 `agents/superpipelines/{P}/` dir. IF a materialized Codex agent fails to resolve by name at
 dispatch, DISPATCH MUST return `BLOCKED` with: *"Materialized Codex agent '{name}' did not
 resolve on this host — Option A requires same-session agent-file discovery. Verify Codex picks up
-agent TOML written under `.agents/codex/agents/superpipelines/{P}/` at dispatch time."* NEVER
+agent TOML written under `.codex/agents/superpipelines/{P}/` at dispatch time."* NEVER
 silently fall back to a generic subagent (that would drop the structural isolation the CAD encodes).
 
 ## Materialized-Cache Cleanup
@@ -370,7 +370,7 @@ For each step in `topology.json` (dependency order):
 | Tier 1 (CC) | `<workspace>/.claude/` → `~/.claude/` |
 | Tier 1b (OC) | `<workspace>/.opencode/` → `~/.opencode/` |
 | Tier 1c (Antigravity) | `<workspace>/.agents/` → `~/.antigravity/` |
-| Tier 1d (Codex) | `<workspace>/.agents/` → `~/.codex/` |
+| Tier 1d (Codex) | `<workspace>/.codex/` → `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` (universal fallback — created on demand) |
 </scope_roots_per_tier>
 

@@ -62,7 +62,7 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 
 - **Codex plugin layout migrated to Codex-native discovery paths** (#52) — the Codex (Tier 1d) plugin no longer uses the non-standard `.agents/codex/` directory layout. All Codex platform files now reside at platform-native locations:
   - **Agent TOMLs**: moved from `.agents/codex/agents/` to `.codex/agents/` — Codex auto-discovers `.toml` agent files from this directory without needing an `agents` manifest field.
-  - **Agent format**: replaced `skills = ["name"]` references with inline `[[developer_instructions]]` content blocks per the Codex TOML agent specification; removed non-standard `version`/`plugin_version` fields.
+  - **Agent format**: replaced `skills = ["name"]` references with scalar `instructions = """..."""` prompt fields per the Codex TOML agent specification; removed non-standard `version`/`plugin_version` fields.
   - **Skills**: moved from `.agents/codex/skills/` to `.agents/skills/` — a cross-platform shared skill discovery directory, referenced by `plugin.json` `"skills": "../.agents/skills/"`.
   - **Pipeline artifacts**: moved from `.agents/codex/superpipelines/` to `.codex/superpipelines/` — registry, pipeline topologies, launchers, specs/plans/tasks.
   - **`plugin.json`**: removed non-standard `"agents"` and `"commands"` manifest fields; `"skills"` updated to point to `"../.agents/skills/"`.
