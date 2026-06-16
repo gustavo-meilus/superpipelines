@@ -1,0 +1,54 @@
+{
+  "schema_version": "2.0.0",
+  "plugin_version": "2.3.1",
+  "pipeline_id": "parity-test-e",
+  "name": "parity-test-e",
+  "pattern": "1",
+  "pattern_name": "Sequential",
+  "scope": "local",
+  "layout": "data",
+  "source_tier": "tier_1d",
+  "metadata": {
+    "goal": "Read a changelog markdown file and produce a concise release summary highlighting breaking changes and new features, written to output/ as a markdown file",
+    "output": "output/parity-test-e-release-summary.md",
+    "migrated_from": {
+      "tier": "tier_1d",
+      "root": ".codex",
+      "at": "2026-06-16"
+    }
+  },
+  "steps": [
+    {
+      "step_id": "extractor",
+      "order": 1,
+      "agent": "extractor",
+      "agent_def": "pipelines/parity-test-e/agents/extractor.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "inputs": [
+        "temp/parity-test-e/{runId}/pipeline-state.json"
+      ],
+      "outputs": [
+        "temp/parity-test-e/{runId}/changelog-entries.json"
+      ],
+      "depends_on": [],
+      "description": "Reads the changelog markdown file, extracts breaking-change and new-feature entries per version, writes structured JSON entries to the temp directory."
+    },
+    {
+      "step_id": "formatter",
+      "order": 2,
+      "agent": "formatter",
+      "agent_def": "pipelines/parity-test-e/agents/formatter.md",
+      "model_tier": "fast",
+      "effort_tier": "medium",
+      "inputs": [
+        "temp/parity-test-e/{runId}/changelog-entries.json"
+      ],
+      "outputs": [
+        "output/parity-test-e-release-summary.md"
+      ],
+      "depends_on": ["extractor"],
+      "description": "Reads extractor entries, renders a concise markdown release summary with breaking changes and new features sections, writes the final output file."
+    }
+  ]
+}
