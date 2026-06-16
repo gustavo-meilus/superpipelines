@@ -58,7 +58,7 @@ Makes the Codex marketplace package self-contained for user-level installs. The 
 
 ## v2.2.2 — Codex Native Layout Migration (2026-06-09)
 
-Migrates the Codex plugin (Tier 1d) from a non-standard `.agents/codex/` layout to Codex-native discovery paths, fully aligning with the official Codex plugin manifest and agent TOML specifications. Agent definitions move from `skills = ["name"]` references to inline `[[developer_instructions]]` content blocks, non-standard manifest fields are removed, and pipeline artifacts relocate to `.codex/superpipelines/`. Skills move to a cross-platform `.agents/skills/` directory shared by all tiers.
+Migrates the Codex plugin (Tier 1d) from a non-standard `.agents/codex/` layout to Codex-native discovery paths, fully aligning with the official Codex plugin manifest and agent TOML specifications. Agent definitions move from `skills = ["name"]` references to scalar `instructions = """..."""` prompt fields, non-standard manifest fields are removed, and pipeline artifacts relocate to `.codex/superpipelines/`. Skills move to a cross-platform `.agents/skills/` directory shared by all tiers.
 
 <release_entry version="2.2.2" status="STABLE">
 
@@ -68,7 +68,7 @@ Migrates the Codex plugin (Tier 1d) from a non-standard `.agents/codex/` layout 
 
 ### Changed
 
-- **Agent TOMLs** (parity-test-e, parity-test-f) — replaced `skills = ["name"]` with inline `[[developer_instructions]]` per Codex spec; removed non-standard `version`/`plugin_version` fields.
+- **Agent TOMLs** (parity-test-e, parity-test-f) — replaced `skills = ["name"]` with scalar `instructions = """..."""` per Codex spec; removed non-standard `version`/`plugin_version` fields.
 - **Codex plugin manifest** (`.codex-plugin/plugin.json`) — removed `"agents"` and `"commands"` fields (not part of the Codex manifest spec); `"skills"` path updated to `"../.agents/skills/"`.
 - **Codex scope root** — migrated from `.agents/codex/` to `.codex/`; all pipeline artifacts, registry, and agent TOMLs relocated accordingly.
 - **Skills directory** — moved from `.agents/codex/skills/` to `.agents/skills/` (cross-platform tier-agnostic skill discovery).

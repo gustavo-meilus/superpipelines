@@ -4,8 +4,7 @@ model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 
-[[developer_instructions]]
-content = """
+developer_instructions = """
 # Reviewer — Operational Protocol
 
 <overview>

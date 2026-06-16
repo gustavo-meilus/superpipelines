@@ -42,12 +42,12 @@ MATERIALIZE, which writes the ephemeral native agent file into the host's own di
 | Tier 1 (CC) | `<workspace>/.claude/` | `~/.claude/` |
 | Tier 1b (OC) | `<workspace>/.opencode/` | `~/.opencode/` |
 | Tier 1c (Antigravity) | `<workspace>/.agents/antigravity/` | `~/.antigravity/` |
-| Tier 1d (Codex) | `<workspace>/.agents/codex/` | `~/.codex/` |
+| Tier 1d (Codex) | `<workspace>/.codex/` | `~/.codex/` |
 | Tier 2 (Cursor/Windsurf/Cline) | `<workspace>/.superpipelines/` | `~/.superpipelines/` |
 </scope_roots_per_tier>
 
 <invariant>
-Tier 1c and Tier 1d use sub-namespaced paths (`.agents/antigravity/` and `.agents/codex/`) to avoid silent collisions on `.agents/` when both platforms coexist in the same workspace. The `.agents/` parent directory remains AGENTS.md-aware.
+Tier 1c uses a sub-namespaced `.agents/antigravity/` path to avoid silent collisions on `.agents/`. Tier 1d uses Codex-native `.codex/` so materialized agent TOMLs land under Codex discovery paths.
 </invariant>
 
 <protocol>

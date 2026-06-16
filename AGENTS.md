@@ -50,7 +50,7 @@ All pipelines produce these files under the active scope root. Roots vary per ti
 - Tier 1 (Claude Code): `<workspace>/.claude/` → `~/.claude/`
 - Tier 1b (OpenCode): `<workspace>/.opencode/` → `~/.config/opencode/`
 - Tier 1c (Antigravity): `<workspace>/.agents/` → `~/.antigravity/`
-- Tier 1d (Codex): `<workspace>/.agents/` → `~/.codex/`
+- Tier 1d (Codex): `<workspace>/.codex/` → `~/.codex/`
 - Tier 2 (Cursor/Windsurf/Cline): `<workspace>/.superpipelines/` (universal fallback)
 
 The artifacts below appear under whichever root the active tier resolves:

@@ -172,7 +172,7 @@ superpipelines/
 │   ├── skills/superpipelines/# Entry skills
 │   └── superpipelines/       # registry.json + pipelines/{P}/
 ├── .agents/antigravity/      # Antigravity CLI scope root (Tier 1c)
-├── .agents/codex/            # Codex App/CLI scope root (Tier 1d)
+├── .codex/                   # Codex App/CLI scope root (Tier 1d)
 │   └── agents/superpipelines/# TOML agent files
 └── .superpipelines/          # Cursor / Windsurf / Cline scope root (Tier 2)
     └── skills/superpipelines/# Protocol skills only (no agent files on Tier 2)
