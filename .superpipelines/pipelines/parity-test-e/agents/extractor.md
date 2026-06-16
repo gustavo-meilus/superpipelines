@@ -1,8 +1,30 @@
 ---
-name: extractor-protocol
-description: Loaded by the extractor agent to supply operating protocol and invariants for changelog entry extraction in the parity-test-e pipeline. Not user-invocable.
-disable-model-invocation: true
-user-invocable: false
+schema_version: "1.0"
+name: extractor
+description: >
+  Use when the parity-test-e pipeline needs to read a changelog markdown file and
+  extract per-version breaking changes and new features for the formatter step.
+role: worker
+review_stage: null
+model_tier: fast
+effort_tier: medium
+turn_budget: null
+capabilities:
+  write_files: true
+  run_shell: false
+  network: false
+  edit_tracked_source: false
+tool_hints:
+  allow: [Read, Write]
+isolation_required: false
+io_contract:
+  inputs:
+    - { key: pipeline_state, from_step: null, kind: file }
+  outputs:
+    - { key: changelog_entries, path: changelog-entries.json, kind: file }
+protocol_skills: []
+status_protocol: standard
+plugin_version: "2.3.1"
 ---
 
 # Extractor — Operational Protocol
@@ -72,7 +94,7 @@ Assemble the entries object:
 </protocol>
 
 <invariants>
-- NEVER write entries to a path outside `{ROOT}/superpipelines/temp/parity-test-e/{runId}/`.
+- NEVER write entries to a path outside `{DATA_ROOT}/temp/parity-test-e/{runId}/`.
 - NEVER pass file contents to the orchestrator in the status message — pass only the entries file path.
 - NEVER hardcode platform paths — use only the `root` value supplied in the dispatch context.
 - ALWAYS validate that `entries_output_path` is writable before attempting write.

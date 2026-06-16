@@ -1,10 +1,32 @@
-name = "formatter"
-description = "Use when the parity-test-e pipeline needs to render a concise markdown release summary from extracted changelog entries produced by the extractor step."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
-sandbox_mode = "workspace-write"
+---
+schema_version: "1.0"
+name: formatter
+description: >
+  Use when the parity-test-e pipeline needs to render a concise markdown release
+  summary from extracted changelog entries produced by the extractor step.
+role: worker
+review_stage: null
+model_tier: fast
+effort_tier: medium
+turn_budget: null
+capabilities:
+  write_files: true
+  run_shell: false
+  network: false
+  edit_tracked_source: false
+tool_hints:
+  allow: [Read, Write]
+isolation_required: false
+io_contract:
+  inputs:
+    - { key: changelog_entries, from_step: extractor, kind: file }
+  outputs:
+    - { key: release_summary, path: output/parity-test-e-release-summary.md, kind: file }
+protocol_skills: []
+status_protocol: standard
+plugin_version: "2.3.1"
+---
 
-developer_instructions = """
 # Formatter — Operational Protocol
 
 <overview>
@@ -84,4 +106,3 @@ Ensure:
 - ALWAYS update `pipeline-state.json` phases[1] and top-level status after writing.
 - Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
 </invariants>
-"""
