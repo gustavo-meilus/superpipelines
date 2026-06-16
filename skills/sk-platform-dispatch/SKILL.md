@@ -377,7 +377,7 @@ For each step in `topology.json` (dependency order):
 `sk-pipeline-paths` resolves scope-root by reading `metadata.runtime_tier` from the pipeline state and walking the chain above. For Tier 2, if a pipeline was scaffolded on CC (paths reference `.claude/`), the dispatch layer rewrites `.claude/` → `.superpipelines/` at read/write time so portable artifacts continue to resolve. This rewrite is invertible: state files stamp the original scope-root string for auditability.
 
 <invariant>
-Path resolution MUST consult `metadata.runtime_tier` for any artifact write on a non-CC tier. Hardcoded `.claude/` paths in scaffolding output break `ARTIFACT_PORTABILITY: CC_AND_CODEX_TO_TIER2; OC_NOT_PORTABLE`.
+Path resolution MUST consult `metadata.runtime_tier` for any artifact write on a non-CC tier. Hardcoded `.claude/` paths in scaffolding output break `ARTIFACT_PORTABILITY: DATA_ONLY_PORTABLE_ALL_TIERS` (see ADR-0003).
 </invariant>
 
 <invariant>
