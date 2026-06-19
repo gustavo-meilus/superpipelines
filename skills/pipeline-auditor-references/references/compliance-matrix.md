@@ -12,7 +12,8 @@ consolidation (PR-*), canonical agent-def (CAD-*).
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–25)
 5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09, PR-10)
-6. Canonical agent-def (criteria CAD-01..CAD-05)
+6. Canonical agent-def (criteria CAD-01..CAD-10)
+7. Bundle maintenance hygiene (criteria BUNDLE-01..BUNDLE-07)
 
 ---
 
@@ -138,6 +139,11 @@ zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11
 | CAD-03 | `io_contract` paths are relative to the run dir | SEV-1 | Every path-bearing `io_contract` value MUST be relative to the active run dir: no absolute path, no leading scope-root name (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`), no `..` escape. The only path-bearing field is `outputs[].path` — `inputs` entries carry `{ key, from_step, kind }` and have no path to check. Any violation = FAIL — breaks the copy-paste-portability guarantee (the orchestrator resolves paths against the run dir at runtime). Carries criterion 22's PORTABILITY intent into the io_contract. Detection: scan each `outputs[].path` value for a leading `/`, a drive letter, a known scope-root prefix, or a `..` segment. |
 | CAD-04 | `schema_version` and `plugin_version` present | SEV-2 | Each canonical def MUST declare both `schema_version` (the CAD schema version, e.g. `"1.0"`) and `plugin_version` (current package version, per `PLUGIN_VERSION_STAMPING`). Missing either field = FAIL (SEV-2 drift risk — the def cannot be retro-compatibility-checked or schema-validated). Detection: `grep -L "^schema_version:" …/agents/*.md` and `grep -L "^plugin_version:" …/agents/*.md` return any file. |
 | CAD-05 | Reviewer roles do not write | SEV-2 | A def with `role: reviewer` MUST declare `capabilities.write_files: false`. A writing reviewer (`role: reviewer` AND `write_files: true`) = FAIL (SEV-2 — breaks the write/review isolation boundary; a reviewer that can edit the artifact it reviews is the canonical-def analogue of criterion 19). Detection: for each def with `role: reviewer`, confirm `capabilities.write_files: false`. |
+| CAD-06 | `description` is trigger-only metadata | SEV-2 | A CAD description must be third-person routing metadata and must not summarize workflow steps. Flag descriptions containing process chains such as "reads X, analyzes Y, writes Z", first/second person, or protocol-like ordering. Escalate to SEV-1 only when the description/body split makes the step contract ambiguous. |
+| CAD-07 | CAD body includes required operational sections | SEV-2 | Every data-only CAD body must include `<overview>`, `## Required Sources`, `## Protocol`, `## Completion Criterion`, and `<invariants>`. Reviewer, safety, debugging, and discipline-enforcing agents must also include `## Red Flags - STOP`. Missing required sections = FAIL. |
+| CAD-08 | Completion Criterion is explicit and verifiable | SEV-2 | `## Completion Criterion` must name the visible condition that proves the step is done. Vague text such as "when complete" or "after processing" = PARTIAL. Missing section = FAIL. |
+| CAD-09 | Per-pipeline references are justified | SEV-3 | If `DATA_ROOT/pipelines/{P}/references/*.md` exists, `scaffold-summary.md` must justify each reference as `reuse`, `scanability`, or `stable-contract`. Missing summary or missing justification = PARTIAL unless it creates a direct execution ambiguity. |
+| CAD-10 | New data-only pipelines avoid stale legacy generation patterns | SEV-1 | New data-only pipelines must not generate zero-body agents, companion `-protocol` skills, or source artifacts under `skills/superpipelines/{P}/` or `agents/superpipelines/{P}/`. Any active-path violation = FAIL. Legacy migration fixtures are N/A when labelled legacy-only. |
 
 ### Canonical agent-def remediation
 
@@ -146,13 +152,42 @@ zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11
 - CAD-03: Rewrite the path relative to the run dir (strip the scope-root prefix / absolute root / `..`). Let the orchestrator resolve it via `sk-pipeline-paths` at runtime.
 - CAD-04: Add the missing `schema_version: "1.0"` and/or `plugin_version: "<current>"` to the def frontmatter.
 - CAD-05: Set `capabilities.write_files: false` on the reviewer, OR change `role` if the agent is in fact a writer (e.g. `fixer`).
+- CAD-06: Move workflow/process text from `description` into the CAD body. Keep `description` third-person and trigger-only.
+- CAD-07: Add the missing body section using the canonical template in `pipeline-architect-references/references/sdd-artifacts.md`.
+- CAD-08: Rewrite the completion criterion as a concrete, observable done condition.
+- CAD-09: Add or update `scaffold-summary.md` with one justification per generated reference.
+- CAD-10: Regenerate the affected new pipeline as data-only CAD artifacts; do not create companion protocol skills for new pipelines.
+
+---
+
+## 7. Bundle maintenance hygiene
+
+Apply BUNDLE-* only when auditing the Superpipelines bundle itself, not ordinary user-generated pipelines.
+
+| ID | Criterion | SEV | Detection |
+|---|---|---|---|
+| BUNDLE-01 | Skill descriptions match invocation role | SEV-2 | User-facing workflow skills have short human-facing summaries; model-invoked method skills have leading trigger words; internal protocol/reference skills have loader-facing summaries. |
+| BUNDLE-02 | Invocation flags match role | SEV-2 | Internal protocol/reference skills use `user-invocable: false` and normally `disable-model-invocation: true`; router and reusable method skills remain reachable when autonomous reach is intended. |
+| BUNDLE-03 | Workflow-summary descriptions are absent | SEV-2 | Flag descriptions that explain internal process steps instead of routing purpose or loader ownership. |
+| BUNDLE-04 | Internal protocol/reference skills are not user-facing | SEV-2 | Any internal protocol/reference skill without `user-invocable: false` is a finding unless explicitly justified in its body. |
+| BUNDLE-05 | Cross-skill deep links are justified | SEV-2 | Flag instructions that deep-link into another skill's private `references/` files unless that reference is declared public normative by the owning skill. |
+| BUNDLE-06 | Active authoring paths contain no stale generated-agent guidance | SEV-1 | Active creation/architect/auditor paths must not instruct new pipelines to create zero-body agents, companion protocol skills, or tool-dir source artifacts. Legacy-only references and migration fixtures are N/A when labelled. |
+| BUNDLE-07 | Packaged plugin mirrors source skills | SEV-1 | `node scripts/package-codex-plugin.js --check` must pass after source edits. |
+
+### Bundle hygiene remediation
+
+- BUNDLE-01/BUNDLE-03: Rewrite the description according to the skill's invocation role.
+- BUNDLE-02/BUNDLE-04: Adjust frontmatter only where platform compatibility is confirmed; otherwise document the advisory limitation and keep descriptions clean.
+- BUNDLE-05: Replace private deep links with an instruction to load the owning skill, or mark the target reference as public normative in the owning skill.
+- BUNDLE-06: Move old-root guidance under legacy-only headings or remove it from active authoring paths.
+- BUNDLE-07: Run `node scripts/package-codex-plugin.js`, then `node scripts/package-codex-plugin.js --check`.
 
 ---
 
 ## How to use
 
 1. **Detect the layout** (data-only vs legacy) per the applicability table above. Read each target file with `Read`.
-2. Walk criteria 1–25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-05 (for canonical defs under `pipelines/{P}/agents/`) in order, applying each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A — use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
+2. Walk criteria 1-25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-10 (for canonical defs under `pipelines/{P}/agents/`), then BUNDLE-01..BUNDLE-07 when auditing this bundle. Apply each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A - use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

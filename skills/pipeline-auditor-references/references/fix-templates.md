@@ -5,7 +5,7 @@ Canonical fixes for common findings. Use as Edit templates when the user request
 ## Table of contents
 
 1. Description summarizes workflow
-2. Agent body is non-empty
+2. CAD body missing required sections
 3. `permissionMode` in frontmatter
 4. `memory: project` / `memory: local`
 5. Skill preload includes workflow skill
@@ -33,14 +33,38 @@ description: Processes Excel files by reading sheets, cleaning data, and generat
 description: Use when working with Excel files, spreadsheets, or .xlsx data extraction.
 ```
 
-## Fix 2 — Agent body is non-empty
+## Fix 2 - CAD body missing required sections
 
-**Action:** Move all body content to a companion `{agent-name}-protocol/SKILL.md`; leave the agent file as frontmatter-only.
+**Action:** For data-only pipelines, keep operational logic inline in the CAD and add the missing sections from the canonical template. Do not move the body to a companion protocol skill.
 
-1. Create `skills/superpipelines/{P}/{agent-name}-protocol/SKILL.md` with `disable-model-invocation: true` and `user-invocable: false`.
-2. Move every line after the closing `---` of the agent file into the new protocol skill.
-3. Add `{agent-name}-protocol` to the agent's `skills:` list in frontmatter.
-4. Delete all body text from the agent file. Nothing may appear after the closing `---`.
+Required body shape:
+
+```markdown
+<overview>
+The agent performs one narrowly scoped pipeline step and reports a terminal status.
+</overview>
+
+## Required Sources
+- None. This step is self-contained.
+
+## Protocol
+
+<protocol>
+### 1. DISCOVER
+Read the inputs declared in `io_contract` and verify each required input is available.
+### 2. PROCESS
+Perform the step responsibility described in the overview without changing undeclared files.
+### 3. DELIVER
+Return the declared output and one terminal status.
+</protocol>
+
+## Completion Criterion
+The step is complete when the declared output is returned and exactly one terminal status is emitted.
+
+<invariants>
+- Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
+</invariants>
+```
 
 ## Fix 3 — `permissionMode` in frontmatter
 
@@ -128,7 +152,9 @@ Read ~/.claude/agents/code-reviewer.md
 Resolve path via `sk-pipeline-paths` using the appropriate scope (local/project/user). Avoid hardcoded absolute paths.
 ```
 
-## Fix 9 — Missing companion protocol skill
+## Fix 9 - Legacy missing companion protocol skill
+
+This fix applies only to legacy old-root pipelines. It MUST NOT be used for new data-only pipelines.
 
 **Action:** Every agent must have a companion `{agent-name}-protocol` skill. If absent:
 
