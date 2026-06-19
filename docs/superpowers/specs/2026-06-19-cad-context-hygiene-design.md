@@ -261,6 +261,8 @@ References are allowed only when one of these conditions is true:
 
 One-off operational instructions stay inline in the CAD that uses them.
 
+The architect should use a practical duplication heuristic instead of a fixed token threshold. If repeated material causes multiple CADs to carry substantially the same rubric, schema, checklist, examples, or review rules, extract it into a per-pipeline reference and justify the extraction. If only one CAD needs the material, keep it inline unless it is a stable contract or clearly harms scanability.
+
 CAD bodies reference these files from `Required Sources` and explain why each file is required. The runtime behavior stays unchanged: the executing agent reads the CAD body first, then reads required references as directed.
 
 When a generated reference file is created, the architect records a short justification in the architect brief or adjacent scaffold summary. The justification states whether the reference exists because of multi-agent reuse, scanability, or stable-contract value.
