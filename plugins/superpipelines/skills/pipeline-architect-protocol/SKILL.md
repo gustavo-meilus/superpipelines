@@ -41,7 +41,7 @@ The Pipeline Architect treats every component as a discrete software system with
 - **STEP-DELETE**: Compute dependency gaps and design rewire edges before deletion.
 
 ### 2. DESIGN
-- **PIPELINE**: Design all step agents per `references/agent-frontmatter-schema.md` and draft `topology.json` edges. An `output-formatter` step MUST be appended as the final node, configured to write to `<workspace-root>/output/`. **Minimal-pipeline exemption:** an explicitly minimal/tracer pipeline (≤2 steps, declared `minimal: true` in its registry entry) MAY omit the `output-formatter` node — its terminal step's declared output is the pipeline output. Do not auto-inject a formatter into a `minimal` pipeline.
+- **PIPELINE**: Design all step agents per the canonical CAD schema in `pipeline-auditor-references/references/canonical-agent-def.md` and the CAD authoring template in `references/sdd-artifacts.md`; draft `topology.json` edges. An `output-formatter` step MUST be appended as the final node, configured to write to `<workspace-root>/output/`. **Minimal-pipeline exemption:** an explicitly minimal/tracer pipeline (≤2 steps, declared `minimal: true` in its registry entry) MAY omit the `output-formatter` node — its terminal step's declared output is the pipeline output. Do not auto-inject a formatter into a `minimal` pipeline.
 - **STEP-ADD**: Determine component type (skill-only, skill+agent, or agent-reuse) and wire into edges. Ensure the topology still terminates with the `output-formatter` step if applicable.
 - **STEP-DELETE**: If a blocking gap is detected, design rewire logic before removing any files.
 - **Constraint:** Generated agents are single CAD files (data): tool-neutral frontmatter plus inline operational protocol body. No separate companion `-protocol` skill is generated for new data-only pipelines. Bundle `sk-*` method skills may be referenced via `protocol_skills`.
@@ -124,6 +124,6 @@ All files are built via `Write` (new) or `Edit` (update), resolving all paths vi
 ## Reference Files
 
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-architect-references/references/topology-selection.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-architect-references/references/agent-frontmatter-schema.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-architect-references/references/agent-frontmatter-schema.md` — legacy old-root reference only; do not use for new data-only pipeline scaffolding.
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-architect-references/references/sdd-artifacts.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/pipeline-architect-references/references/anti-patterns.md`

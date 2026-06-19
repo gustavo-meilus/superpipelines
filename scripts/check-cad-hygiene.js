@@ -121,8 +121,45 @@ function checkStalePhrases() {
   return files.length;
 }
 
+function checkActiveContractContradictions() {
+  const checks = [
+    {
+      file: path.join(repoRoot, 'skills', 'pipeline-architect-protocol', 'SKILL.md'),
+      pattern: /Design all step agents per `references\/agent-frontmatter-schema\.md`/,
+      message: 'new pipeline design must not use the legacy agent-frontmatter schema as its active schema',
+    },
+    {
+      file: path.join(repoRoot, 'skills', 'pipeline-auditor-protocol', 'SKILL.md'),
+      pattern: /CAD-01\.\.CAD-05 govern there instead/,
+      message: 'data-only auditor guidance must apply CAD-01..CAD-10',
+    },
+    {
+      file: path.join(repoRoot, 'skills', 'pipeline-auditor-references', 'references', 'compliance-matrix.md'),
+      pattern: /CAD-01\.\.CAD-05 govern instead|\| CAD-01\.\.CAD-05 \|/,
+      message: 'compliance matrix applicability must apply CAD-01..CAD-10',
+    },
+    {
+      file: path.join(repoRoot, 'skills', 'pipeline-auditor-references', 'references', 'compliance-matrix.md'),
+      pattern: /step protocols are `pipelines\/\{P\}\/skills\/\{step\}\/SKILL\.md`/,
+      message: 'data-only layout must not advertise separate step protocol files',
+    },
+    {
+      file: path.join(repoRoot, 'skills', 'sk-pipeline-paths', 'SKILL.md'),
+      pattern: /Step Protocol \(data\)|pipelines\/\{P\}\/skills\/\{step\}\/SKILL\.md/,
+      message: 'data-only path templates must not advertise separate step protocol files',
+    },
+  ];
+
+  for (const check of checks) {
+    if (fs.existsSync(check.file) && check.pattern.test(read(check.file))) {
+      fail(check.file, check.message);
+    }
+  }
+}
+
 const cadCount = checkCadFiles();
 const scannedCount = checkStalePhrases();
+checkActiveContractContradictions();
 
 if (failures.length > 0) {
   console.error('cad hygiene check failed:');

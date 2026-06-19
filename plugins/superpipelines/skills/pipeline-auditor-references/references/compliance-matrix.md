@@ -21,7 +21,7 @@ consolidation (PR-*), canonical agent-def (CAD-*).
 
 A bundle is one of two layouts. Detect it before walking criteria:
 
-- **Data-only (v2.x):** the pipeline lives entirely under `DATA_ROOT/pipelines/{P}/` (DATA_ROOT = `.superpipelines`) — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline body), the entry is `pipelines/{P}/entry.md` (data), step protocols are `pipelines/{P}/skills/{step}/SKILL.md` (data). Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
+- **Data-only (v2.x):** the pipeline lives entirely under `DATA_ROOT/pipelines/{P}/` (DATA_ROOT = `.superpipelines`) — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline protocol body), the entry is `pipelines/{P}/entry.md` (data), and optional shared references live under `pipelines/{P}/references/`. Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
 - **Legacy old-root (pre-v2):** agents at `agents/superpipelines/{P}/` (zero-body + companion `-protocol` skill), entry skill at `skills/superpipelines/{P}/run-{P}/SKILL.md`.
 
 **Criterion applicability by layout:**
@@ -29,12 +29,12 @@ A bundle is one of two layouts. Detect it before walking criteria:
 | Criteria | Data-only | Legacy |
 |---|---|---|
 | 1 (scope-root layout), 4 (entry skill flags), 5 (internal skills suppressed) | **N/A** — replaced by the data layout; verify CAD files exist under `pipelines/{P}/agents/` and `entry.md` is present | Apply |
-| 8, 9, 10, 10a (legacy old-root CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-05 govern instead** | Apply |
+| 8, 9, 10, 10a (legacy old-root CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-10 govern instead** | Apply |
 | 19 (reviewer `disallowedTools`) | **N/A** — reviewer write-deny is expressed as `capabilities.write_files: false`; **CAD-05 governs** | Apply |
 | 6, 7, 11 (name, description, memory), 12–16 (topology), 17, 20, 21, 22, 25 | Apply to both | Apply |
 | 23, 24 (worktree artifact-loss / data-agent isolation) | **N/A — superseded by CAD-02.** These grep `isolation: worktree` on legacy agent files; a CAD never carries `isolation: worktree` (it declares `isolation_required`, translated only at materialization). CAD-02 governs the data-only equivalent (`isolation_required:true` without `edit_tracked_source:true`) | Apply |
 | PR-01..PR-10 (resolver/profiles) | Apply to both | Apply |
-| CAD-01..CAD-05 | **Apply** (the canonical-def contract) | N/A — no CAD files |
+| CAD-01..CAD-10 | **Apply** (the canonical-def contract) | N/A — no CAD files |
 
 When auditing a data-only pipeline, mark the layout-specific legacy criteria **N/A (data-only layout)** with a one-line reason rather than FAIL. A false FAIL on criterion 1/4/10a against a conformant CAD is itself a defect.
 
@@ -130,7 +130,7 @@ each tier's enforcement primitive. Full schema + translation contract: `referenc
 Fixture examples: `references/fixtures/cad-00-valid-canonical-def.md` (passing) and
 `references/fixtures/cad-contradictions.md` (one failing section per rule). Apply CAD-* to every
 file under `.superpipelines/pipelines/{P}/agents/`; these criteria are N/A to legacy
-legacy zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6-11).
+old-root zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6-11).
 
 | ID | Criterion | SEV | Detection |
 |---|---|---|---|
