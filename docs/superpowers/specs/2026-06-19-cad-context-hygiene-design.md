@@ -152,7 +152,10 @@ The implementation should specifically check and update:
 - `pipeline-auditor-references/references/fix-templates.md`;
 - `pipeline-auditor-references/references/topology-rules.md`;
 - `pipeline-auditor-references/references/compliance-matrix.md`;
+- fixtures, examples, snapshots, and tests that assert generated pipeline shape;
 - source and packaged copies under `plugins/superpipelines/skills/`.
+
+Generated pipeline fixtures or examples that intentionally preserve pre-change behavior must be labelled legacy-only. Tests for new scaffolding should assert the data-only CAD shape, inline protocol body, required sections, and absence of companion protocol skills.
 
 ### Packaging synchronization
 
