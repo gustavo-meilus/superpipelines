@@ -1,12 +1,19 @@
-# CAD Context Hygiene for New Pipelines
+# Skill Invocation and CAD Context Hygiene
 
 ## Context
 
 Superpipelines now scaffolds generated pipelines as data-only bundles under `.superpipelines/pipelines/{P}/`. Each generated step agent is a canonical agent definition (CAD): one markdown file containing tool-neutral frontmatter plus the inline operational protocol body. Runtime dispatch materializes those CADs into native agent files per platform.
 
-The bundle already documents several context-hygiene principles: descriptions are routing metadata, large instructions should use progressive disclosure, and generated CADs are the portable source of truth. The current creation path can be made more efficient and less ambiguous by applying those principles consistently to new pipeline scaffolding.
+The bundle already documents several context-hygiene principles: descriptions are routing metadata, large instructions should use progressive disclosure, and generated CADs are the portable source of truth. Matt Pocock's v1.0 skill architecture sharpens the same idea with a stricter invocation split: user-invoked workflow skills carry human-facing summaries and no model-trigger burden, while model-invoked reusable discipline skills keep trigger-rich descriptions only when autonomous reach is valuable.
 
-This design applies only to pipelines created after the change. It does not migrate or audit already-created pipelines.
+The current creation path and bundle skill set can be made more efficient and less ambiguous by applying those principles consistently to:
+
+- new pipeline scaffolding;
+- the Superpipelines bundle's own skill invocation metadata;
+- cross-skill dependency ownership;
+- auditor checks that keep stale legacy guidance out of active paths.
+
+This design applies to the Superpipelines bundle and to pipelines created after the change. It does not migrate or audit already-created pipelines.
 
 ## Goals
 
@@ -15,7 +22,10 @@ This design applies only to pipelines created after the change. It does not migr
 - Ensure CAD descriptions are trigger-only metadata, not workflow summaries.
 - Standardize generated CAD bodies around a compact, executable structure.
 - Allow per-pipeline shared references only when they reduce duplication or encode a stable contract.
-- Add auditor checks so the hygiene rules are enforceable during pipeline creation.
+- Apply the user-invoked vs model-invoked taxonomy to bundle skills.
+- Treat `using-superpipelines` as the bundle router/index, similar to `ask-matt`.
+- Keep shared rules in one owning skill or reference instead of duplicating them across workflow bodies.
+- Add auditor checks so the hygiene rules are enforceable during pipeline creation and bundle maintenance.
 
 ## Non-goals
 
@@ -24,8 +34,136 @@ This design applies only to pipelines created after the change. It does not migr
 - Do not change `sk-platform-dispatch` materialization semantics.
 - Do not make every generated pipeline create a `references/` directory.
 - Do not move bundle-level protocol skills into generated pipeline data.
+- Do not add new public commands.
+- Do not rewrite model resolution, dispatch, worktree behavior, or reviewer-isolation semantics.
+- Do not perform broad prose/style cleanup unrelated to invocation, context hygiene, or stale generation guidance.
 
 ## Design
+
+### Bundle invocation taxonomy
+
+The bundle should classify skills by invocation role before editing descriptions or flags.
+
+User-facing workflow and command entrypoints are the skills users think of as Superpipelines commands or flows:
+
+- `creating-a-pipeline`
+- `running-a-pipeline`
+- `adding-a-pipeline-step`
+- `updating-a-pipeline-step`
+- `deleting-a-pipeline-step`
+- `change-models`
+- `optimizing-a-pipeline`
+- `migrating-a-pipeline`
+- `using-superpipelines`
+
+These skills should be routed through `using-superpipelines` or explicit command invocation. If the platform supports a strict user-invoked flag, heavy command skills should set `disable-model-invocation: true` unless another model-invoked bundle skill must reach them directly. Their descriptions should be human-facing one-line summaries, not rich trigger lists. The router carries the trigger table.
+
+Reusable discipline, guardrail, and method skills remain model-invoked only when autonomous reach is valuable. Examples include:
+
+- `test-driven-development`
+- `systematic-debugging`
+- `verification-before-completion`
+- `sk-spec-driven-development`
+- `sk-claude-code-conventions`
+
+Their descriptions may remain model-facing, but should contain distinct trigger branches rather than workflow summaries.
+
+Internal protocol/reference skills should not be directly user-invoked. They should declare `user-invocable: false`, and should set `disable-model-invocation: true` unless they are intentionally reachable as reusable model-invoked discipline skills. Examples include pipeline agent protocols, model resolver internals, path/state helpers, and platform dispatch helpers.
+
+The implementation should make the smallest safe flag changes. If a platform-specific compatibility concern requires keeping a command skill model-invoked, the description still moves toward trigger-only metadata and `using-superpipelines` remains the intended router.
+
+### Router behavior
+
+`using-superpipelines` becomes the explicit router/index for the bundle. Its body should help the user or orchestrator choose the correct workflow without loading every workflow body.
+
+The router owns:
+
+- command-to-skill routing;
+- ambiguous-request handling;
+- which workflows are user-facing;
+- which skills are internal support;
+- when to run direct codebase Q&A instead of invoking a pipeline workflow.
+
+Workflow skills should not duplicate the full routing table. They may state their local trigger and refer back to the router for global command selection.
+
+### Description rules
+
+Descriptions should be pruned according to invocation role.
+
+For model-invoked skills:
+
+- front-load the leading trigger words;
+- use one trigger per distinct branch;
+- avoid workflow summaries such as "reads X, analyzes Y, writes Z";
+- include "when another skill needs..." only when direct model reach is actually needed.
+
+For user-invoked skills:
+
+- use a short human-facing summary;
+- strip "Use when the user says..." trigger lists;
+- keep command discovery in the router or command docs.
+
+For internal protocol/reference skills:
+
+- state what agent or bundle step loads the skill;
+- do not advertise broad user workflows;
+- avoid duplicating protocol details in the description.
+
+Every edited description should be tested against three expected invocations and three false-positive prompts before shipping.
+
+### Dependency ownership
+
+Cross-skill dependencies should be expressed as skill invocation, not deep references into another skill's private files.
+
+Preferred:
+
+```text
+Load `sk-pipeline-patterns` to select the topology.
+```
+
+Avoid:
+
+```text
+Read `../sk-pipeline-patterns/references/topology-selection.md`.
+```
+
+Shared reference files stay owned by the skill that owns the concept. Other skills reach that material by loading the owning skill unless the reference is explicitly declared a public normative reference. Public normative references must be named as such in the owning skill.
+
+Generated pipeline references are different: they are pipeline data files under `DATA_ROOT/pipelines/{P}/references/`, not registered skills and not bundle-level references.
+
+### Single source of truth and stale guidance
+
+The active generation path must describe one layout:
+
+- data-only pipeline artifacts under `.superpipelines/pipelines/{P}/`;
+- one CAD file per generated agent;
+- inline protocol body inside each CAD;
+- no generated companion `-protocol` skills;
+- no generated source artifacts under tool directories.
+
+Legacy old-root guidance may remain only where needed for migration, backward-compatible audit, or fixtures. It must be labelled as legacy-only. Active architect templates, fix templates, topology rules, and anti-pattern references must not tell the architect or auditor to create zero-body generated agents or companion protocol skills for new pipelines.
+
+The implementation should specifically check and update:
+
+- `pipeline-architect-references/references/agent-frontmatter-schema.md`;
+- `pipeline-architect-references/references/anti-patterns.md`;
+- `pipeline-auditor-references/references/fix-templates.md`;
+- `pipeline-auditor-references/references/topology-rules.md`;
+- `pipeline-auditor-references/references/compliance-matrix.md`;
+- source and packaged copies under `plugins/superpipelines/skills/`.
+
+### Packaging synchronization
+
+The source of truth for bundled skills remains `skills/`. Packaged copies under `plugins/superpipelines/skills/` must mirror source after implementation.
+
+After source edits, implementation must run the packaging sync/check path:
+
+```text
+node scripts/package-codex-plugin.js
+node scripts/package-codex-plugin.js --check
+```
+
+If the package script exposes additional validation failures unrelated to the edited scope, those should be reported rather than silently worked around.
 
 ### CAD shape
 
@@ -154,6 +292,18 @@ The auditor should add CAD hygiene criteria after the existing `CAD-01..CAD-05` 
 
 `CAD-06`, `CAD-07`, and `CAD-08` should normally be SEV-2 unless the missing content makes execution ambiguous enough to break the step contract. `CAD-10` should be SEV-1 because it violates the data-only architecture and can break portability. `CAD-09` should normally be SEV-3 or PARTIAL because over-inlining or over-splitting is an efficiency problem unless it causes a direct contract conflict.
 
+The auditor or bundle-maintenance checks should also add bundle-level hygiene criteria:
+
+- `BUNDLE-01`: skill descriptions match invocation role: human-facing summary for user-only skills, model-facing triggers for model-invoked skills, loader summary for internal protocol skills.
+- `BUNDLE-02`: invocation flags match role: command/workflow, reusable discipline, or internal protocol/reference.
+- `BUNDLE-03`: workflow-summary descriptions are flagged when they include internal process details instead of routing triggers or human summaries.
+- `BUNDLE-04`: internal protocol/reference skills are not user-invocable unless explicitly justified.
+- `BUNDLE-05`: cross-skill deep reference links are flagged unless they point to an explicitly public normative reference.
+- `BUNDLE-06`: active authoring paths contain no stale generated-agent guidance for zero-body agents, companion protocol skills, or tool-dir source artifacts.
+- `BUNDLE-07`: packaged plugin copies mirror source skill files after edits.
+
+`BUNDLE-06` should be SEV-1 because stale generation guidance can create non-portable pipelines. `BUNDLE-01..BUNDLE-05` are normally SEV-2 unless they make a skill unreachable or falsely auto-invoked. `BUNDLE-07` is SEV-1 for release readiness because packaged users would receive different behavior than source users.
+
 ### Runtime impact
 
 `sk-platform-dispatch` remains mostly unchanged. Materialization still reads one CAD per agent and emits the native agent representation for the current tier. Per-pipeline references are ordinary data files read by the executing protocol when required; they are not separate registered skills.
@@ -165,6 +315,12 @@ The auditor should add CAD hygiene criteria after the existing `CAD-01..CAD-05` 
 - Generated CAD bodies include a completion criterion by default.
 - Shared references are available for reused rubrics, schemas, checklists, and templates without becoming mandatory.
 - The auditor can detect stale legacy generation patterns before human approval.
+- Bundle skills are classified by invocation role.
+- `using-superpipelines` owns command/workflow routing instead of scattering a full routing table through workflow skills.
+- Internal protocol/reference skills are not user-facing entrypoints.
+- Cross-skill dependencies no longer deep-link into private reference files unless the target is an explicit public normative reference.
+- Active authoring references no longer tell new pipelines to generate zero-body agents or companion protocol skills.
+- Packaged plugin skill copies are synced with source skill changes.
 - Existing generated pipelines are unaffected.
 
 ## Decisions
@@ -172,3 +328,7 @@ The auditor should add CAD hygiene criteria after the existing `CAD-01..CAD-05` 
 - Explicitly minimal or tracer pipelines still include `Required Sources`, but may declare `None. This step is self-contained.`
 - New `references/` files require a short scaffold-time justification.
 - The legacy zero-body agent guidance should be removed from the active generation path and retained only as legacy documentation if still needed for migration or audit support.
+- `using-superpipelines` is the bundle router/index and should absorb global command-routing responsibility.
+- Heavy workflow skills should be user-invoked where platform compatibility allows; when compatibility requires model reach, their descriptions still follow trigger-only metadata and defer routing breadth to the router.
+- Reusable discipline skills stay model-invoked only when autonomous reach is valuable.
+- Internal protocol skills are loader-facing, not user-facing.
