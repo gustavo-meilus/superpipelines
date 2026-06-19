@@ -1,6 +1,13 @@
-# Agent Frontmatter Schema — Architect Reference
+# Legacy Agent Frontmatter Schema - Architect Reference
 
-Canonical YAML frontmatter for pipeline subagents. Use this when generating new agent files via `pipeline-architect`.
+This reference applies only to legacy old-root pipeline artifacts that still use tool-native agent files under `agents/superpipelines/{P}/` plus companion protocol skills under `skills/superpipelines/{P}/`.
+
+New pipeline scaffolding MUST NOT use this schema. New data-only pipelines use the canonical agent definition (CAD): one file at `DATA_ROOT/pipelines/{P}/agents/{agent-name}.md` containing tool-neutral frontmatter plus inline protocol body. For new CADs, use:
+
+- `pipeline-auditor-references/references/canonical-agent-def.md` for schema authority.
+- `pipeline-architect-references/references/sdd-artifacts.md` for the authoring template.
+
+## Legacy Old-Root Schema
 
 ## Schema
 
