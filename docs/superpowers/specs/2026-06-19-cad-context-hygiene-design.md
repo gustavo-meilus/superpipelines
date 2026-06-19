@@ -267,6 +267,8 @@ CAD bodies reference these files from `Required Sources` and explain why each fi
 
 When a generated reference file is created, the architect records a short justification in the architect brief or adjacent scaffold summary. The justification states whether the reference exists because of multi-agent reuse, scanability, or stable-contract value.
 
+The creation flow must produce a scaffold summary artifact or section that is available to the auditor. It records the generated CAD count, reference files created, the justification for each reference, and any deliberate exceptions to the default inline-body pattern. This summary is the primary evidence for `CAD-09`.
+
 Explicitly minimal or tracer pipelines may omit `Required Sources` only when no external source is required. In that case, the CAD body must include:
 
 ```markdown
