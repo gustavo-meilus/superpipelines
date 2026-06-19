@@ -195,6 +195,8 @@ Each CAD keeps the existing canonical frontmatter contract:
 
 The `description` field remains third-person, trigger-only routing metadata. It must not summarize the agent's workflow.
 
+CAD frontmatter is not skill frontmatter. Invocation fields such as `disable-model-invocation` and `user-invocable` belong to bundle skills only, subject to the compatibility matrix above. Generated CADs keep the canonical agent schema unless the schema is deliberately extended in a separate design. For this change, CAD context hygiene means improving CAD descriptions and bodies, not adding skill-invocation metadata to generated agent definitions.
+
 ### CAD body contract
 
 Every generated CAD body uses this structure unless the pipeline is explicitly minimal. Braced values in the template are placeholders for generated content, not unresolved requirements.
