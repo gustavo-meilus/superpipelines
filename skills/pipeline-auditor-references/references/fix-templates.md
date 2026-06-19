@@ -228,7 +228,7 @@ fixes route to the architect).
 
 ## Fix 12 — Frontmatter ↔ protocol capability split-brain
 
-**Symptom (compliance criterion #25):** an agent's companion protocol describes a
+**Symptom (compliance criterion #25):** a legacy old-root agent's companion protocol describes a
 **primary action** that uses a tool the agent's frontmatter forbids — the tool is
 absent from a present `tools:` allowlist, listed in `disallowedTools:`, or
 write-blocked by `permissionMode: plan`. The primary path is dead at runtime

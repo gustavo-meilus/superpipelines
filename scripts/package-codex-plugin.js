@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -166,6 +167,14 @@ function validateCodexAgentTomls() {
 }
 
 function validatePackage() {
+  const hygiene = spawnSync(process.execPath, [path.join(repoRoot, 'scripts', 'check-cad-hygiene.js')], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+  if (hygiene.status !== 0) {
+    fail('CAD hygiene validation failed');
+  }
+
   const manifest = readManifest();
   validateManifest(manifest);
   validateCodexAgentTomls();
