@@ -35,6 +35,7 @@ This design applies to the Superpipelines bundle and to pipelines created after 
 - Do not make every generated pipeline create a `references/` directory.
 - Do not move bundle-level protocol skills into generated pipeline data.
 - Do not add new public commands.
+- Do not split, rename, or remove existing public Superpipelines skills or commands.
 - Do not rewrite model resolution, dispatch, worktree behavior, or reviewer-isolation semantics.
 - Do not perform broad prose/style cleanup unrelated to invocation, context hygiene, or stale generation guidance.
 
