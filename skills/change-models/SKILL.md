@@ -1,6 +1,6 @@
 ---
 name: change-models
-description: Manages model preferences across the resolver's preference layers — user-global prefs, workspace prefs, per-agent `model_tier:` overrides, escape-hatch `model:` overrides, first-run wizard, catalog drift reconciliation, and orchestrator-tier overrides. Use when a user asks to set, change, view, or audit model assignments for pipeline agents, configure models for a new workspace, reconcile stale model preferences after a catalog update, or override the model for a specific agent or tier.
+description: Reassign Superpipelines model-tier preferences across user, workspace, and pipeline scopes.
 user-invocable: false
 ---
 

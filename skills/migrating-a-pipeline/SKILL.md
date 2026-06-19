@@ -1,6 +1,6 @@
 ---
 name: migrating-a-pipeline
-description: Converts an existing pre-v2 per-tier pipeline (stored under a legacy scope root such as .claude/, .opencode/, or .agents/codex/) into the unified data-only .superpipelines/ layout — canonical agent defs, entry.md, topology, and a rewritten registry entry — losslessly with a git-backed checkpoint pair. Use when the user requests migrating a legacy pipeline, invokes /superpipelines:migrate-pipeline, or when a discovered pipeline carries layout:"legacy" and the user wants it on the unified root.
+description: Migrate a legacy old-root Superpipelines workflow into the data-only pipeline layout.
 user-invocable: false
 ---
 

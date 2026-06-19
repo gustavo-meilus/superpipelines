@@ -1,6 +1,6 @@
 ---
 name: deleting-a-pipeline-step
-description: Removes a step from an existing named pipeline while preserving topology continuity. Use when the user requests deletion of a pipeline step, wants to remove a capability from a named pipeline, or invokes /superpipelines:delete-step.
+description: Remove a step from an existing named Superpipelines workflow while preserving topology continuity.
 user-invocable: false
 ---
 

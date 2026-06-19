@@ -1,6 +1,6 @@
 ---
 name: pipeline-auditor-protocol
-description: Supplies the pipeline-auditor agent with its operating modes (FULL/DELTA/SCOPE-WIDE), full compliance matrix dispatch, severity classification, fix routing, and model-tier resolution criteria. Use when the pipeline-auditor agent is invoked to perform standards-enforcement auditing of pipeline bundles.
+description: Loaded by the pipeline-auditor agent to audit Superpipelines pipeline bundles against compliance, CAD, topology, and bundle hygiene rules.
 disable-model-invocation: true
 user-invocable: false
 ---

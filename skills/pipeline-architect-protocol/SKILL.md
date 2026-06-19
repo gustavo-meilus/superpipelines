@@ -1,6 +1,6 @@
 ---
 name: pipeline-architect-protocol
-description: Operational protocol and invariants for multi-agent pipeline design, loaded by the pipeline-architect agent. Use when the pipeline-architect agent initializes any operating mode (PIPELINE, STEP-ADD, STEP-UPDATE, STEP-DELETE, UPDATE, DIAGNOSE).
+description: Loaded by the pipeline-architect agent to design or mutate Superpipelines pipeline topology and data-only CAD artifacts.
 disable-model-invocation: true
 user-invocable: false
 ---

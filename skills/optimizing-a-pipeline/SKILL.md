@@ -1,6 +1,6 @@
 ---
 name: optimizing-a-pipeline
-description: Orchestrates on-demand optimization of an existing named pipeline — surveys topology, model-tier cost, and past-run signals, runs a discovery session to lock an optimization plan, then batch-applies it atomically with a mandatory post-apply audit. Use when the user asks to optimize a pipeline, find topology/cost improvements, merge or split steps, or invokes /superpipelines:optimize-pipeline.
+description: Optimize an existing named Superpipelines workflow for topology, model tiers, cost, latency, and reliability.
 user-invocable: false
 ---
 
