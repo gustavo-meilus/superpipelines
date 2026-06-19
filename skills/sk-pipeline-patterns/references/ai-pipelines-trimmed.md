@@ -23,7 +23,7 @@
 - `PIPELINE_PHASE_ISOLATION: TRUE` — Tester, Analyzer, Healer (and Executor / Stage-1 Reviewer / Stage-2 Reviewer) are separate instances.
 - `WORKTREE_MERGE_REQUIRED: TRUE` — If `isolation: worktree` is used, the orchestrator MUST commit and merge successful changes before worktree destruction. See `sk-worktree-safety`.
 
-Agent files are zero-body (frontmatter only). All protocol lives in a companion `{agent-name}-protocol/SKILL.md`. Deep reference material lives in `{agent-name}-references/references/*.md` (read on demand).
+New data-only pipeline agents are CAD files with tool-neutral frontmatter plus an inline protocol body. Extract per-pipeline reference material only when it is reused by multiple CADs, improves scanability, or defines a stable contract.
 
 ---
 

@@ -5,7 +5,7 @@ Catalog of common failure modes when designing pipelines and agents. Each entry:
 ## Table of contents
 
 1. The Diver
-2. The Mega-Prompt
+2. CAD Workflow Summary
 3. Context Dumping
 4. Silent Failures
 5. Tool Sprawl
@@ -32,11 +32,13 @@ Catalog of common failure modes when designing pipelines and agents. Each entry:
 
 **Fix:** Decompose into RPI loop with separate agents per phase. `ANT_SWARM_PRINCIPLE: TRUE`. Pattern 5 is the canonical decomposition.
 
-## 2. The Mega-Prompt
+## 2. CAD Workflow Summary
 
-**Symptoms:** Agent body is non-empty; operational protocol, modes, or invariants written directly in the agent file after the closing `---`.
+**Symptoms:** A generated CAD `description` explains the agent's internal workflow, lists process steps, or repeats the protocol body.
 
-**Fix:** Agent files are zero-body (frontmatter only). Move all content to the companion `{agent-name}-protocol/SKILL.md`. Deep reference material goes to `{agent-name}-references/references/*.md`.
+**Fix:** Keep `description` as third-person trigger-only routing metadata. Put operational steps in the inline CAD body under Required Sources, Protocol, Completion Criterion, and invariants.
+
+**Legacy note:** Zero-body agents plus companion `{agent-name}-protocol/SKILL.md` were the old-root pattern. They are valid only for legacy migration/audit references, not new data-only pipeline scaffolding.
 
 ## 3. Context Dumping
 

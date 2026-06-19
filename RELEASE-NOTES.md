@@ -3,8 +3,30 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, and the Codex agent TOML schema fix with regression guard in v2.3.1.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, the Codex agent TOML schema fix with regression guard in v2.3.1, and CAD hygiene hardening in v2.3.2.
 </overview>
+
+## v2.3.2 — CAD Hygiene Hardening (2026-06-19)
+
+Hardens the Canonical Agent Def authoring and validation contract. The release adds executable hygiene validation, expands auditor and architect guidance for CAD context discipline, keeps invocation flags separate from skill metadata, and syncs the packaged Codex skill bundle so marketplace installs receive the same checks and protocol updates.
+
+<release_entry version="2.3.2" status="STABLE">
+
+### Added
+
+- **Executable CAD hygiene validation** — package checks now cover CAD fixture validity, bundled skill hygiene, invocation metadata separation, and context-size regressions.
+- **CAD and bundle hygiene audit rules** — auditor guidance now includes concrete CAD contradiction, bundle hygiene, public command preservation, reference extraction, and scaffold summary checks.
+
+### Changed
+
+- **CAD generation contract** — generated CADs now preserve lightweight context by keeping runtime invocation metadata separate from skill metadata and by referencing source artifacts instead of embedding unnecessary bulk.
+- **Packaged Codex skills** — the marketplace package mirrors the updated root skills and fixtures.
+
+### Fixed
+
+- **CAD hygiene review findings** — review feedback from the CAD hygiene update is incorporated across docs, fixtures, validation, and packaged assets.
+
+</release_entry>
 
 ## v2.3.1 — Codex Agent Schema Fix (2026-06-16)
 

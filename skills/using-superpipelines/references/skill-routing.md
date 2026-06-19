@@ -1,5 +1,18 @@
 # Skill Routing — Decision Table
 
+## Invocation Roles
+
+Superpipelines keeps public command names stable and uses invocation metadata only where the current platform understands it.
+
+| Role | Examples | Description style | Flag policy |
+|---|---|---|---|
+| Router/index | `using-superpipelines` | Model-facing routing summary | Remains model-discoverable |
+| User-facing workflow | `creating-a-pipeline`, `running-a-pipeline`, step mutation skills, model changes, migration, optimization | Short human-facing summary | Prefer explicit command/router invocation; only add strict flags where platform compatibility is confirmed |
+| Reusable discipline/method | `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `sk-spec-driven-development` | Leading trigger words for autonomous reach | Keep model-invoked when autonomous reach is useful |
+| Internal protocol/reference | `pipeline-architect-protocol`, `pipeline-auditor-protocol`, `sk-platform-dispatch`, path/state/model helpers | Loader-facing summary | `user-invocable: false`; usually `disable-model-invocation: true` |
+
+Generated CAD files are not skills. Do not add skill invocation flags to CAD frontmatter.
+
 When to invoke which superpipelines skill or agent. Source of truth for the routing rules in `using-superpipelines` SKILL.md.
 
 ## User-facing workflow skills

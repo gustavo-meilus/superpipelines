@@ -188,11 +188,14 @@ status_protocol: standard
 plugin_version: "{current-superpipelines-version}"
 ---
 
-# {Agent Display Name} — Operational Protocol
+# {Agent Display Name} - Operational Protocol
 
 <overview>
-{One paragraph describing what this agent does and the quality bar it must meet.}
+{One short paragraph describing the agent's responsibility and quality bar.}
 </overview>
+
+## Required Sources
+- {source} - {why this source is required}
 
 ## Protocol
 
@@ -204,13 +207,30 @@ plugin_version: "{current-superpipelines-version}"
 {Core operational steps.}
 
 ### 3. DELIVER
-{Output schema and terminal status emission.}
+{Output schema, persistence expectations, and terminal status emission.}
 </protocol>
 
+## Completion Criterion
+{Visible condition that proves this step is done.}
+
 <invariants>
-- {Non-negotiable rule 1.}
+- {Non-negotiable rule.}
 - Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
 </invariants>
+```
+
+Reviewer, safety, debugging, and discipline-enforcing agents also include:
+
+```markdown
+## Red Flags - STOP
+- "{rationalization}" -> {corrective action}
+```
+
+If no external source is required, use:
+
+```markdown
+## Required Sources
+- None. This step is self-contained.
 ```
 
 Notes:

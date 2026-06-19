@@ -133,7 +133,7 @@ For **data-only** pipelines (v2.x+), artifact and state paths are **tier-indepen
 
 The canonical templates for new pipelines. DATA_ROOT = `RESOLVE_DATA_ROOT(scope)` (the
 `.superpipelines/` root). Everything a pipeline needs — including the entry orchestration body
-and the step protocols — is DATA here; nothing is written to a tool dir as source.
+and inline CAD operational protocols — is DATA here; nothing is written to a tool dir as source.
 
 <data_path_templates>
 | Artifact Type | Path Template (relative to DATA_ROOT) |
@@ -143,7 +143,7 @@ and the step protocols — is DATA here; nothing is written to a tool dir as sou
 | **Topology Graph** | `pipelines/{P}/topology.json` |
 | **Audit Report** | `pipelines/{P}/audit/latest.md` |
 | **Canonical Agent Def (CAD)** | `pipelines/{P}/agents/{agent-name}.md` |
-| **Step Protocol (data)** | `pipelines/{P}/skills/{step}/SKILL.md` |
+| **Optional Shared References** | `pipelines/{P}/references/{name}.md` |
 | **Entry (data)** | `pipelines/{P}/entry.md` |
 | **Run Command (data)** | `pipelines/{P}/{P}.md` |
 | **Pipeline State** | `temp/{P}/{runId}/pipeline-state.json` |

@@ -1,6 +1,6 @@
 ---
 name: updating-a-pipeline-step
-description: Orchestrates the modification of an existing step within a named pipeline, enforcing impact analysis, edge re-validation, staged promotion, and delta audit. Use when the user requests changes to a step's logic, tools, or I/O contracts, or invokes /superpipelines:update-step.
+description: Modify an existing step in a named Superpipelines workflow while preserving contracts and topology continuity.
 user-invocable: false
 ---
 

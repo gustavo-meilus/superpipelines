@@ -1,6 +1,6 @@
 ---
 name: pipeline-task-executor-protocol
-description: Supplies the SDD implementation protocol, allowlist constraints, self-verification steps, and terminal status rules to the pipeline-task-executor agent. Use when the pipeline-task-executor agent initializes a task run and requires its full operational protocol.
+description: Loaded by the pipeline-task-executor agent to execute one assigned implementation task under the pipeline contract.
 disable-model-invocation: true
 user-invocable: false
 ---

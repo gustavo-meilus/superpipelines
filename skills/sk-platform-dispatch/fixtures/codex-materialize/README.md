@@ -2,6 +2,8 @@
 
 Proves `TRANSLATE_CAD_TO_CODEX` + the tier-neutral `MATERIALIZE` for issue #65 (AC1, AC2, AC4).
 
+Materialization fixture: native `agents/superpipelines` paths here are disposable runtime cache outputs for dispatcher testing. They are not new-pipeline authoring guidance.
+
 Given a tool-neutral **canonical agent def (CAD)** and the Codex-resolved model object,
 `MATERIALIZE` on a `model_driven` + `toml_split` profile writes a native Codex agent **TOML** file
 into `<scope-root>/agents/superpipelines/{P}/{name}.toml` (dir + `.toml` ext from `tier_1d.json`

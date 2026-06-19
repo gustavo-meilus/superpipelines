@@ -1,6 +1,6 @@
 ---
 name: pipeline-failure-analyzer-protocol
-description: Supplies the iteration-control protocol, escalation hard-gate, and rationalization resistance for Pattern 3 diagnosis cycles. Use when the pipeline-failure-analyzer agent is invoked and requires its operational protocol, convergence detection logic, or escalation criteria.
+description: Loaded by the pipeline-failure-analyzer agent to diagnose iterative pipeline failures and escalation gates.
 disable-model-invocation: true
 user-invocable: false
 ---

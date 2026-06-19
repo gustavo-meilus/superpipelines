@@ -1,6 +1,6 @@
 ---
 name: pipeline-optimizer-protocol
-description: Full operational protocol for the pipeline-optimizer agent — read-only four-axis optimization survey.
+description: Loaded by the pipeline-optimizer agent to inspect an existing workflow and recommend optimization opportunities.
 disable-model-invocation: true
 user-invocable: false
 ---

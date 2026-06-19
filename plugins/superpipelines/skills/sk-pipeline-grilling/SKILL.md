@@ -1,6 +1,6 @@
 ---
 name: sk-pipeline-grilling
-description: Use when creating-a-pipeline needs to harden a pipeline brief before architect dispatch — runs an adversarial crawl/grill/reconcile interrogation (MODE=brief) and a lighter post-pattern architectural-confirmation pass (MODE=architectural). Also used by optimizing-a-pipeline to reconcile optimization opportunities one at a time (MODE=optimization). Loaded via the orchestrator's Skill invocation; not user-invocable.
+description: Loaded by pipeline creation and optimization workflows to harden briefs, confirm architecture, or reconcile optimization choices.
 user-invocable: false
 ---
 

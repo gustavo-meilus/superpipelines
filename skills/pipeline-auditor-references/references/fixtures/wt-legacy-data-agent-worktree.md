@@ -1,5 +1,7 @@
 # Fixture — Data-agent worktree artifact loss (#23/#24 → Fix 11)
 
+Legacy fixture: this file intentionally models old-root behavior for auditor discrimination. It is not new-pipeline authoring guidance.
+
 Discriminating fixture for the worktree-artifact-loss criteria and the Phase 0.7
 tripwire. Mirrors the real `lectio-divina` v2.0.0 defect. The load-bearing
 discriminator is the topology `outputs` path + host-anchor — NOT `tools`.

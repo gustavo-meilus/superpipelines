@@ -2,6 +2,10 @@
 
 Golden fixtures for the legacy→data-only reverse-translation contract.
 
+## Legacy fixture note
+
+Fixtures under `legacy-*` intentionally preserve old-root pipeline shapes so the migration workflow can prove lossless conversion into data-only artifacts. They are not examples for new pipeline scaffolding.
+
 - `legacy-cc-pipeline/` — a minimal pre-v2 Claude Code pipeline (`doc-legacy`) as it would sit
   under a `.claude/`-era scope root: two agents (a worktree worker + a read-only Stage-1 reviewer),
   a legacy `run-doc-legacy` entry skill using direct `Task()`, a topology with no `agent_def`, and

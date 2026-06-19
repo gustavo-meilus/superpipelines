@@ -12,7 +12,8 @@ consolidation (PR-*), canonical agent-def (CAD-*).
 3. Topology (criteria 12–16)
 4. Runtime safety (criteria 17–25)
 5. Resolver consolidation (criteria PR-01..PR-05, PR-07, PR-08, PR-09, PR-10)
-6. Canonical agent-def (criteria CAD-01..CAD-05)
+6. Canonical agent-def (criteria CAD-01..CAD-10)
+7. Bundle maintenance hygiene (criteria BUNDLE-01..BUNDLE-07)
 
 ---
 
@@ -20,7 +21,7 @@ consolidation (PR-*), canonical agent-def (CAD-*).
 
 A bundle is one of two layouts. Detect it before walking criteria:
 
-- **Data-only (v2.x):** the pipeline lives entirely under `DATA_ROOT/pipelines/{P}/` (DATA_ROOT = `.superpipelines`) — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline body), the entry is `pipelines/{P}/entry.md` (data), step protocols are `pipelines/{P}/skills/{step}/SKILL.md` (data). Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
+- **Data-only (v2.x):** the pipeline lives entirely under `DATA_ROOT/pipelines/{P}/` (DATA_ROOT = `.superpipelines`) — agents are canonical defs (CAD) at `pipelines/{P}/agents/{agent}.md` (frontmatter + inline protocol body), the entry is `pipelines/{P}/entry.md` (data), and optional shared references live under `pipelines/{P}/references/`. Nothing generated lives in `skills/superpipelines/*` or `agents/superpipelines/*` (those hold only ephemeral DISPATCH materialization cache, which is NOT audited as source).
 - **Legacy old-root (pre-v2):** agents at `agents/superpipelines/{P}/` (zero-body + companion `-protocol` skill), entry skill at `skills/superpipelines/{P}/run-{P}/SKILL.md`.
 
 **Criterion applicability by layout:**
@@ -28,12 +29,12 @@ A bundle is one of two layouts. Detect it before walking criteria:
 | Criteria | Data-only | Legacy |
 |---|---|---|
 | 1 (scope-root layout), 4 (entry skill flags), 5 (internal skills suppressed) | **N/A** — replaced by the data layout; verify CAD files exist under `pipelines/{P}/agents/` and `entry.md` is present | Apply |
-| 8, 9, 10, 10a (CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-05 govern instead** | Apply |
+| 8, 9, 10, 10a (legacy old-root CC-primitive frontmatter + Lean-Agent zero-body) | **N/A** — CAD frontmatter is capability-intent with an inline body by design; **CAD-01..CAD-10 govern instead** | Apply |
 | 19 (reviewer `disallowedTools`) | **N/A** — reviewer write-deny is expressed as `capabilities.write_files: false`; **CAD-05 governs** | Apply |
 | 6, 7, 11 (name, description, memory), 12–16 (topology), 17, 20, 21, 22, 25 | Apply to both | Apply |
 | 23, 24 (worktree artifact-loss / data-agent isolation) | **N/A — superseded by CAD-02.** These grep `isolation: worktree` on legacy agent files; a CAD never carries `isolation: worktree` (it declares `isolation_required`, translated only at materialization). CAD-02 governs the data-only equivalent (`isolation_required:true` without `edit_tracked_source:true`) | Apply |
 | PR-01..PR-10 (resolver/profiles) | Apply to both | Apply |
-| CAD-01..CAD-05 | **Apply** (the canonical-def contract) | N/A — no CAD files |
+| CAD-01..CAD-10 | **Apply** (the canonical-def contract) | N/A — no CAD files |
 
 When auditing a data-only pipeline, mark the layout-specific legacy criteria **N/A (data-only layout)** with a one-line reason rather than FAIL. A false FAIL on criterion 1/4/10a against a conformant CAD is itself a defect.
 
@@ -43,11 +44,11 @@ When auditing a data-only pipeline, mark the layout-specific legacy criteria **N
 
 | # | Criterion | PASS condition |
 |---|-----------|----------------|
-| 1 | Files under correct scope root | Agents at `agents/superpipelines/{P}/`; skills at `skills/superpipelines/{P}/`; support files at `superpipelines/pipelines/{P}/` — all under the correct scope root resolved by `sk-pipeline-paths` |
+| 1 | Files under correct scope root | Legacy old-root only: agents at `agents/superpipelines/{P}/`; skills at `skills/superpipelines/{P}/`; support files at `superpipelines/pipelines/{P}/` - all under the correct scope root resolved by `sk-pipeline-paths` |
 | 2 | Registry entry present | `registry.json` in the scope root has an entry for this pipeline with all required fields (`name`, `scope`, `created_at`, `plugin_version`, `pattern`, `entry_skill`, `agents`, `skills`, `topology_path`, `last_audit`) |
 | 3 | Registry consistent with disk | `registry.json[].agents` and `[].skills` match files on disk exactly; `topology_path` resolves to a readable file |
 | 4 | Entry skill correctly flagged | `run-{P}/SKILL.md` has `disable-model-invocation: true` AND `user-invocable: true` in frontmatter |
-| 5 | Internal skills suppressed | Every skill under `skills/superpipelines/{P}/` other than `run-{P}` has `user-invocable: false` in frontmatter |
+| 5 | Internal skills suppressed | Legacy old-root only: every skill under `skills/superpipelines/{P}/` other than `run-{P}` has `user-invocable: false` in frontmatter |
 
 ## 2. Frontmatter
 
@@ -76,13 +77,13 @@ When auditing a data-only pipeline, mark the layout-specific legacy criteria **N
 | # | Criterion | PASS condition |
 |---|-----------|----------------|
 | 17 | Temp path convention | State and outputs stored at `{ROOT}/superpipelines/temp/{P}/{runId}/` — no `tmp/` or hardcoded absolute paths |
-| 18 | No hardcoded absolute paths in agent or protocol skill bodies | Agent files are zero-body; companion `{agent-name}-protocol` skills reference paths via a scope-root variable (`${SCOPE_ROOT}` or equivalent), never literal `/home/...` or `~/.claude/...` |
+| 18 | No hardcoded absolute paths in agent or protocol bodies | Data-only CAD bodies and `entry.md` use scope variables or `DATA_ROOT`; legacy old-root companion `{agent-name}-protocol` skills use a scope-root variable (`${SCOPE_ROOT}` or equivalent), never literal `/home/...` or `~/.claude/...` |
 | 19 | Write/review isolation honored | Review-role agents (`*-spec-reviewer`, `*-quality-reviewer`) have `disallowedTools: Write, Edit, Bash` (or equivalent) in frontmatter |
 | 20 | Cleanup contract present in entry skill | Entry skill body explicitly: (a) writes `status: completed` to `pipeline-state.json` on success, (b) deletes `temp/{P}/{runId}/` on DONE, (c) preserves temp on ESCALATED/FAILED/BLOCKED |
 | 21 | `plugin_version` present and consistent | `topology.json` has a `plugin_version` field; all agent frontmatter have `plugin_version`; registry entry has `plugin_version`. Missing → SEV-2. Mismatch between topology and agents → SEV-3 |
 | 22 | No hardcoded scope-root paths (PORTABILITY) | Entry skill, all step agents, all protocol skills, and topology.json contain no hardcoded scope-root directory names (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`) except inside comments that explicitly document `PORTABILITY_REWRITE`. **Permitted pattern:** paths MUST use the `{ROOT}` template variable resolved via `sk-pipeline-paths` at runtime. Hardcoded scope-root path outside of PORTABILITY_REWRITE documentation → SEV-1 |
-| 23 | Worktree artifact retention | No agent file in the bundle both declares `isolation: worktree` AND has its companion protocol/topology declare an output artifact under a gitignored `temp/` path without host-anchoring. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md` cross-referenced against each step's declared outputs in `topology.json`; any worktree step whose outputs resolve under `superpipelines/temp/` without a host-anchor note = FAIL (SEV-0, silent data loss — issue #31). |
-| 24 | Data agents omit isolation | Every agent that writes no tracked code (read-only / data-retrieval / artifact-only — i.e. `tools` has no `Write`/`Edit` to source paths, or the topology marks the step non-code-modifying) does NOT declare `isolation: worktree`. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md`; for each hit, confirm the step modifies tracked code per `topology.json`. A worktree on a non-code step = FAIL (SEV-1 — issue #31). |
+| 23 | Worktree artifact retention | Legacy old-root only: no agent file in the bundle both declares `isolation: worktree` AND has its companion protocol/topology declare an output artifact under a gitignored `temp/` path without host-anchoring. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md` cross-referenced against each step's declared outputs in `topology.json`; any worktree step whose outputs resolve under `superpipelines/temp/` without a host-anchor note = FAIL (SEV-0, silent data loss - issue #31). |
+| 24 | Data agents omit isolation | Legacy old-root only: every agent that writes no tracked code (read-only / data-retrieval / artifact-only, meaning `tools` has no `Write`/`Edit` to source paths or the topology marks the step non-code-modifying) does NOT declare `isolation: worktree`. Detection: `grep -ln "isolation: worktree" agents/superpipelines/{P}/*.md`; for each hit, confirm the step modifies tracked code per `topology.json`. A worktree on a non-code step = FAIL (SEV-1 - issue #31). |
 | 25 | Frontmatter ↔ protocol capability coherence | For every agent + companion `{agent-name}-protocol` skill pair, the protocol's **primary action** must not assume a tool the agent's frontmatter forbids, and `permissionMode` must not contradict the protocol's declared write behavior. **Forbidden-tool set** = (any tool absent from a present `tools:` allowlist) ∪ (`disallowedTools:` entries); `permissionMode: plan` additionally makes all write-class tools (`Write`, `Edit`, `Bash`) effectively forbidden. **Detection:** (1) build the forbidden set from agent frontmatter; (2) read the protocol's primary-action region (the `<protocol>`/`Workflow` block and any step labelled the agent's main job — NOT Red Flags, examples, or fix prose); (3) for each forbidden tool `T`, search that region for an **unconditional imperative** that performs `T` (e.g. "Write the report to …", "render … to a file", "Edit the agent", "run `<cmd>`" for `Bash`). A match whose primary path is blocked → **SEV-1** (frontmatter-vs-protocol split-brain — runtime/ownership defect, issue #34). A `permissionMode` that merely contradicts stated intent while the tool is still granted → **SEV-2**. **False-positive guard:** a forbidden-tool mention guarded as a *documented conditional fallback* — language like "if `T` unavailable", "on Tier N", "fallback", "otherwise", "when … absent", or an explicit `disallowedTools` self-citation declaring the agent does NOT do the action (e.g. the auditor protocol's "auditor is read-only … NEVER writes the report file") — is **PASS**, not a finding. Correct positive example: `pipeline-auditor-protocol/SKILL.md` step 3 declares `disallowedTools: Write` AND routes persistence to the orchestrator. |
 
 Note: Tier 1c (Antigravity) and Tier 1d (Codex) both resolve `workspace` to `.agents/` per the cross-tool open skill-path standard (`.agents/skills/` is read by both Codex and Antigravity). Pipeline state files for either tier live under `.agents/superpipelines/`; the active tier is disambiguated by which orchestrator is loaded in the workspace.
@@ -129,7 +130,7 @@ each tier's enforcement primitive. Full schema + translation contract: `referenc
 Fixture examples: `references/fixtures/cad-00-valid-canonical-def.md` (passing) and
 `references/fixtures/cad-contradictions.md` (one failing section per rule). Apply CAD-* to every
 file under `.superpipelines/pipelines/{P}/agents/`; these criteria are N/A to legacy
-zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11).
+old-root zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6-11).
 
 | ID | Criterion | SEV | Detection |
 |---|---|---|---|
@@ -138,6 +139,11 @@ zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11
 | CAD-03 | `io_contract` paths are relative to the run dir | SEV-1 | Every path-bearing `io_contract` value MUST be relative to the active run dir: no absolute path, no leading scope-root name (`.claude/`, `.opencode/`, `.codex/`, `.agents/`, `.superpipelines/`), no `..` escape. The only path-bearing field is `outputs[].path` — `inputs` entries carry `{ key, from_step, kind }` and have no path to check. Any violation = FAIL — breaks the copy-paste-portability guarantee (the orchestrator resolves paths against the run dir at runtime). Carries criterion 22's PORTABILITY intent into the io_contract. Detection: scan each `outputs[].path` value for a leading `/`, a drive letter, a known scope-root prefix, or a `..` segment. |
 | CAD-04 | `schema_version` and `plugin_version` present | SEV-2 | Each canonical def MUST declare both `schema_version` (the CAD schema version, e.g. `"1.0"`) and `plugin_version` (current package version, per `PLUGIN_VERSION_STAMPING`). Missing either field = FAIL (SEV-2 drift risk — the def cannot be retro-compatibility-checked or schema-validated). Detection: `grep -L "^schema_version:" …/agents/*.md` and `grep -L "^plugin_version:" …/agents/*.md` return any file. |
 | CAD-05 | Reviewer roles do not write | SEV-2 | A def with `role: reviewer` MUST declare `capabilities.write_files: false`. A writing reviewer (`role: reviewer` AND `write_files: true`) = FAIL (SEV-2 — breaks the write/review isolation boundary; a reviewer that can edit the artifact it reviews is the canonical-def analogue of criterion 19). Detection: for each def with `role: reviewer`, confirm `capabilities.write_files: false`. |
+| CAD-06 | `description` is trigger-only metadata | SEV-2 | A CAD description must be third-person routing metadata and must not summarize workflow steps. Flag descriptions containing process chains such as "reads X, analyzes Y, writes Z", first/second person, or protocol-like ordering. Escalate to SEV-1 only when the description/body split makes the step contract ambiguous. |
+| CAD-07 | CAD body includes required operational sections | SEV-2 | Every data-only CAD body must include `<overview>`, `## Required Sources`, `## Protocol`, `## Completion Criterion`, and `<invariants>`. Reviewer, safety, debugging, and discipline-enforcing agents must also include `## Red Flags - STOP`. Missing required sections = FAIL. |
+| CAD-08 | Completion Criterion is explicit and verifiable | SEV-2 | `## Completion Criterion` must name the visible condition that proves the step is done. Vague text such as "when complete" or "after processing" = PARTIAL. Missing section = FAIL. |
+| CAD-09 | Per-pipeline references are justified | SEV-3 | If `DATA_ROOT/pipelines/{P}/references/*.md` exists, `scaffold-summary.md` must justify each reference as `reuse`, `scanability`, or `stable-contract`. Missing summary or missing justification = PARTIAL unless it creates a direct execution ambiguity. |
+| CAD-10 | New data-only pipelines avoid stale legacy generation patterns | SEV-1 | New data-only pipelines must not generate zero-body agents, companion `-protocol` skills, or source artifacts under `skills/superpipelines/{P}/` or `agents/superpipelines/{P}/`. Any active-path violation = FAIL. Legacy migration fixtures are N/A when labelled legacy-only. |
 
 ### Canonical agent-def remediation
 
@@ -146,13 +152,42 @@ zero-body agents under `agents/superpipelines/{P}/` (governed by criteria 6–11
 - CAD-03: Rewrite the path relative to the run dir (strip the scope-root prefix / absolute root / `..`). Let the orchestrator resolve it via `sk-pipeline-paths` at runtime.
 - CAD-04: Add the missing `schema_version: "1.0"` and/or `plugin_version: "<current>"` to the def frontmatter.
 - CAD-05: Set `capabilities.write_files: false` on the reviewer, OR change `role` if the agent is in fact a writer (e.g. `fixer`).
+- CAD-06: Move workflow/process text from `description` into the CAD body. Keep `description` third-person and trigger-only.
+- CAD-07: Add the missing body section using the canonical template in `pipeline-architect-references/references/sdd-artifacts.md`.
+- CAD-08: Rewrite the completion criterion as a concrete, observable done condition.
+- CAD-09: Add or update `scaffold-summary.md` with one justification per generated reference.
+- CAD-10: Regenerate the affected new pipeline as data-only CAD artifacts; do not create companion protocol skills for new pipelines.
+
+---
+
+## 7. Bundle maintenance hygiene
+
+Apply BUNDLE-* only when auditing the Superpipelines bundle itself, not ordinary user-generated pipelines.
+
+| ID | Criterion | SEV | Detection |
+|---|---|---|---|
+| BUNDLE-01 | Skill descriptions match invocation role | SEV-2 | User-facing workflow skills have short human-facing summaries; model-invoked method skills have leading trigger words; internal protocol/reference skills have loader-facing summaries. |
+| BUNDLE-02 | Invocation flags match role | SEV-2 | Internal protocol/reference skills use `user-invocable: false` and normally `disable-model-invocation: true`; router and reusable method skills remain reachable when autonomous reach is intended. |
+| BUNDLE-03 | Workflow-summary descriptions are absent | SEV-2 | Flag descriptions that explain internal process steps instead of routing purpose or loader ownership. |
+| BUNDLE-04 | Internal protocol/reference skills are not user-facing | SEV-2 | Any internal protocol/reference skill without `user-invocable: false` is a finding unless explicitly justified in its body. |
+| BUNDLE-05 | Cross-skill deep links are justified | SEV-2 | Flag instructions that deep-link into another skill's private `references/` files unless that reference is declared public normative by the owning skill. |
+| BUNDLE-06 | Active authoring paths contain no stale generated-agent guidance | SEV-1 | Active creation/architect/auditor paths must not instruct new pipelines to create zero-body agents, companion protocol skills, or tool-dir source artifacts. Legacy-only references and migration fixtures are N/A when labelled. |
+| BUNDLE-07 | Packaged plugin mirrors source skills | SEV-1 | `node scripts/package-codex-plugin.js --check` must pass after source edits. |
+
+### Bundle hygiene remediation
+
+- BUNDLE-01/BUNDLE-03: Rewrite the description according to the skill's invocation role.
+- BUNDLE-02/BUNDLE-04: Adjust frontmatter only where platform compatibility is confirmed; otherwise document the advisory limitation and keep descriptions clean.
+- BUNDLE-05: Replace private deep links with an instruction to load the owning skill, or mark the target reference as public normative in the owning skill.
+- BUNDLE-06: Move old-root guidance under legacy-only headings or remove it from active authoring paths.
+- BUNDLE-07: Run `node scripts/package-codex-plugin.js`, then `node scripts/package-codex-plugin.js --check`.
 
 ---
 
 ## How to use
 
 1. **Detect the layout** (data-only vs legacy) per the applicability table above. Read each target file with `Read`.
-2. Walk criteria 1–25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-05 (for canonical defs under `pipelines/{P}/agents/`) in order, applying each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A — use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
+2. Walk criteria 1-25 (including 10a), then PR-01..PR-05, PR-07, PR-08, PR-09, PR-10, then CAD-01..CAD-10 (for canonical defs under `pipelines/{P}/agents/`), then BUNDLE-01..BUNDLE-07 when auditing this bundle. Apply each criterion only where the layout table says it applies. Mark each PASS / FAIL / PARTIAL / N/A - use **N/A (data-only layout)** for legacy-only criteria on a data pipeline.
 3. For every FAIL or PARTIAL: cite the file path, line number, and quoted evidence.
 4. Assign severity per `severity-classification.md`.
 5. Emit the audit report per `audit-report-template.md`.

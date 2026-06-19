@@ -17,6 +17,22 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.3.2 — CAD Hygiene Hardening (2026-06-19)
+
+### Added
+
+- **Executable CAD hygiene validation** — adds a package check that validates Canonical Agent Def fixtures and bundled skills for invocation metadata, context-size hygiene, and reference extraction regressions.
+- **CAD hygiene audit rules** — expands auditor guidance with concrete checks for CAD contradiction detection, bundle hygiene, invocation metadata separation, public command preservation, and scaffold summary requirements.
+
+### Changed
+
+- **CAD generation contract** — tightens the architect-facing contract so generated CADs keep runtime invocation flags separate from skill metadata and preserve lightweight context by referencing source artifacts instead of embedding unnecessary bulk.
+- **Packaged skill mirror** — syncs the packaged Codex skill bundle after the CAD hygiene updates.
+
+### Fixed
+
+- **CAD hygiene review findings** — addresses review feedback from the CAD hygiene work so docs, fixtures, and validation align on the same executable contract.
+
 ## 2.3.1 — Codex Agent Schema Fix (2026-06-16)
 
 ### Fixed

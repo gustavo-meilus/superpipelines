@@ -1,5 +1,7 @@
 # Topology Rules — Auditor Reference
 
+These rules apply to both layouts. For data-only pipelines, agent coverage and entry coverage resolve under `DATA_ROOT/pipelines/{P}/`. For legacy old-root pipelines, use the old `agents/superpipelines/{P}/` and `skills/superpipelines/{P}/` paths.
+
 Graph-level checks applied by `pipeline-auditor` on `topology.json` and the surrounding file bundle.
 These are distinct from the 20-criterion compliance matrix and are run in addition to it.
 
@@ -9,7 +11,7 @@ These are distinct from the 20-criterion compliance matrix and are run in additi
 2. Agent coverage
 3. Edge consistency
 4. Cycle rules
-5. Entry-skill contract
+5. Entry contract
 6. Registry consistency
 
 ---
@@ -48,7 +50,8 @@ These are distinct from the 20-criterion compliance matrix and are run in additi
 
 For every step where `step.agent` is non-null:
 
-- A file must exist at `agents/superpipelines/{P}/{step.agent}.md`.
+- Data-only: `step.agent_def` or the topology convention must resolve to `DATA_ROOT/pipelines/{P}/agents/{step.agent}.md`.
+- Legacy old-root: a file must exist at `agents/superpipelines/{P}/{step.agent}.md`.
 - The agent file's `name` frontmatter field must match `step.agent` exactly.
 
 **FAIL:** Agent file missing, or `name` frontmatter does not match the `agent` field value.
@@ -75,14 +78,11 @@ For every step S:
 
 ---
 
-## 5. Entry-skill contract
+## 5. Entry contract
 
-- `topology.json["entry_skill"]` must equal `run-{P}` (where `{P}` is the pipeline name).
-- The corresponding SKILL.md must exist at `skills/superpipelines/{P}/run-{P}/SKILL.md`.
-- That SKILL.md frontmatter must contain:
-  - `disable-model-invocation: true`
-  - `user-invocable: true`
-- **All other** skills under `skills/superpipelines/{P}/` must have `user-invocable: false`.
+- Data-only: `DATA_ROOT/pipelines/{P}/entry.md` must exist and dispatch steps through `sk-platform-dispatch` with `agent_def` references.
+- Legacy old-root: `topology.json["entry_skill"]` must equal `run-{P}` and the corresponding `skills/superpipelines/{P}/run-{P}/SKILL.md` must exist with `disable-model-invocation: true` and `user-invocable: true`.
+- Legacy old-root: **All other** skills under `skills/superpipelines/{P}/` must have `user-invocable: false`.
 
 **FAIL:** Entry skill path mismatch; missing `disable-model-invocation` or `user-invocable` on entry skill; internal step skill missing `user-invocable: false`.
 

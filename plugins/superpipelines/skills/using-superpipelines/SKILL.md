@@ -1,6 +1,6 @@
 ---
 name: using-superpipelines
-description: Loads core routing table, invariants, and red flags for the Superpipelines orchestration framework. Use when a conversation starts in any project that has the Superpipelines plugin installed, or when the orchestrator needs to determine which pipeline skill handles the current request.
+description: Route Superpipelines requests to the right command workflow, reusable method skill, or direct codebase answer.
 ---
 
 # Using Superpipelines — Core Orchestration Reference
@@ -16,21 +16,22 @@ If a pipeline skill applies to the user's request, invoke it. Do not rationalize
 ## Skill Routing Protocols
 
 <routing_table>
-| User Request / Situation | Skill to Invoke | Rationale |
+| User Request / Situation | Route | Rationale |
 | :--- | :--- | :--- |
-| `/new-pipeline` or "Design a workflow" | `creating-a-pipeline` | End-to-end scaffolding. |
-| `/run-pipeline` or "Execute [P]" | `running-a-pipeline` | Registry-driven launcher. |
-| `/new-step` or "Add capability" | `adding-a-pipeline-step` | Topology mutation. |
-| `/update-step` or "Modify agent" | `updating-a-pipeline-step` | Contract-aware update. |
-| `/delete-step` or "Remove step" | `deleting-a-pipeline-step` | Gap-analysis removal. |
-| `/audit-steps` | `pipeline-auditor` | Security/topology review. |
-| `/change-models` or "Change models" | `change-models` | Interactive model reassignment. |
-| `/optimize-pipeline` or "Optimize [P]" | `optimizing-a-pipeline` | On-demand topology/cost optimization. |
-| `/migrate-pipeline` or "Migrate legacy pipeline to .superpipelines/" | `migrating-a-pipeline` | Lossless legacy→data-only conversion. |
-| Ambiguous / Discovery phase | `sk-4d-method` | Intent deconstruction. |
-| Implementation / Task execution | `sk-spec-driven-development` | Contracted development. |
-| Authoring Agents or Skills | `sk-claude-code-conventions` | Format enforcement. |
+| `/superpipelines:new-pipeline`, "design a pipeline", "build a workflow", "plan multi-step feature work" | `creating-a-pipeline` | End-to-end new pipeline scaffolding. |
+| `/superpipelines:run-pipeline`, `/superpipelines:{P}`, "run/execute/resume pipeline" | `running-a-pipeline` | Registry-driven launcher and resume flow. |
+| `/superpipelines:new-step`, "add/insert a step/capability" | `adding-a-pipeline-step` | Existing topology mutation. |
+| `/superpipelines:update-step`, "update/change a pipeline step" | `updating-a-pipeline-step` | Contract-aware step modification. |
+| `/superpipelines:delete-step`, "remove/delete a pipeline step" | `deleting-a-pipeline-step` | Safe topology removal and gap analysis. |
+| `/superpipelines:audit-steps`, "audit/review pipeline X" | dispatch `pipeline-auditor` | Pipeline bundle compliance review. |
+| `/superpipelines:change-models`, "change/reassign pipeline model tiers" | `change-models` | Model preference and tier reassignment. |
+| `/superpipelines:optimize-pipeline`, "optimize pipeline X" | `optimizing-a-pipeline` | Cost, latency, and topology optimization. |
+| `/superpipelines:migrate-pipeline`, "migrate legacy pipeline" | `migrating-a-pipeline` | Legacy old-root to data-only conversion. |
+| Ambiguous Superpipelines request | Ask one clarifying question or use `sk-4d-method` | Avoid loading heavy workflows prematurely. |
+| Read-only Q&A about the repo or plugin | Answer directly with file reads/searches | Do not invoke a workflow for explanation-only requests. |
 </routing_table>
+
+The router owns global command selection. Workflow skills should only describe their local workflow and may point back here for global routing. Do not duplicate this full table in workflow bodies.
 
 ## Core Pipeline Invariants
 
