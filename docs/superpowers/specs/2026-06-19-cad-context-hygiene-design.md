@@ -171,6 +171,14 @@ node scripts/package-codex-plugin.js --check
 
 If the package script exposes additional validation failures unrelated to the edited scope, those should be reported rather than silently worked around.
 
+Implementation should record lightweight before/after evidence for context hygiene:
+
+- edited skill description lengths before and after cleanup;
+- `rg` hit counts for stale active-path phrases such as `zero-body`, `companion protocol`, `-protocol skill`, and generated artifacts under tool directories;
+- which hits remain intentionally because they are legacy-only, fixtures, or migration documentation.
+
+This is not a performance benchmark. It is verification evidence that the single-shot cleanup reached the intended surface.
+
 ### CAD shape
 
 The architect continues to generate one CAD file for each step agent:
