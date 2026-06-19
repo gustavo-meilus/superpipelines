@@ -296,7 +296,9 @@ The auditor should add CAD hygiene criteria after the existing `CAD-01..CAD-05` 
 
 `CAD-06`, `CAD-07`, and `CAD-08` should normally be SEV-2 unless the missing content makes execution ambiguous enough to break the step contract. `CAD-10` should be SEV-1 because it violates the data-only architecture and can break portability. `CAD-09` should normally be SEV-3 or PARTIAL because over-inlining or over-splitting is an efficiency problem unless it causes a direct contract conflict.
 
-The auditor or bundle-maintenance checks should also add bundle-level hygiene criteria:
+Bundle-level hygiene criteria must live in one canonical audit surface. If the existing pipeline auditor is the tool used for bundle maintenance, these checks belong in its references and report schema. If bundle maintenance uses a different path, implementation must identify that path and wire the checks there. At minimum, each `BUNDLE-*` check must have a concrete manual verification checklist in the owning audit reference; they should not exist only in this design document.
+
+The canonical bundle-maintenance audit surface should include:
 
 - `BUNDLE-01`: skill descriptions match invocation role: human-facing summary for user-only skills, model-facing triggers for model-invoked skills, loader summary for internal protocol skills.
 - `BUNDLE-02`: invocation flags match role: command/workflow, reusable discipline, or internal protocol/reference.
