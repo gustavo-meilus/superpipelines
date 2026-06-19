@@ -169,6 +169,17 @@ node scripts/package-codex-plugin.js
 node scripts/package-codex-plugin.js --check
 ```
 
+The single-shot implementation should also add executable validation for objective CAD/BUNDLE hygiene checks over repo-owned sources only. The validator should live in the existing Node validation surface where practical: either as part of `node scripts/package-codex-plugin.js --check` or as a companion `scripts/` check that the package check calls. It should not scan or migrate real user-created pipelines under local runtime roots such as `.superpipelines/`, `.codex/`, `.agents/`, `.claude/`, or home-directory pipeline stores.
+
+The hard validator should focus on objective checks:
+
+- CAD fixtures/templates do not contain skill invocation metadata such as `disable-model-invocation` or `user-invocable`.
+- Repo-owned CAD fixtures/templates include required body sections such as `## Required Sources`, `## Protocol`, `## Completion Criterion`, and `<invariants>`.
+- Stale active-path phrases for zero-body agents, companion protocol skills, and generated tool-dir source artifacts are absent outside clearly labelled legacy, migration, old-root, or fixture-discrimination material.
+- Packaged plugin mirrors remain synchronized with source skills.
+
+Description quality should remain a review/evidence concern rather than a hard lint rule. The evidence file should record before/after description lengths and manual invocation checks, but the executable validator should avoid subjective "workflow summary" heuristics that would create noisy false positives.
+
 If the package script exposes additional validation failures unrelated to the edited scope, those should be reported rather than silently worked around.
 
 Implementation should record lightweight before/after evidence for context hygiene:
@@ -176,6 +187,7 @@ Implementation should record lightweight before/after evidence for context hygie
 - edited skill description lengths before and after cleanup;
 - `rg` hit counts for stale active-path phrases such as `zero-body`, `companion protocol`, `-protocol skill`, and generated artifacts under tool directories;
 - which hits remain intentionally because they are legacy-only, fixtures, or migration documentation.
+- the exact executable hygiene validation command and a concise pass/fail summary.
 
 This is not a performance benchmark. It is verification evidence that the single-shot cleanup reached the intended surface.
 
@@ -343,6 +355,7 @@ The canonical bundle-maintenance audit surface should include:
 - Cross-skill dependencies no longer deep-link into private reference files unless the target is an explicit public normative reference.
 - Active authoring references no longer tell new pipelines to generate zero-body agents or companion protocol skills.
 - Packaged plugin skill copies are synced with source skill changes.
+- An executable repo-owned hygiene validator checks objective CAD/BUNDLE drift and is run as part of, or immediately alongside, the package check.
 - Existing generated pipelines are unaffected.
 
 ## Decisions
@@ -354,3 +367,5 @@ The canonical bundle-maintenance audit surface should include:
 - Heavy workflow skills should be user-invoked where platform compatibility allows; when compatibility requires model reach, their descriptions still follow trigger-only metadata and defer routing breadth to the router.
 - Reusable discipline skills stay model-invoked only when autonomous reach is valuable.
 - Internal protocol skills are loader-facing, not user-facing.
+- Hard validation is limited to objective repo-owned checks; subjective skill-description quality stays in evidence and review.
+- Legacy stale-pattern hits are allowed only when clearly labelled as legacy, migration, old-root, or fixture-discrimination material.
