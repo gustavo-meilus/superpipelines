@@ -1,6 +1,6 @@
 ---
 name: skill-architect-protocol
-description: Supplies the skill-architect agent with its operating modes, invocation-model design rules, authoring invariants, and protocol phases for skill design and authoring. Use when the skill-architect agent initializes any operating mode (ARCHITECT, QUICK-BUILD, DIAGNOSE, EXTRACT, ITERATE).
+description: Loaded by the skill-architect agent to design or revise Superpipelines-compatible skills.
 disable-model-invocation: true
 user-invocable: false
 ---

@@ -1,6 +1,6 @@
 ---
 name: adding-a-pipeline-step
-description: Inserts a new step, capability, or agent into an existing named pipeline topology. Use when the user requests expanding a workflow with a new step or invokes /superpipelines:new-step.
+description: Add a new step, capability, or agent to an existing named Superpipelines workflow.
 user-invocable: false
 ---
 

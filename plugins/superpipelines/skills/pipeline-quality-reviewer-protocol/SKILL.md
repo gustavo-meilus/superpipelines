@@ -1,6 +1,6 @@
 ---
 name: pipeline-quality-reviewer-protocol
-description: Supplies the pipeline-quality-reviewer agent with the Stage 2 operational protocol, finding classification rules, verdict logic, and rationalization resistance tables for code quality audits. Use when the pipeline-quality-reviewer agent is dispatched to perform Stage 2 review after Stage 1 has returned an explicit PASS verdict.
+description: Loaded by the pipeline-quality-reviewer agent to perform Stage 2 code-quality review after spec compliance passes.
 disable-model-invocation: true
 user-invocable: false
 ---

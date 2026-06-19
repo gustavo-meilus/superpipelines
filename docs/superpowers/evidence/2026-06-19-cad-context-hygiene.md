@@ -37,17 +37,17 @@ rg -n "zero-body|companion protocol|-protocol skill|agents/superpipelines|skills
 
 | Skill | Expected prompt | Should route? | Result after implementation |
 |---|---|---:|---|
-| `using-superpipelines` | "Which Superpipelines command handles adding a step?" | yes | Record the observed route after Task 2 |
-| `creating-a-pipeline` | "/superpipelines:new-pipeline" | yes | Record the observed route after Task 2 |
-| `running-a-pipeline` | "run the release-review pipeline" | yes | Record the observed route after Task 2 |
+| `using-superpipelines` | "Which Superpipelines command handles adding a step?" | yes | Router table maps add/insert step requests to `adding-a-pipeline-step` |
+| `creating-a-pipeline` | "/superpipelines:new-pipeline" | yes | Router table maps `/superpipelines:new-pipeline` to `creating-a-pipeline` |
+| `running-a-pipeline` | "run the release-review pipeline" | yes | Router table maps run/execute/resume requests to `running-a-pipeline` |
 
 ## False Positive Checks
 
 | Prompt | Should not auto-route to | Result after implementation |
 |---|---|---|
-| "Explain what a pipeline is" | `creating-a-pipeline` | Record whether the router keeps this as direct Q&A after Task 2 |
-| "Review this single file" | `creating-a-pipeline` | Record whether the router avoids pipeline creation after Task 2 |
-| "Change the app model class" | `change-models` | Record whether model-change routing remains pipeline-specific after Task 2 |
+| "Explain what a pipeline is" | `creating-a-pipeline` | Router table keeps read-only Q&A as direct file/search answers |
+| "Review this single file" | `creating-a-pipeline` | Router table only routes audit/review when the target is a pipeline |
+| "Change the app model class" | `change-models` | `change-models` description and router route are pipeline model-tier specific |
 
 ## Baseline Summary
 
@@ -59,8 +59,29 @@ rg -n "zero-body|companion protocol|-protocol skill|agents/superpipelines|skills
 
 ## After Measurements
 
-Fill this section after implementation with the same commands above.
+### After Summary
+
+- Description cleanup completed for workflow and loader-facing skills. Long workflow descriptions were reduced, for example `change-models` from 506 to 104 chars, `migrating-a-pipeline` from 514 to 98 chars, `optimizing-a-pipeline` from 410 to 122 chars, `using-superpipelines` from 298 to 123 chars, and `creating-a-pipeline` from 280 to 131 chars.
+- Final package sync: `node scripts/package-codex-plugin.js` passed with `cad hygiene ok: 7 CAD files checked; 66 authoring/fixture files scanned` and `codex package ok: 38 skill files`.
+- Package mirror check: `node scripts/package-codex-plugin.js --check` passed with the same hygiene result and `codex package ok: 38 skill files`.
+- Final stale active-path scan command: `rg -n "Every agent file is zero-body|Move all content to the companion|Place the companion skill|new data-only.*companion|generated.*skills/superpipelines|generated.*agents/superpipelines" skills plugins/superpipelines/skills`.
+- Broad stale scan still reports intentional prohibitions, legacy-only schema references, and materialization-cache paths; executable hygiene validation is the pass/fail gate for unlabelled active misuse.
+- Final invocation metadata scan confirmed workflow descriptions are concise and loader-facing protocol skills retain `disable-model-invocation: true` and `user-invocable: false`.
 
 ## Executable Hygiene Validation
 
-Record the exact command and concise pass/fail result after the validator is added. The validator scans repo-owned sources, fixtures, and packaged plugin copies only; it does not scan user-created runtime pipelines.
+Exact command:
+
+```powershell
+node scripts/check-cad-hygiene.js
+```
+
+Result: PASS - `cad hygiene ok: 7 CAD files checked; 66 authoring/fixture files scanned`.
+
+Integrated package command:
+
+```powershell
+node scripts/package-codex-plugin.js --check
+```
+
+Result: PASS - the command runs CAD hygiene validation first, then package manifest/live-agent/mirror checks. It does not scan user-created runtime pipelines under `.superpipelines/`, `.codex/`, `.agents/`, `.claude/`, or home stores.

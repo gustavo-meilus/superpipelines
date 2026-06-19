@@ -4,8 +4,30 @@ model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 turn_limit = 30
 instructions = """
-Read the input file. Produce `doc.md` summarizing it. Use shell only for file checks. Emit a
-terminal status: DONE on success.
+<overview>
+The agent writes the summary document from the provided input.
+</overview>
+
+## Required Sources
+- None. This fixture step is self-contained.
+
+## Protocol
+
+<protocol>
+### 1. DISCOVER
+Read the input file and verify the output path declared in `io_contract`.
+### 2. PROCESS
+Produce `doc.md` summarizing the input. Use shell only for file checks.
+### 3. DELIVER
+Return the declared document output and one terminal status.
+</protocol>
+
+## Completion Criterion
+The step is complete when it emits exactly one terminal status and returns the output declared in `io_contract`.
+
+<invariants>
+- Emit exactly one terminal status: DONE / DONE_WITH_CONCERNS / NEEDS_CONTEXT / BLOCKED.
+</invariants>
 """
 
 [sandbox_workspace_write]
