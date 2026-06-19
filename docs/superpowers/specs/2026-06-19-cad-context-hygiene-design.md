@@ -72,6 +72,8 @@ Internal protocol/reference skills should not be directly user-invoked. They sho
 
 The implementation should make the smallest safe flag changes. If a platform-specific compatibility concern requires keeping a command skill model-invoked, the description still moves toward trigger-only metadata and `using-superpipelines` remains the intended router.
 
+Before changing invocation flags, implementation must build a small compatibility matrix for the supported skill surfaces: Codex, Claude, Cursor, OpenCode, and the universal fallback. The matrix should record which fields are recognized, ignored, or unsafe for each surface, especially `disable-model-invocation` and `user-invocable`. Flags should only change where semantics are confirmed. Description cleanup applies everywhere because it is platform-neutral.
+
 ### Router behavior
 
 `using-superpipelines` becomes the explicit router/index for the bundle. Its body should help the user or orchestrator choose the correct workflow without loading every workflow body.
