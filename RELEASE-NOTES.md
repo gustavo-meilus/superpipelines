@@ -3,8 +3,31 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.1.3 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, the Codex agent TOML schema fix with regression guard in v2.3.1, and CAD hygiene hardening in v2.3.2.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.4.0 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, the Codex agent TOML schema fix with regression guard in v2.3.1, CAD hygiene hardening in v2.3.2, and refined isolation/delete-step safety guards in v2.4.0.
 </overview>
+
+## v2.4.0 — Isolation & Delete-Step Guards (2026-06-28)
+
+Refines runtime safety gates so artifact-only data pipelines can use richer patterns on non-worktree runtimes while tracked-source writer isolation and delete-step staging completeness remain hard-guarded.
+
+<release_entry version="2.4.0" status="STABLE">
+
+### Added
+
+- **Worktree gating regression guard** (#86) — fixture-backed validation distinguishes artifact-only Pattern 3 data pipelines from tracked-code Pattern 3 pipelines, proving the former can proceed on `worktrees:false` runtimes while the latter still hard-aborts.
+- **Delete-step staging guard** (#85) — package validation now checks that STEP-DELETE requires a completion manifest and that Phase 2 has explicit markdown staging guards.
+
+### Changed
+
+- **Pattern isolation semantics** (#86) — Phase 0.6 now computes `requires_tracked_source_isolation` from CAD/legacy step intent instead of treating Pattern 2/3/5 as a blanket worktree requirement.
+- **Pipeline creation gating** (#86) — Pattern selection now asks whether the workflow edits tracked source before excluding Pattern 2/3/5 on `worktrees:false` platforms; artifact-only workflows can still use Superpipelines-native run-dir/state isolation.
+
+### Fixed
+
+- **Delete-step partial exits** (#85) — `deleting-a-pipeline-step` blocks before delta audit when expected markdown is listed as `copied-unchanged` or staged byte-identical to production.
+- **STEP-DELETE architect reporting** (#85) — `pipeline-architect-protocol` requires a per-file completion manifest with `edited`, `copied-unchanged`, and `deleted` statuses.
+
+</release_entry>
 
 ## v2.3.2 — CAD Hygiene Hardening (2026-06-19)
 

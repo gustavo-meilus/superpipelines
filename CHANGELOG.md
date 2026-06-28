@@ -17,6 +17,23 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.4.0 — Isolation & Delete-Step Guards (2026-06-28)
+
+### Added
+
+- **Worktree gating regression guard** (#86) — adds fixture-backed validation proving artifact-only Pattern 3 data pipelines do not require worktrees while tracked-code Pattern 3 pipelines still do.
+- **Delete-step staging guard** (#85) — adds executable validation for STEP-DELETE completion manifests and Phase 2 markdown staging checks.
+
+### Changed
+
+- **Pattern isolation semantics** (#86) — Pattern 2/3/5 worktree gating now depends on tracked-source writer isolation requirements instead of topology pattern alone, allowing artifact-only data pipelines to run on Codex and other `worktrees:false` runtimes.
+- **Pipeline creation gating** (#86) — pattern selection now distinguishes artifact-only workflows from tracked-source writer workflows before excluding Pattern 2/3/5 on non-worktree platforms.
+
+### Fixed
+
+- **Delete-step partial exits** (#85) — `deleting-a-pipeline-step` now blocks before delta audit when expected markdown artifacts are copied unchanged or staged byte-identical to production after STEP-DELETE.
+- **STEP-DELETE architect reporting** (#85) — `pipeline-architect-protocol` now requires a per-file completion manifest using `edited`, `copied-unchanged`, and `deleted`.
+
 ## 2.3.2 — CAD Hygiene Hardening (2026-06-19)
 
 ### Added

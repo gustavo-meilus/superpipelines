@@ -2,7 +2,7 @@
   "$schema": "./profile.schema.json",
   "tier": "tier_1d",
   "name": "Codex",
-  "profile_version": "2.1.3",
+  "profile_version": "2.4.0",
   "model_tiers_version": "2026-05-19",
   "capabilities": {
     "subagents": true,
