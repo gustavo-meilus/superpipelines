@@ -75,15 +75,19 @@ The pipeline creation workflow enforces a fixed sequence: tier detection, git pr
 
 ### PHASE 3: PATTERN SELECTION
 - Select a topology pattern (Sequential, Parallel, Iterative, Gated, or Spec-Driven) using the `sk-pipeline-patterns` decision tree.
+- Before narrowing patterns, classify the hardened brief as `workflow_requires_tracked_source_isolation`:
+  - `true` when the workflow needs parallel or iterative writers to modify tracked source files, or when the requested recovery/rollback boundary is a git branch/worktree.
+  - `false` when the workflow only reads tracked source, performs review, fetches data, or writes declared artifacts under the Superpipelines run directory / output contracts.
+  - If unclear, ask one direct question about whether any generated step will edit tracked source files. Do not infer tracked-source edits from Pattern 2/3/5 alone.
 - **Q7 capability gating**: Build the available-pattern list dynamically:
   ```
   IF !git_repo: patterns = [1, 4]
-  ELIF !platform_profile.capabilities.worktrees: patterns = [1, 4]
+  ELIF workflow_requires_tracked_source_isolation AND !platform_profile.capabilities.worktrees: patterns = [1, 4]
   ELSE IF !platform_profile.capabilities.parallel_subagents: patterns = [1, 3, 4]   # Pattern 3 needs worktrees but not parallelism
   ELSE: patterns = [1, 2, 3, 4, 5]
   ```
-  When narrowing, emit an advisory naming the missing capability and the excluded patterns: e.g., "Pattern 2/3/5 require `worktrees`, unavailable on `<platform>`. Limited to Patterns 1 and 4."
-- **Restriction**: If git is absent OR `worktrees: false`, limit selection to Pattern 1 or 4 (these are the only patterns that do not require writer isolation via worktrees).
+  When narrowing for tracked-source isolation, emit an advisory naming the missing capability and the excluded patterns: e.g., "This workflow requires tracked-source writer isolation, but `<platform>` has `worktrees:false`. Limited to Patterns 1 and 4."
+- **Restriction**: If git is absent, limit selection to Pattern 1 or 4. If `worktrees:false`, limit selection to Pattern 1 or 4 only when `workflow_requires_tracked_source_isolation == true`. Artifact-only workflows may still use Patterns 2/3/5 because their isolation boundary is the Superpipelines run directory, `pipeline-state.json`, declared `io_contract.outputs`, dependency ordering/barriers, and platform reviewer write-deny controls where available.
 - **Architectural confirmation grill (mandatory)**: After the pattern is selected, load `sk-pipeline-grilling` via the `Skill` tool and run `GRILL(MODE=architectural, platform_profile, selected_pattern)`. It confirms the user understands the pattern/isolation/model-tier tradeoffs and surfaces every `platform_profile.degradation_warnings` entry. Do NOT advance to Phase 4 until the user acknowledges.
 
 ### PHASE 4: DESIGN & AUDIT LOOP
