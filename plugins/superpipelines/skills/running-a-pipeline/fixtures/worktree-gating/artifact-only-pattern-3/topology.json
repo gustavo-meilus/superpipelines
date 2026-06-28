@@ -1,0 +1,14 @@
+{
+  "pattern": "3",
+  "pattern_name": "Sequential + parallel fan-out + review loop",
+  "steps": [
+    {
+      "id": "writer",
+      "agent_def": "agents/artifact-writer.md"
+    },
+    {
+      "id": "reviewer",
+      "agent_def": "agents/artifact-reviewer.md"
+    }
+  ]
+}
