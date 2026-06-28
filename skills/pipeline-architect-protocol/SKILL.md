@@ -108,6 +108,11 @@ All files are built via `Write` (new) or `Edit` (update), resolving all paths vi
 ### 4. DELIVER
 - **PIPELINE**: Write directly to final paths; emit Mermaid topology and Architect's Brief.
 - **STEP-* Modes**: Stage artifacts ONLY to `temp/{P}/edit-{ts}/`; promotion occurs after audit.
+- **STEP-DELETE completion manifest**: Before returning from STEP-DELETE mode, emit a completion manifest covering every file the architect was tasked with touching. Each entry MUST include the production path, staged path when present, and one status:
+  - `edited` — staged content was intentionally changed from the production source.
+  - `copied-unchanged` — staged content is byte-identical to the production source.
+  - `deleted` — the file is intentionally removed and has no staged replacement.
+  The manifest is mandatory even when the topology edit succeeds. The delete-step orchestrator reads it before delta audit and treats `copied-unchanged` on expected markdown updates as a blocking partial-exit signal.
 - **UPDATE/DIAGNOSE**: Edit in-place and provide a delta summary.
 </protocol>
 

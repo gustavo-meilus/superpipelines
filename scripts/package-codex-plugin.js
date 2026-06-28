@@ -183,6 +183,14 @@ function validatePackage() {
     fail('worktree gating validation failed');
   }
 
+  const deleteStepGuards = spawnSync(process.execPath, [path.join(repoRoot, 'scripts', 'check-delete-step-guards.js')], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+  if (deleteStepGuards.status !== 0) {
+    fail('delete-step guard validation failed');
+  }
+
   const manifest = readManifest();
   validateManifest(manifest);
   validateCodexAgentTomls();
