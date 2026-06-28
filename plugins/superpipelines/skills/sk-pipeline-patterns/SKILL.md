@@ -21,14 +21,14 @@ user-invocable: false
 | Pattern | Information Flow | Worktree | Capability Requirements (Q7) | Best Applied To |
 | :--- | :--- | :--- | :--- | :--- |
 | **1. Sequential** | Linear (A → B → C) | Optional | none | Strictly dependent sequential phases. |
-| **2. Parallel** | Fan-Out / Merge | **Required** | `worktrees: true` AND `parallel_subagents: true` | Independent analyses or reviews. |
-| **3. Iterative** | Loop (Test → Fix) | **Required** | `worktrees: true` | Fix/heal cycles with defined exit criteria. |
+| **2. Parallel** | Fan-Out / Merge | Conditional | `parallel_subagents: true`; `worktrees: true` only for tracked-source writers | Independent analyses or reviews. |
+| **3. Iterative** | Loop (Test → Fix) | Conditional | `worktrees: true` only for tracked-source writers | Fix/heal cycles with defined exit criteria. |
 | **4. Gated** | Phase → GATE → User | Selective | none | Destructive or irreversible operations. |
-| **5. Spec-Driven** | Spec → Plan → Implement | **Required** | `worktrees: true` AND `parallel_subagents: true` | Large feature work or complex migrations. |
+| **5. Spec-Driven** | Spec → Plan → Implement | Conditional | `parallel_subagents: true`; `worktrees: true` only for tracked-source writers | Large feature work or complex migrations. |
 | **6. 4D Method** | Wrapper (Internal) | N/A | none | Every agent turn within any other pattern. |
 </pattern_matrix>
 
-**Q7 capability gating:** A pattern's worktree requirement is about correctness (writer isolation), not just parallelism. "Degrades to sequential" hides this — degrading scope is fine; degrading isolation is not. Selecting Pattern 2, 3, or 5 on a platform with `worktrees: false` produces multi-writer file collisions across iterations or parallel branches. The worktree requirement binds **code-writer** steps only: data-retrieval/generation steps within a worktree pattern still OMIT `isolation` (a no-tracked-change worktree is auto-cleaned, losing gitignored artifacts — issue #31).
+**Q7 capability gating:** A worktree requirement is about tracked-source writer isolation, not topology alone. "Degrades to sequential" hides this — degrading scope is fine; degrading tracked-source isolation is not. Pattern 2, 3, or 5 on a platform with `worktrees: false` is valid for artifact-only data pipelines, but invalid when any step edits tracked source across parallel, iterative, or spec-driven branches. The worktree requirement binds **code-writer** steps only: data-retrieval/generation steps within a worktree pattern still OMIT `isolation` (a no-tracked-change worktree is auto-cleaned, losing gitignored artifacts — issue #31).
 
 ## Pattern 3 — Iterative Loop Protocol
 
@@ -64,8 +64,8 @@ user-invocable: false
 
 <decision_tree>
 **Q7 capability preflight (consult before traversal):**
-- IF `platform_profile.capabilities.worktrees == false`: available patterns = {1, 4, 6}. Skip the Pattern 2 / 3 / 5 branches below and emit advisory: "Pattern 2/3/5 require worktrees, unavailable on this platform. Limited to Patterns 1 and 4."
-- IF `platform_profile.capabilities.parallel_subagents == false`: Patterns 2 and 5 are unavailable (their parallel fan-out cannot execute safely). Allow Pattern 3 only if `worktrees: true`.
+- IF `workflow_requires_tracked_source_isolation == true` AND `platform_profile.capabilities.worktrees == false`: available patterns = {1, 4, 6}. Skip the Pattern 2 / 3 / 5 branches below and emit advisory: "This workflow requires tracked-source writer isolation, but this platform has worktrees:false. Limited to Patterns 1 and 4."
+- IF `platform_profile.capabilities.parallel_subagents == false`: Patterns 2 and 5 are unavailable (their parallel fan-out cannot execute safely). Allow Pattern 3 when either `worktrees: true` OR `workflow_requires_tracked_source_isolation == false`.
 
 Is the task multi-step with dependencies?
 - **NO**: Apply 4D Method and execute directly.

@@ -67,4 +67,4 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 ## Metadata
 
 - **Current Model IDs**: `claude-sonnet-4-6`, `claude-opus-4-8`, `claude-haiku-4-5-20251001`.
-- **Project Version**: v2.3.2
+- **Project Version**: v2.4.0

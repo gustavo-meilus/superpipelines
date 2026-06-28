@@ -31,6 +31,11 @@ Removes a named step from an existing pipeline. Performs gap analysis to identif
 - For through-gaps or entry-gaps, present a rewire plan to the user (e.g., "Wire A directly to C").
 - Dispatch `pipeline-architect` in `STEP-DELETE` mode to stage all changes.
 - <invariant>All mutations (file removals and topology updates) MUST be staged in `edit-{ts}/`. NEVER delete directly from production paths during design.</invariant>
+- **Architect completion manifest gate**: After the architect returns, read the STEP-DELETE completion manifest. It MUST cover every file the architect was tasked with touching and use only `edited`, `copied-unchanged`, or `deleted`.
+  - <HARD-GATE>If any expected markdown artifact (`*.md`) is listed as `copied-unchanged`, STOP before Phase 3. Emit a blocking error naming the file and explain that unchanged markdown in STEP-DELETE staging indicates an architect partial exit.</HARD-GATE>
+  - <HARD-GATE>If any expected file is missing from the manifest, STOP before Phase 3. The staging set is incomplete and cannot be audited as a coherent delta.</HARD-GATE>
+- **Staged markdown modification guard**: Independently diff every staged `*.md` file against its production original before Phase 3. If the staged file has a production source and is byte-identical to that source, STOP before Phase 3 with a blocking error naming both paths. This guard is independent of the manifest and catches partial exits even when the manifest is wrong or missing detail.
+- **Pre-audit residual-reference scan**: Prefer the Phase 3 delta auditor as the authoritative gate. If a manual grep is run as an additional pre-audit smoke check, it MUST explicitly include markdown files (for example, `--include="*.md"`) so `.md` artifacts cannot be silently skipped.
 
 ### PHASE 3: DELTA AUDIT
 - Dispatch `pipeline-auditor` in `DELTA` mode on the staged topology, entry skill, and neighbor steps.
