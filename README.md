@@ -1,9 +1,17 @@
-# Superpipelines: Multi-Agent Orchestration Across AI Coding Platforms
+# Superpipelines
 
-Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. The same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, and Cline (Antigravity CLI 2.0 on a best-effort roadmap basis), with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
+**Your AI reviewer cannot edit code. Structurally. And when a host cannot enforce that, Superpipelines tells you instead of pretending.**
+
+Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, crash-resumable state, and bounded repair loops while running the same pipeline scaffolds across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, and Cline.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
+
+> Demo slot for launch: 90-second reviewer-denial clip plus same-pipeline cross-platform clip. Scenario and recording checklist live in [`docs/launch/checklist.md`](docs/launch/checklist.md).
+
+- **Write/review isolation**: reviewers are constrained by host permissions where the platform supports it; Codex degrades honestly on unsandboxed hosts.
+- **One pipeline, many agents**: scaffold once, run on Claude Code, OpenCode, Codex, and Tier 2 skill hosts.
+- **Crash-resumable execution**: state is written locally throughout the run so interrupted work resumes from the last stable checkpoint.
 
 ---
 
