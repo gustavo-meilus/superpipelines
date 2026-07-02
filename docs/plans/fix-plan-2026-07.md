@@ -197,6 +197,12 @@ logic — the runtime path stays; only its *advertising* moves.
 
 **Blocked by.** None. (WI-16 rebases on this.)
 
+**Executed deviation (2026-07-02).** GEMINI.md is NOT deleted: inspection showed it
+is the session-context file Antigravity loads at start (the platform's global-rules
+path is `~/.gemini/GEMINI.md`), i.e. runtime surface, not documentation — and this
+plan preserves the runtime path. The file stays with a roadmap-tier label in the
+README layout tree; only the headline tables moved Antigravity to Roadmap.
+
 ### WI-06 · Tier 2 manual-install fallback
 
 *Spec: GAP-12 · Label: `enhancement`, `ready-for-agent`*

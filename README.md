@@ -1,6 +1,6 @@
 # Superpipelines: Multi-Agent Orchestration Across AI Coding Platforms
 
-Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. As of v2.1.3, the same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, Cline, and Antigravity CLI 2.0, with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
+Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. The same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, and Cline (Antigravity CLI 2.0 on a best-effort roadmap basis), with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
@@ -66,11 +66,14 @@ By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent canno
 | :--- | :--- | :--- | :--- |
 | **1** | Claude Code | Native `Task()` | Structural (`tools:` restriction) |
 | **1b** | OpenCode | `mode: subagent` | Structural (`permission: { edit: deny }`) |
-| **1c** | Antigravity CLI 2.0 | Dynamic Subagents *(aspirational)* | Unverified |
 | **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` (`read-only` structural; `workspace-write` requires Hyper-V) |
 | **2** | Cursor, Windsurf, Cline | Single-agent inline loop | Convention-only (advisory) |
 
 Pipelines scaffolded on Tier 1 (Claude Code) or Tier 1d (Codex) run on Tier 2 platforms without modification — `sk-platform-dispatch` rewrites paths at read/write time.
+
+#### Roadmap
+
+**Antigravity CLI 2.0 (Tier 1c)** is supported on a best-effort basis: dispatch via Dynamic Subagents is implemented but not yet verified on a live host, and reviewer isolation there is convention-only until verification lands. Antigravity runs are always safe — the dispatcher falls back to the Tier 2 inline loop when the subagent primitive is absent, and every degradation is surfaced at run start and end.
 
 ---
 
@@ -162,7 +165,7 @@ superpipelines/
 ├── bin/install.js            # Universal Node installer (7 platforms auto-detected)
 ├── install.sh / install.ps1  # POSIX + PowerShell installer wrappers
 ├── AGENTS.md                 # Universal context (any AGENTS.md-aware tool)
-├── GEMINI.md                 # Antigravity-specific context
+├── GEMINI.md                 # Antigravity session context (loaded by agy at start; roadmap tier)
 ├── CLAUDE.md                 # Claude Code project reference + invariants
 │
 │   ── Scope-local pipeline artifacts (generated at install / pipeline-create time) ──
