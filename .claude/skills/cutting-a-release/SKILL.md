@@ -17,7 +17,7 @@ Cut a version release after the feature PR(s) are merged into `main`. Full step 
 
 ## Workflow
 
-1. **Preflight** — `git fetch origin`; confirm `origin/main` has the feature merge; verify all 5 version targets agree and equal the intended vX.Y.Z; check tag/release naming convention (`vX.Y.Z — <Title Case Name>`).
+1. **Preflight** — `git fetch origin`; confirm `origin/main` has the feature merge; verify all 5 version targets agree and equal the intended vX.Y.Z (`npm run check:versions` covers 6 including `.codex-plugin`); check tag/release naming convention (`vX.Y.Z — <Title Case Name>`). **Profile-drift check:** confirm the latest "Profile drift review" issue (opened monthly by `.github/workflows/profile-drift.yml`) is closed or its findings are consciously deferred in the release notes; a `model_tiers_version` older than 90 days blocks unless deferred.
 2. **Sync local main** — `ExitWorktree action:keep` if in a worktree; `git checkout main && git pull --ff-only origin main` (clear stale untracked blockers first — diff against `origin/main`).
 3. **Draft doc entries** — add `## X.Y.Z` to `CHANGELOG.md` and a `<release_entry>` to `RELEASE-NOTES.md`, mirroring the previous entry's format exactly. Source bullets from real changes; do not invent.
 4. **Land docs via PR** — branch `release-notes-X.Y.Z`, commit, push, `gh pr create` (`--body-file`), wait for CI pass, confirm intent, `gh pr merge --squash --admin --delete-branch`, re-sync main.
@@ -28,7 +28,8 @@ Cut a version release after the feature PR(s) are merged into `main`. Full step 
 ## Gotchas checklist
 
 - [ ] Bumped `plugins.0.version` in marketplace.json, not top-level `1.0.0`.
-- [ ] All 5 version targets agree before tagging.
+- [ ] All 5 version targets agree before tagging (`npm run check:versions`).
+- [ ] Latest profile-drift review issue closed or explicitly deferred.
 - [ ] CHANGELOG + RELEASE-NOTES entries exist before `gh release create`.
 - [ ] Used `--body-file` for all gh bodies (never `@'...'@`).
 - [ ] No direct push to main — everything via PR.
