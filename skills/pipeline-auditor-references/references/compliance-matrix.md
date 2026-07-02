@@ -173,6 +173,7 @@ Apply BUNDLE-* only when auditing the Superpipelines bundle itself, not ordinary
 | BUNDLE-05 | Cross-skill deep links are justified | SEV-2 | Flag instructions that deep-link into another skill's private `references/` files unless that reference is declared public normative by the owning skill. |
 | BUNDLE-06 | Active authoring paths contain no stale generated-agent guidance | SEV-1 | Active creation/architect/auditor paths must not instruct new pipelines to create zero-body agents, companion protocol skills, or tool-dir source artifacts. Legacy-only references and migration fixtures are N/A when labelled. |
 | BUNDLE-07 | Packaged plugin mirrors source skills | SEV-1 | `node scripts/package-codex-plugin.js --check` must pass after source edits. |
+| BUNDLE-08 | No plugin-path `permissionMode` enforcement claims | SEV-2 | Claude Code ignores `permissionMode` on plugin-shipped subagents (only `tools:`/`disallowedTools:` are enforced). Flag any bundle doc (README, CLAUDE.md, skill body) asserting that `permissionMode` enforces isolation for the bundle's `agents/*.md`. Claims scoped to project-scope/materialized agents are PASS. |
 
 ### Bundle hygiene remediation
 
@@ -181,6 +182,7 @@ Apply BUNDLE-* only when auditing the Superpipelines bundle itself, not ordinary
 - BUNDLE-05: Replace private deep links with an instruction to load the owning skill, or mark the target reference as public normative in the owning skill.
 - BUNDLE-06: Move old-root guidance under legacy-only headings or remove it from active authoring paths.
 - BUNDLE-07: Run `node scripts/package-codex-plugin.js`, then `node scripts/package-codex-plugin.js --check`.
+- BUNDLE-08: Reword the claim to scope enforcement to `tools:`/`disallowedTools:` (plugin path) or to project-scope/materialized agents (where `permissionMode` is honored).
 
 ---
 

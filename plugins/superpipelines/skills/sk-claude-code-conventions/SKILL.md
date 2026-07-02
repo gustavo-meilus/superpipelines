@@ -17,13 +17,14 @@ user-invocable: false
 <model_tier_table>
 | Tier | Model ID | Application |
 | :--- | :--- | :--- |
-| `fast` | `claude-sonnet-4-6` | Default for pipelines, agents, and skills. |
-| `deep` | `claude-opus-4-7` | High-complexity architecture or auditing tasks. |
 | `triage` | `claude-haiku-4-5-20251001` | High-volume, low-latency classification. |
+| `fast` | `claude-haiku-4-5-20251001` | Reviews and bounded worker steps. |
+| `medium` | `claude-sonnet-4-6` | Default for pipelines, agents, and skills. |
+| `deep` | `claude-opus-4-8` | High-complexity architecture or auditing tasks. |
 </model_tier_table>
 
 <invariant>
-This skill is Claude Code-scoped (Tier 1 only). Concrete model IDs above describe the Tier 1 resolution of the `MODEL_SELECTION: TIER_BASED_RUNTIME_RESOLVED` invariant — i.e., Tier 1's `platform_profile.model_tiers.fast` resolves to `claude-sonnet-4-6` and `.deep` to `claude-opus-4-7`. On other tiers the same `fast`/`deep` slots resolve to that platform's idiomatic models (see `skills/sk-platform-dispatch/profiles/{tier_id}.json`). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, pipeline-architect and other tier-agnostic skills MUST consult `platform_profile.model_tiers` rather than the CC literals shown here. Reasoning scales within-tier via `effort`; tier switches are warranted only when the step category genuinely differs.
+This skill is Claude Code-scoped (Tier 1 only). Concrete model IDs above describe the Tier 1 resolution of the `MODEL_SELECTION: TIER_BASED_RUNTIME_RESOLVED` invariant — i.e., Tier 1's `platform_profile.model_tiers.medium` resolves to `claude-sonnet-4-6`, `.fast`/`.triage` to `claude-haiku-4-5-20251001`, and `.deep` to `claude-opus-4-8`. On other tiers the same `fast`/`deep` slots resolve to that platform's idiomatic models (see `skills/sk-platform-dispatch/profiles/{tier_id}.json`). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, pipeline-architect and other tier-agnostic skills MUST consult `platform_profile.model_tiers` rather than the CC literals shown here. Reasoning scales within-tier via `effort`; tier switches are warranted only when the step category genuinely differs.
 </invariant>
 
 ## Caching & Context Discipline
@@ -67,6 +68,10 @@ effort: {high for architects, medium for workers}
 isolation: worktree
 skills: [sk-4d-method, sk-spec-driven-development]
 ```
+
+<invariant>
+Plugin-scope enforcement rule: Claude Code ignores `permissionMode`, `hooks`, and `mcpServers` on subagents loaded from a plugin — only `tools:` and `disallowedTools:` are enforced on that path. Reviewer write-deny for plugin-shipped agents therefore rests entirely on the tool allowlist; `permissionMode` in `agents/*.md` is declarative intent, not a barrier. Project-scope agents (including agents MATERIALIZE writes under `.claude/agents/superpipelines/{P}/`) enforce `permissionMode` normally. No document may claim `permissionMode` enforcement for plugin-shipped agents (auditor BUNDLE-08).
+</invariant>
 
 ## Progressive Disclosure Checklist
 

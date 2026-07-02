@@ -6,7 +6,7 @@ user-invocable: false
 
 # Model Resolver — 5-Layer Cross-Platform Model Resolution
 
-> Translates agent-author intent (`model_tier: deep`) into concrete platform-specific model strings (`claude-opus-4-7` on CC, `opencode-go/kimi-k2.6` on OC, `gpt-5.5` on Codex). Preloaded by `running-a-pipeline` Phase 0.45. Pure function — never writes to disk, never calls APIs.
+> Translates agent-author intent (`model_tier: deep`) into concrete platform-specific model strings (`claude-opus-4-8` on CC, `opencode-go/kimi-k2.6` on OC, `gpt-5.5` on Codex). Preloaded by `running-a-pipeline` Phase 0.45. Pure function — never writes to disk, never calls APIs.
 
 <overview>
 The resolver decouples agent-author intent from runtime model selection. Five resolution layers ranked top-wins: (1) explicit `model:` in agent frontmatter, (2) workspace preferences, (3) user-global preferences, (4) platform profile default, (5) native host inherit. Callers obtain a `resolved` object, persist it to `pipeline-state.json metadata.resolved_models`, and pass it to dispatch.
@@ -36,7 +36,7 @@ Where each `entries[]` element is `{ step_id, agent_name, model_tier, resolved }
 
 ```json
 {
-  "model": "claude-opus-4-7",
+  "model": "claude-opus-4-8",
   "effort": "high",
   "effort_field_name": null,
   "model_field_format": "shorthand",

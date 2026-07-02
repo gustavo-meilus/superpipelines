@@ -1,0 +1,26 @@
+{
+  "doc-writer": {
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "effort_field_name": "effort",
+    "model_field_format": "shorthand",
+    "source": "profile_default",
+    "warnings": []
+  },
+  "doc-reviewer": {
+    "model": "claude-sonnet-4-6",
+    "effort": "medium",
+    "effort_field_name": "effort",
+    "model_field_format": "shorthand",
+    "source": "profile_default",
+    "warnings": []
+  },
+  "triage-probe": {
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "effort_field_name": "effort",
+    "model_field_format": "shorthand",
+    "source": "profile_default",
+    "warnings": []
+  }
+}

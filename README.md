@@ -1,6 +1,6 @@
 # Superpipelines: Multi-Agent Orchestration Across AI Coding Platforms
 
-Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. As of v2.1.3, the same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, Cline, and Antigravity CLI 2.0, with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
+Superpipelines turns AI coding assistants from chaotic generators into disciplined engineering teams. It enforces isolated code reviews, prevents infinite loops, guarantees persistent state across mid-session crashes, and removes the manual overhead of verifying every generated output. The same pipeline scaffolds run unmodified across Claude Code, OpenCode, Codex App/CLI, Cursor, Windsurf, and Cline (Antigravity CLI 2.0 on a best-effort roadmap basis), with a pre-run safety tripwire guarding against worktree artifact-loss before any dispatch.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
@@ -22,14 +22,31 @@ irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install
 npx -y superpipelines-install
 ```
 
-Platform-specific install commands:
+Platform-specific install commands (generated from `bin/install.js` — run `node scripts/generate-install-docs.js` after changing the installer):
 
+<!-- <install_matrix> -->
 | Platform | Install |
 | :--- | :--- |
-| Claude Code | `claude plugin install github:gustavo-meilus/superpipelines` |
-| Codex App/CLI | `codex plugin add github:gustavo-meilus/superpipelines` (syntax pending verification — see RELEASE-NOTES) |
-| Antigravity 2.0 | `agy plugin install github:gustavo-meilus/superpipelines` |
-| Cursor / Windsurf / Cline | `npx -y skills add superpipelines -a <cursor\|windsurf\|cline>` |
+| Claude Code (Tier 1) | `claude plugin marketplace add https://github.com/gustavo-meilus/superpipelines`<br>`claude plugin install superpipelines@superpipelines-marketplace` |
+| Codex App/CLI (Tier 1d) | `codex plugin marketplace add gustavo-meilus/superpipelines`<br>`codex plugin add superpipelines@superpipelines-marketplace` |
+| Cursor (Tier 2) | `npx -y skills add superpipelines -a cursor` |
+| Windsurf (Tier 2) | `npx -y skills add superpipelines -a windsurf` |
+| Cline (Tier 2) | `npx -y skills add superpipelines -a cline` |
+| Antigravity CLI 2.0 (Tier 1c) | `agy plugin install superpipelines@superpipelines` |
+<!-- </install_matrix> -->
+
+<details>
+<summary>Manual install (Tier 2) — if the <code>skills</code> CLI is unavailable</summary>
+
+Tier 2 installs go through the third-party `skills` CLI (`npx -y skills add …`). If it fails or you prefer not to use it:
+
+```bash
+git clone https://github.com/gustavo-meilus/superpipelines
+```
+
+Then copy `plugins/superpipelines/skills/` into the skills directory your tool documents (Cursor, Windsurf, and Cline each document their own skills location). The skills are plain SKILL.md folders per the [Agent Skills](https://agentskills.io) open standard — no build step.
+
+</details>
 
 Step 2: Create your first pipeline
 
@@ -62,11 +79,14 @@ By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent canno
 | :--- | :--- | :--- | :--- |
 | **1** | Claude Code | Native `Task()` | Structural (`tools:` restriction) |
 | **1b** | OpenCode | `mode: subagent` | Structural (`permission: { edit: deny }`) |
-| **1c** | Antigravity CLI 2.0 | Dynamic Subagents *(aspirational)* | Unverified |
 | **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` (`read-only` structural; `workspace-write` requires Hyper-V) |
 | **2** | Cursor, Windsurf, Cline | Single-agent inline loop | Convention-only (advisory) |
 
 Pipelines scaffolded on Tier 1 (Claude Code) or Tier 1d (Codex) run on Tier 2 platforms without modification — `sk-platform-dispatch` rewrites paths at read/write time.
+
+#### Roadmap
+
+**Antigravity CLI 2.0 (Tier 1c)** is supported on a best-effort basis: dispatch via Dynamic Subagents is implemented but not yet verified on a live host, and reviewer isolation there is convention-only until verification lands. Antigravity runs are always safe — the dispatcher falls back to the Tier 2 inline loop when the subagent primitive is absent, and every degradation is surfaced at run start and end.
 
 ---
 
@@ -133,7 +153,7 @@ The framework selects the optimal pattern based on task complexity:
 
 ## Design Principles
 
-Permission boundaries are enforced at the agent definition level, not by prompt instruction. But the constraint preventing reviewers from modifying code sits in the permission schema, not in a system prompt that a sufficiently confident model can talk itself around. Every agent declares a `permissionMode`, and bypassing it requires explicit documented justification.
+Permission boundaries are enforced at the agent definition level, not by prompt instruction. The constraint preventing reviewers from modifying code sits in the tool allowlist (`tools:` + `disallowedTools:`) — a schema a sufficiently confident model cannot talk itself around. Agents additionally declare a `permissionMode`; on Claude Code this is enforced for the per-pipeline agents materialized into your project, while for the plugin's own bundled agents Claude Code honors only the tool restrictions (a documented platform rule), so the tool allowlist is always the load-bearing barrier.
 
 Pipeline state persists to a deterministic path at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets any in-progress phases to their initial state while preserving all completed work, which means a crashed session picks back up without re-running the intake or architecture phases that already passed validation. High-density reference documentation lives in companion `*-references/` directories and loads on demand. This strategy prevents token-heavy reference payloads from bloating the active session window during phases that do not need deep technical detail. Practitioners commonly underestimate how quickly context saturation degrades output quality on long pipelines. Keeping reference data out of the primary context until it is needed is one of the highest-return optimizations available without modifying the underlying model configuration.
 
@@ -158,7 +178,7 @@ superpipelines/
 ├── bin/install.js            # Universal Node installer (7 platforms auto-detected)
 ├── install.sh / install.ps1  # POSIX + PowerShell installer wrappers
 ├── AGENTS.md                 # Universal context (any AGENTS.md-aware tool)
-├── GEMINI.md                 # Antigravity-specific context
+├── GEMINI.md                 # Antigravity session context (loaded by agy at start; roadmap tier)
 ├── CLAUDE.md                 # Claude Code project reference + invariants
 │
 │   ── Scope-local pipeline artifacts (generated at install / pipeline-create time) ──

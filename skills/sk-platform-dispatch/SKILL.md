@@ -152,7 +152,12 @@ generic subagent (that would drop the structural isolation the CAD encodes).
 
 ```
 name:        cad.name
+description: cad.description          // required by CC agent-file discovery
 model_tier:  cad.model_tier          // resolved.model is passed at the Task() call, not the file
+// effort is profile-gated, never hardcoded (CC accepts low|medium|high|xhigh|max — our
+// vocabulary maps identity, so no emit map is configured for tier_1):
+IF resolved.effort != null AND profile.capabilities.effort_field_name != null:
+  {profile.capabilities.effort_field_name}: resolved.effort   // e.g. effort: medium
 maxTurns:    cad.turn_budget
 // capability intent → CC enforcement primitive (structural):
 IF cad.capabilities.write_files == false:
@@ -328,7 +333,7 @@ SWITCH mechanism:
 <dispatch_tiers>
 | `dispatch_mechanism` | Model resolution source | Effort handling | Reviewer isolation source |
 |---|---|---|---|
-| `native_task` | Resolved model passed in Task() payload (overrides agent frontmatter) | Ignored (CC has no effort field) | `profile.capabilities.reviewer_isolation = structural`; agent `tools:` restricts reviewer |
+| `native_task` | Resolved model passed in Task() payload (overrides agent frontmatter) | Emitted to the materialized agent file via profile `effort_field_name` (`effort:`; CC accepts `low..max`) | `profile.capabilities.reviewer_isolation = structural`; agent `tools:` restricts reviewer |
 | `native_subagent` | Resolved model + reasoningEffort written to dispatch payload | Only for `opencode/*` and `opencode-go/*` provider prefixes | `structural`; OC `permission: { edit: deny }` on reviewer agent |
 | `model_driven` (Codex) | Resolved model + model_reasoning_effort written to TOML | `effort_emit_map` translates `low → minimal` | `structural`; per-agent `sandbox_mode = "read-only"` on reviewer TOML |
 | `model_driven` (Antigravity) | Orchestrator tier only; subagents auto-managed | N/A (no per-subagent control) | `convention` |

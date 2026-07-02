@@ -7,6 +7,18 @@ New pipeline scaffolding MUST NOT use this schema. New data-only pipelines use t
 - `pipeline-auditor-references/references/canonical-agent-def.md` for schema authority.
 - `pipeline-architect-references/references/sdd-artifacts.md` for the authoring template.
 
+## Table of contents
+
+1. Legacy Old-Root Schema / Schema
+2. Field rules
+3. NEVER use
+4. permissionMode selection guide
+5. memory selection guide
+6. Effort selection
+7. Protocol skill companion
+8. Operating Modes / Workflow
+9. Reference Files
+
 ## Legacy Old-Root Schema
 
 ## Schema

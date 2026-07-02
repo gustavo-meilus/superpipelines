@@ -22,9 +22,9 @@ This skill is **Claude Code-scoped (tier_1 only)**. Superpipelines on Tier 1 mai
 | Category | Primary Model | Fallback Chain | Use Case |
 | :--- | :--- | :--- | :--- |
 | **`default`** | `claude-sonnet-4-6` | *None* | Implementation, general tasks, and task-execution. |
-| **`deep-plan`** | `claude-opus-4-7` | `gpt-5.4` -> `sonnet-4-6` | High-stakes architectural planning (e.g., `pipeline-architect`). |
+| **`deep-plan`** | `claude-opus-4-8` | `gpt-5.4` -> `sonnet-4-6` | High-stakes architectural planning (e.g., `pipeline-architect`). |
 | **`quick-audit`** | `claude-haiku-4-5-20251001` | *None* | Fast, broad pattern matching and codebase grepping. |
-| **`visual`** | `gemini-3.1-pro` | `gpt-5.4` | Tasks requiring image processing, UI screenshots, or diagram analysis. |
+| **`visual`** | `gemini-3.5-pro` | `gpt-5.4` | Tasks requiring image processing, UI screenshots, or diagram analysis. |
 </categories_table>
 
 ## Routing Protocol
