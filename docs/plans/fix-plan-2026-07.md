@@ -330,7 +330,11 @@ the profile) and update the registration-assumption text in
 install via the `.agents/skills/` path — if stale, point `.codex-plugin/plugin.json
 skills` at the verified location. Also verify `turn_limit` and scalar
 `instructions` against the live agent parser; correct the translator if either is
-rejected.
+rejected. **Known internal inconsistency to resolve here:**
+`scripts/package-codex-plugin.js` enforces scalar `developer_instructions` in the
+live `.codex/agents/*.toml`, while `TRANSLATE_CAD_TO_CODEX` and the
+codex-materialize goldens emit `instructions` — the live host decides which key is
+real; packager, translator, and goldens then change together.
 
 **Acceptance criteria**
 - [ ] Probe transcripts committed (same `docs/agents/verification/` dir).

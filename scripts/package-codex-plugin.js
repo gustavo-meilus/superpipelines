@@ -166,7 +166,53 @@ function validateCodexAgentTomls() {
   }
 }
 
+// Every URL a manifest publishes must resolve: blob/main/<path> URLs to a file in
+// this repo, and relative paths to a file or directory next to the manifest.
+// Catches dead marketplace links like a missing PRIVACY.md (fix-plan WI-04).
+function validateManifestUrls() {
+  const manifests = [
+    path.join(repoRoot, '.claude-plugin', 'plugin.json'),
+    path.join(repoRoot, '.claude-plugin', 'marketplace.json'),
+    path.join(repoRoot, '.codex-plugin', 'plugin.json'),
+    path.join(repoRoot, '.cursor-plugin', 'plugin.json'),
+    manifestPath,
+  ];
+  const blobUrl = /^https:\/\/github\.com\/gustavo-meilus\/superpipelines\/blob\/main\/(.+)$/;
+  const walk = (node, visit) => {
+    if (typeof node === 'string') visit(node);
+    else if (Array.isArray(node)) node.forEach((v) => walk(v, visit));
+    else if (node && typeof node === 'object') Object.values(node).forEach((v) => walk(v, visit));
+  };
+  for (const file of manifests) {
+    if (!fs.existsSync(file)) continue;
+    let json;
+    try {
+      json = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (error) {
+      fail(`manifest is not valid JSON: ${path.relative(repoRoot, file)}: ${error.message}`);
+    }
+    const rel = path.relative(repoRoot, file);
+    walk(json, (value) => {
+      const blob = value.match(blobUrl);
+      if (blob && !fs.existsSync(path.join(repoRoot, blob[1]))) {
+        fail(`${rel} references missing repo file: ${blob[1]}`);
+      }
+      if (value.startsWith('./') || value.startsWith('../')) {
+        // Platforms disagree on the base: Codex resolves from the manifest dir
+        // (.codex-plugin/plugin.json → ../.agents/skills/), Cursor from the plugin
+        // root (.cursor-plugin/plugin.json → ./skills/). Accept either base.
+        const fromManifestDir = path.resolve(path.dirname(file), value);
+        const fromPluginRoot = path.resolve(path.dirname(path.dirname(file)), value);
+        if (!fs.existsSync(fromManifestDir) && !fs.existsSync(fromPluginRoot)) {
+          fail(`${rel} references missing relative path: ${value}`);
+        }
+      }
+    });
+  }
+}
+
 function validatePackage() {
+  validateManifestUrls();
   const hygiene = spawnSync(process.execPath, [path.join(repoRoot, 'scripts', 'check-cad-hygiene.js')], {
     cwd: repoRoot,
     stdio: 'inherit',
