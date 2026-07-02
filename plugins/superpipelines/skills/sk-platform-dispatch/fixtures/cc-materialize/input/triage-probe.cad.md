@@ -1,7 +1,7 @@
 ---
 schema_version: "1.0"
 name: triage-probe
-description: Read-only triage step — exercises the low→minimal effort map on Codex.
+description: Read-only triage step — exercises the low effort map on Codex.
 role: reviewer
 review_stage: null
 model_tier: triage

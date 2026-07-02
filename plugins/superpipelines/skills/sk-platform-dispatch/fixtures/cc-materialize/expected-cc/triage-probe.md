@@ -1,6 +1,6 @@
 ---
 name: triage-probe
-description: Read-only triage step — exercises the low→minimal effort map on Codex.
+description: Read-only triage step — exercises the low effort map on Codex.
 model_tier: triage
 effort: low
 maxTurns: 10
