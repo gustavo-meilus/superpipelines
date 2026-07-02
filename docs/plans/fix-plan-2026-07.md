@@ -72,6 +72,17 @@ WI-06 (`81a5a2b`), WI-07 (`df658e4`), WI-08 (`97296a9`), WI-09 (`bdedfe7`),
 WI-10 (`361360d`). All acceptance criteria verified locally (`npm run check:all` green;
 seeded failures demonstrated for the version, URL-integrity, and parity checks).
 Wave 3 (WI-11/WI-12) is next and requires a live Codex host (`ready-for-human`).
+**Wave 3 update (2026-07-02, later):** WI-11 verified PASS on Codex CLI 0.142.5 and
+WI-12 probes ran (PR #89 / `docs/agents/verification/`). Follow-up applied on this
+branch: Probe C schema fixes landed everywhere in lockstep (translator emits
+`description` + scalar `developer_instructions`, `turn_limit` retired, effort map now
+identity `low → low`; goldens, parity harness, packager, and references updated), and
+Probe D's read-only breach is handled host-conditionally — `tier_1d.json` gains
+`extensions.isolation_unsandboxed_warning` and the dispatch skill's mandatory runtime
+guard degrades reviewer isolation to advisory (with the warning surfaced and stamped
+into `metadata.isolation_warning`) when the session sandbox is disabled. The global
+`structural` claim stands for sandbox-capable hosts pending the option-2 re-probe on a
+Hyper-V-capable machine (still open).
 WI-13 stays queued behind WI-12 as planned — the Codex `instructions` vs
 `developer_instructions` outcome sets the precedent for how translator/golden/packager
 disagreements resolve before a fourth translator is added.

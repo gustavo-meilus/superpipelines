@@ -37,7 +37,7 @@ Superpipelines runs on five tiers. The active platform's tier determines paralle
 |------|----------|-----------|--------------------|
 | 1 | Claude Code | Skill-callable `Task()` (true parallel) | Structural |
 | 1b | OpenCode | `mode: subagent` agents | Structural |
-| 1d | Codex App/CLI | Model-driven, TOML agents (up to 6 concurrent) | Structural (`sandbox_mode = "read-only"`) |
+| 1d | Codex App/CLI | Model-driven, TOML agents (up to 6 concurrent) | Structural on sandbox-capable hosts (`sandbox_mode = "read-only"`); advisory + surfaced warning on unsandboxed sessions |
 | 2 | Cursor / Windsurf / Cline | None — single-agent inline | Convention-only (advisory) |
 
 Roadmap: Tier 1c (Antigravity CLI 2.0, Dynamic Subagents) is implemented best-effort and unverified on a live host; it degrades safely to the Tier 2 inline loop with surfaced warnings.

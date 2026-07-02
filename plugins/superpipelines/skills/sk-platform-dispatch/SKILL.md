@@ -59,7 +59,7 @@ When calling skills from within a running-a-pipeline orchestration, use the corr
 | `model_field_format` | `shorthand` (CC) \| `provider_prefixed` (OC) \| `toml_split` (Codex) \| `omit` (Tier 2, Antigravity) |
 | `effort_field_name` | Name of the reasoning-effort key in agent files (null = platform has no effort field) |
 | `effort_field_applies_to_providers` | List of provider prefixes for which effort emits (null = all) |
-| `effort_emit_map` | Translation table for effort values (Codex `low → minimal`) |
+| `effort_emit_map` | Translation table for effort values (identity on current profiles; live Codex 0.142.5 accepts `low` verbatim and fails `minimal` when tools are exposed) |
 | `subagent_env_override` | Env var that forces all subagents to one model (CC `CLAUDE_CODE_SUBAGENT_MODEL`) |
 | `subagent_inherit_target` | What `inherit` resolves to natively (`session`, `primary`, `orchestrator`) |
 | `provider_families` | Provider prefixes this platform accepts |
@@ -231,16 +231,18 @@ triple-quoted `instructions` string (TOML has no frontmatter/body split), so the
 returns the whole file (`body_inlined: true`):
 
 ```
-name  = cad.name
-model = resolved.model                    # e.g. "gpt-5.4"
+name        = cad.name
+description = cad.description             # REQUIRED by the live parser ("must define a description")
+model       = resolved.model              # e.g. "gpt-5.4"
 IF resolved.effort != null
    AND (profile.capabilities.effort_field_applies_to_providers == null              # null = all providers
         OR provider_prefix(resolved.model) ∈ profile.capabilities.effort_field_applies_to_providers):
-  model_reasoning_effort = resolved.effort  # ALREADY mapped by sk-model-resolver (low→minimal); emit verbatim
-# capability intent → Codex sandbox primitive (structural):
+  model_reasoning_effort = resolved.effort  # mapped by sk-model-resolver via effort_emit_map (identity); emit verbatim
+# capability intent → Codex sandbox primitive (host-conditional structural, see below):
 sandbox_mode = cad.capabilities.write_files ? "workspace-write" : "read-only"
-IF cad.turn_budget != null: turn_limit = cad.turn_budget   # Codex per-agent turn cap
-instructions = """<cad.body verbatim>"""
+# cad.turn_budget has NO Codex primitive — the live parser rejects `turn_limit` as an unknown
+# field (verified 2026-07); do not emit it. The turn budget degrades to prompt-level guidance.
+developer_instructions = """<cad.body verbatim>"""   # `instructions` is rejected by the live parser
 # read-only ALSO denies shell-exec writes + network, so a reviewer (run_shell:false,
 # network:false) is fully covered by sandbox_mode alone. For a WRITER that denies network, emit a
 # [sandbox_workspace_write] table — and ONLY after all top-level keys (TOML table-ordering rule):
@@ -249,13 +251,20 @@ IF cad.capabilities.write_files == true AND cad.capabilities.network == false:
   network_access = false
 ```
 
-**Reviewer isolation stays STRUCTURAL on Codex.** `capabilities.write_files: false` emits
-`sandbox_mode = "read-only"` — the writer cannot mutate tracked source or shell-write. This is
-the `extensions.reviewer_isolation_recipe` for tier_1d and upholds `WRITE_REVIEW_ISOLATION:
-STRUCTURAL_ON_TIER1_1B_1D`. Codex has no per-subagent worktree primitive (`worktrees: false`); it
-isolates per-thread at the app level, so a writer's `isolation_required` carries no additional
-materialized primitive (no degradation warning is configured for tier_1d — app-level threading
-covers it).
+**Reviewer isolation on Codex is STRUCTURAL, host-conditionally.** `capabilities.write_files:
+false` emits `sandbox_mode = "read-only"` per `extensions.reviewer_isolation_recipe` — but
+enforcement depends on the live host's sandbox helpers. Live verification (2026-07,
+`docs/agents/verification/codex-discovery-2026-07.md` Probe D) showed a read-only agent writing
+to the workspace when the parent session ran `danger-full-access` on a host without sandbox
+support. Runtime guard (MANDATORY): before dispatching any `write_files: false` step on a
+profile that defines `extensions.isolation_unsandboxed_warning`, determine whether the current
+session's sandbox is disabled (`danger-full-access`) or host sandbox helpers are unavailable;
+if so, surface that warning at dispatch, append it to `metadata.isolation_warning` (atomic),
+and treat the step's review verdicts as ADVISORY for this run — never report them as
+structurally enforced. On sandbox-capable hosts the read-only deny is structural and
+`WRITE_REVIEW_ISOLATION: STRUCTURAL_ON_TIER1_1B_1D` holds. Codex has no per-subagent worktree
+primitive (`worktrees: false`); it isolates per-thread at the app level, so a writer's
+`isolation_required` carries no additional materialized primitive.
 
 **Concurrency.** Codex fans subagents out per `topology.json`, capped at
 `profile.extensions.max_concurrent_subagents` (6). The orchestrator must not dispatch more than
@@ -335,7 +344,7 @@ SWITCH mechanism:
 |---|---|---|---|
 | `native_task` | Resolved model passed in Task() payload (overrides agent frontmatter) | Emitted to the materialized agent file via profile `effort_field_name` (`effort:`; CC accepts `low..max`) | `profile.capabilities.reviewer_isolation = structural`; agent `tools:` restricts reviewer |
 | `native_subagent` | Resolved model + reasoningEffort written to dispatch payload | Only for `opencode/*` and `opencode-go/*` provider prefixes | `structural`; OC `permission: { edit: deny }` on reviewer agent |
-| `model_driven` (Codex) | Resolved model + model_reasoning_effort written to TOML | `effort_emit_map` translates `low → minimal` | `structural`; per-agent `sandbox_mode = "read-only"` on reviewer TOML |
+| `model_driven` (Codex) | Resolved model + model_reasoning_effort written to TOML | `effort_emit_map` (identity) — emitted verbatim | `structural` when host sandbox helpers are active; degrades to convention + surfaced `isolation_unsandboxed_warning` on unsandboxed sessions (danger-full-access) |
 | `model_driven` (Antigravity) | Orchestrator tier only; subagents auto-managed | N/A (no per-subagent control) | `convention` |
 | `inline` (Tier 2) | No emission — host IDE selects model | N/A | `convention` |
 </dispatch_tiers>

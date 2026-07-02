@@ -83,15 +83,15 @@ function translateToOC(cad, resolved, profile) {
 }
 
 function translateToCodex(cad, resolved, profile) {
-  const lines = [`name = "${cad.name}"`, `model = "${resolved.model}"`];
+  const lines = [`name = "${cad.name}"`, `description = "${cad.description}"`, `model = "${resolved.model}"`];
   const providers = profile.capabilities.effort_field_applies_to_providers;
   const provider = resolved.model.split('/')[0];
   if (resolved.effort != null && (providers == null || providers.includes(provider))) {
     lines.push(`${profile.capabilities.effort_field_name} = "${resolved.effort}"`);
   }
   lines.push(`sandbox_mode = "${cad.capabilities.write_files ? 'workspace-write' : 'read-only'}"`);
-  if (cad.turn_budget != null) lines.push(`turn_limit = ${cad.turn_budget}`);
-  lines.push('instructions = """', cad.body.replace(/\n$/, ''), '"""');
+  // turn_budget has no Codex primitive — the live parser rejects `turn_limit` (verified 2026-07).
+  lines.push('developer_instructions = """', cad.body.replace(/\n$/, ''), '"""');
   if (cad.capabilities.write_files && !cad.capabilities.network) {
     lines.push('', '[sandbox_workspace_write]', 'network_access = false');
   }

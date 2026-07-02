@@ -16,10 +16,16 @@
     "model_field_format": "toml_split",
     "effort_field_name": "model_reasoning_effort",
     "effort_field_applies_to_providers": null,
-    "effort_emit_map": { "low": "minimal", "medium": "medium", "high": "high" },
+    "effort_emit_map": {
+      "low": "low",
+      "medium": "medium",
+      "high": "high"
+    },
     "subagent_env_override": null,
     "subagent_inherit_target": "session",
-    "provider_families": ["openai"]
+    "provider_families": [
+      "openai"
+    ]
   },
   "scope_root": {
     "workspace": ".codex",
@@ -31,13 +37,26 @@
     "native_agent_dir": "agents/superpipelines",
     "native_agent_ext": ".toml",
     "max_concurrent_subagents": 6,
-    "reviewer_isolation_recipe": "Set sandbox_mode = \"read-only\" in the reviewer agent TOML to achieve structural write-deny. sandbox_mode = \"workspace-write\" is the writer default.",
-    "skill_tool_note": "Codex discovers SKILL.md via `.agents/skills` (cross-tool open path) and `$HOME/.agents/skills`. Skill content preloads at session start; no runtime Skill() primitive callable from another skill."
+    "reviewer_isolation_recipe": "Set sandbox_mode = \"read-only\" in the reviewer agent TOML to achieve structural write-deny. sandbox_mode = \"workspace-write\" is the writer default. HOST-CONDITIONAL: enforcement requires live host sandbox helpers; when the session runs with the sandbox disabled (danger-full-access) or the host lacks sandbox support (e.g. Windows without Hyper-V), per-agent read-only is NOT enforced (verified 2026-07, docs/agents/verification/codex-discovery-2026-07.md Probe D) and dispatch MUST surface extensions.isolation_unsandboxed_warning.",
+    "skill_tool_note": "Codex discovers SKILL.md via `.agents/skills` (cross-tool open path) and `$HOME/.agents/skills`. Skill content preloads at session start; no runtime Skill() primitive callable from another skill.",
+    "isolation_unsandboxed_warning": "⚠️ Codex sandbox is disabled or unavailable on this host (danger-full-access session or missing sandbox helpers). Per-agent sandbox_mode = \"read-only\" is NOT enforced here: reviewer write-deny degrades to convention for this run and review verdicts are advisory. Structural isolation resumes on sandbox-capable hosts."
   },
   "model_tiers": {
-    "triage": { "model": "gpt-5.4-mini", "effort": "low" },
-    "fast":   { "model": "gpt-5.4-mini", "effort": "medium" },
-    "medium": { "model": "gpt-5.4",      "effort": "medium" },
-    "deep":   { "model": "gpt-5.5",      "effort": "high" }
+    "triage": {
+      "model": "gpt-5.4-mini",
+      "effort": "low"
+    },
+    "fast": {
+      "model": "gpt-5.4-mini",
+      "effort": "medium"
+    },
+    "medium": {
+      "model": "gpt-5.4",
+      "effort": "medium"
+    },
+    "deep": {
+      "model": "gpt-5.5",
+      "effort": "high"
+    }
   }
 }

@@ -163,6 +163,13 @@ function validateCodexAgentTomls() {
     if (!scalarDeveloperInstructions.test(content)) {
       fail(`Codex agent TOML is missing scalar developer_instructions = """...""": .codex/agents/${file}`);
     }
+    // Live parser requirements verified 2026-07 (docs/agents/verification/codex-discovery-2026-07.md Probe C):
+    if (!/(?:^|\n)description\s*=\s*"/.test(content)) {
+      fail(`Codex agent TOML must define description (required by the live parser): .codex/agents/${file}`);
+    }
+    if (/(?:^|\n)turn_limit\s*=/.test(content)) {
+      fail(`Codex agent TOML must not define turn_limit (rejected as unknown field by the live parser): .codex/agents/${file}`);
+    }
   }
 }
 
