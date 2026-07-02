@@ -7,7 +7,7 @@ Superpipelines turns AI coding assistants from chaotic generators into disciplin
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/gustavo-meilus/superpipelines/actions/workflows/ci.yml)
 
-> Demo slot for launch: 90-second reviewer-denial clip plus same-pipeline cross-platform clip. Scenario and recording checklist live in [`docs/launch/checklist.md`](docs/launch/checklist.md).
+> Demo slot for launch: 90-second reviewer-denial clip plus same-pipeline cross-platform clip.
 
 - **Write/review isolation**: reviewers are constrained by host permissions where the platform supports it; Codex degrades honestly on unsandboxed hosts.
 - **One pipeline, many agents**: scaffold once, run on Claude Code, OpenCode, Codex, and Tier 2 skill hosts.
