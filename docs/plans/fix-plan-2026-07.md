@@ -63,6 +63,19 @@ should say so (respectfully, per the named-comparison strategy).
 
 ---
 
+## Execution Status (2026-07-02)
+
+**Waves 1 and 2 are executed** on branch `claude/superpipelines-comparison-analysis-k68cb4`,
+one commit per work item: WI-01 (`ec14afe`), WI-02 (`bea7cb1`), WI-03 (`28ed520`),
+WI-04 (`eae4040`), WI-05 (`2c5b714`, with the recorded GEMINI.md deviation),
+WI-06 (`81a5a2b`), WI-07 (`df658e4`), WI-08 (`97296a9`), WI-09 (`bdedfe7`),
+WI-10 (`361360d`). All acceptance criteria verified locally (`npm run check:all` green;
+seeded failures demonstrated for the version, URL-integrity, and parity checks).
+Wave 3 (WI-11/WI-12) is next and requires a live Codex host (`ready-for-human`).
+WI-13 stays queued behind WI-12 as planned — the Codex `instructions` vs
+`developer_instructions` outcome sets the precedent for how translator/golden/packager
+disagreements resolve before a fourth translator is added.
+
 ## 2. Execution Model
 
 - **One work item = one branch = one session/agent = one PR.** Items within a wave
