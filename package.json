@@ -9,7 +9,10 @@
     "package:codex": "node scripts/package-codex-plugin.js",
     "check:codex-plugin": "node scripts/package-codex-plugin.js --check",
     "docs:install-table": "node scripts/generate-install-docs.js",
-    "check:install-docs": "node scripts/generate-install-docs.js --check"
+    "check:install-docs": "node scripts/generate-install-docs.js --check",
+    "check:profiles": "node scripts/check-profiles.js",
+    "check:versions": "node scripts/check-version-agreement.js",
+    "check:all": "npm run check:versions && npm run check:profiles && npm run check:install-docs && npm run check:codex-plugin"
   },
   "engines": {
     "node": ">=18"

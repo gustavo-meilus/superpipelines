@@ -7,20 +7,70 @@ on:
     branches: [main]
 
 jobs:
-  validate:
-    name: Validate Plugin Manifests
+  manifests:
+    name: Manifests & Version Agreement
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - name: Validate JSON manifests
         run: |
-          for f in .claude-plugin/*.json; do
+          for f in .claude-plugin/*.json .codex-plugin/*.json .cursor-plugin/*.json; do
             echo "Validating $f"
             python3 -m json.tool "$f" > /dev/null
           done
       - name: Check required files
         run: |
-          test -f .claude-plugin/plugin.json || (echo "Missing plugin.json" && exit 1)
-          test -f README.md || (echo "Missing README.md" && exit 1)
-          test -f LICENSE || (echo "Missing LICENSE" && exit 1)
+          for f in .claude-plugin/plugin.json README.md LICENSE PRIVACY.md; do
+            test -f "$f" || (echo "Missing $f" && exit 1)
+          done
           echo "All required files present."
+      - name: Version agreement across release targets
+        run: npm run check:versions
+
+  profiles:
+    name: Platform Profiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate profiles against schema (+ fixture behavior)
+        run: npm run check:profiles
+
+  guards:
+    name: Guard Scripts & Packaged Plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # check:codex-plugin chains CAD hygiene, worktree gating, delete-step guards,
+      # manifest URL integrity, live Codex TOML shape, and source↔package mirror.
+      - name: Run repository guards
+        run: npm run check:codex-plugin
+
+  installer:
+    name: Installer Smoke (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Detection matrix
+        run: node bin/install.js --list
+      - name: Dry-run every platform's install commands
+        # --only proceeds for undetected platforms (with a warning), so this
+        # exercises every PLATFORMS[].install() even on a bare runner.
+        run: node bin/install.js --dry-run --non-interactive --only claude-code --only codex --only cursor --only windsurf --only cline --only antigravity
+      - name: README install table in sync
+        run: npm run check:install-docs
