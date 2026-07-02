@@ -370,7 +370,7 @@ A 10-pipeline cross-tier validation suite ships with v2.0.0. Each pipeline is sc
 - **F-AGY-01** — `agy plugin validate` reports "hooks: skipped (not found)". Dual incompatibility: `${CLAUDE_PLUGIN_ROOT}` in `hooks.json` is CC-only (AGY uses `${extensionPath}`); `hookSpecificOutput` payload format is CC-only. Fix requires AGY-specific hook files; blocked pending official AGY docs being accessible.
 - **F-COD-03** — Codex `workspace-write` sandbox requires Hyper-V (unavailable on Windows 11 Home). Parity runs on Home SKU require `--sandbox danger-full-access`. No code change needed; host capability gap.
 - **F-CC-02** — `effort_tier` on CC agents is silently ignored (`effort_field_name: null` in tier_1.json). Non-blocking; CC uses `model_tier` for capacity selection only.
-- Codex installer command syntax unverified against a stable release.
+- Codex installer command syntax verified on Codex CLI 0.142.5: `codex plugin marketplace add gustavo-meilus/superpipelines` followed by `codex plugin add superpipelines@superpipelines-marketplace` (see `docs/agents/verification/codex-install-2026-07.md`).
 - No automated cross-platform parity gate. Per-platform validation is manual.
 - Kiro (AWS) is not supported in v2.0.x. Kiro 0.9 (Feb 2026) is a viable Tier 1e target but is explicitly out-of-scope per spec NG6; scoped for v2.1+.
 
