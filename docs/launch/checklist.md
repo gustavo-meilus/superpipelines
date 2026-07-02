@@ -1,6 +1,6 @@
 # Launch Checklist - v2.5.0 Trust Release
 
-This checklist converts `docs/launch/viral-playbook.md` into release actions. It is intentionally operational: if an item is not checkable, it does not belong here.
+This checklist converts the launch-readiness research into release actions. It is intentionally operational: if an item is not checkable, it does not belong here.
 
 ## Gate
 
