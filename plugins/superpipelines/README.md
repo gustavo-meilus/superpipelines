@@ -35,6 +35,19 @@ Platform-specific install commands (generated from `bin/install.js` — run `nod
 | Antigravity CLI 2.0 (Tier 1c) | `agy plugin install superpipelines@superpipelines` |
 <!-- </install_matrix> -->
 
+<details>
+<summary>Manual install (Tier 2) — if the <code>skills</code> CLI is unavailable</summary>
+
+Tier 2 installs go through the third-party `skills` CLI (`npx -y skills add …`). If it fails or you prefer not to use it:
+
+```bash
+git clone https://github.com/gustavo-meilus/superpipelines
+```
+
+Then copy `plugins/superpipelines/skills/` into the skills directory your tool documents (Cursor, Windsurf, and Cline each document their own skills location). The skills are plain SKILL.md folders per the [Agent Skills](https://agentskills.io) open standard — no build step.
+
+</details>
+
 Step 2: Create your first pipeline
 
 ```

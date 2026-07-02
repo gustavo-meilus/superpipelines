@@ -24,7 +24,7 @@ user-invocable: false
 </model_tier_table>
 
 <invariant>
-This skill is Claude Code-scoped (Tier 1 only). Concrete model IDs above describe the Tier 1 resolution of the `MODEL_SELECTION: TIER_BASED_RUNTIME_RESOLVED` invariant — i.e., Tier 1's `platform_profile.model_tiers.fast` resolves to `claude-sonnet-4-6` and `.deep` to `claude-opus-4-7`. On other tiers the same `fast`/`deep` slots resolve to that platform's idiomatic models (see `skills/sk-platform-dispatch/profiles/{tier_id}.json`). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, pipeline-architect and other tier-agnostic skills MUST consult `platform_profile.model_tiers` rather than the CC literals shown here. Reasoning scales within-tier via `effort`; tier switches are warranted only when the step category genuinely differs.
+This skill is Claude Code-scoped (Tier 1 only). Concrete model IDs above describe the Tier 1 resolution of the `MODEL_SELECTION: TIER_BASED_RUNTIME_RESOLVED` invariant — i.e., Tier 1's `platform_profile.model_tiers.medium` resolves to `claude-sonnet-4-6`, `.fast`/`.triage` to `claude-haiku-4-5-20251001`, and `.deep` to `claude-opus-4-8`. On other tiers the same `fast`/`deep` slots resolve to that platform's idiomatic models (see `skills/sk-platform-dispatch/profiles/{tier_id}.json`). Per `DEPENDENCY_INVERSION: PROFILE_DRIVEN`, pipeline-architect and other tier-agnostic skills MUST consult `platform_profile.model_tiers` rather than the CC literals shown here. Reasoning scales within-tier via `effort`; tier switches are warranted only when the step category genuinely differs.
 </invariant>
 
 ## Caching & Context Discipline

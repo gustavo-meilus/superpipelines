@@ -15,19 +15,19 @@ Single YAML line. Effort field absent (CC has no native effort).
 
 **Resolved:**
 ```json
-{ "model": "claude-opus-4-7", "effort": null, "model_field_format": "shorthand" }
+{ "model": "claude-opus-4-8", "effort": null, "model_field_format": "shorthand" }
 ```
 
 **EMIT output:**
 ```
-model: claude-opus-4-7
+model: claude-opus-4-8
 ```
 
 **Where emitted:** agent frontmatter, OR Task() prompt override:
 ```javascript
 Task({
   subagent_type: "my-agent",
-  model: "claude-opus-4-7",
+  model: "claude-opus-4-8",
   prompt: "..."
 })
 ```

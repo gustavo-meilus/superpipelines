@@ -41,6 +41,19 @@ jobs:
       - name: Validate profiles against schema (+ fixture behavior)
         run: npm run check:profiles
 
+  authoring:
+    name: Authoring Rules & Preload Budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Authoring rules (body/description limits, zero-body agents, ToCs, model-ID currency)
+        run: npm run check:authoring
+      - name: Preload budget report
+        run: npm run report:preload
+
   guards:
     name: Guard Scripts & Packaged Plugin
     runs-on: ubuntu-latest
