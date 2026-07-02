@@ -102,7 +102,7 @@ and emits a native agent file. This is the normative capability → primitive ma
 |---|---|---|---|---|---|
 | `name` | `name:` | `name:` | agent name | n/a (dynamic) | n/a (inline) |
 | `model_tier` → resolved | `Task(model=…)` override | `model:` (provider-prefixed) | `model = "…"` | orchestrator tier only | omit (host) |
-| `effort_tier` | — (no effort field) | `reasoningEffort:` for `opencode*` providers | `model_reasoning_effort` via `effort_emit_map` | — | — |
+| `effort_tier` | `effort:` (profile `effort_field_name`; CC values `low..max`, identity map) | `reasoningEffort:` for `opencode*` providers | `model_reasoning_effort` via `effort_emit_map` | — | — |
 | `turn_budget` | `maxTurns:` | maxTurns equiv | turn limit | — | inline cap |
 | `capabilities.write_files: false` | `tools:` excludes Write/Edit/Bash **+** `permissionMode: plan` | `permission: { edit: deny }` | `sandbox_mode = "read-only"` | convention | convention |
 | `capabilities.write_files: true` | `tools:` includes Write/Edit | default edit | `sandbox_mode = "workspace-write"` | convention | convention |

@@ -17,9 +17,10 @@ user-invocable: false
 <model_tier_table>
 | Tier | Model ID | Application |
 | :--- | :--- | :--- |
-| `fast` | `claude-sonnet-4-6` | Default for pipelines, agents, and skills. |
-| `deep` | `claude-opus-4-7` | High-complexity architecture or auditing tasks. |
 | `triage` | `claude-haiku-4-5-20251001` | High-volume, low-latency classification. |
+| `fast` | `claude-haiku-4-5-20251001` | Reviews and bounded worker steps. |
+| `medium` | `claude-sonnet-4-6` | Default for pipelines, agents, and skills. |
+| `deep` | `claude-opus-4-8` | High-complexity architecture or auditing tasks. |
 </model_tier_table>
 
 <invariant>
