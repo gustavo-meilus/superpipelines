@@ -7,7 +7,9 @@
   },
   "scripts": {
     "package:codex": "node scripts/package-codex-plugin.js",
-    "check:codex-plugin": "node scripts/package-codex-plugin.js --check"
+    "check:codex-plugin": "node scripts/package-codex-plugin.js --check",
+    "docs:install-table": "node scripts/generate-install-docs.js",
+    "check:install-docs": "node scripts/generate-install-docs.js --check"
   },
   "engines": {
     "node": ">=18"

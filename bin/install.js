@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { execSync, spawnSync } from 'node:child_process';
 
 const REPO = 'gustavo-meilus/superpipelines';
@@ -61,7 +62,9 @@ function vsCodeExtensionInstalled(extensionId) {
   } catch { return false; }
 }
 
-const PLATFORMS = [
+// Exported: scripts/generate-install-docs.js renders the README install table
+// from this array so the installer stays the single source of truth for commands.
+export const PLATFORMS = [
   {
     id: 'claude-code',
     name: 'Claude Code',
@@ -294,4 +297,8 @@ function main() {
   if (anyFailed) process.exit(1);
 }
 
-main();
+// Run only when executed directly (node bin/install.js / npx superpipelines-install),
+// not when imported by the docs generator.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

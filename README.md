@@ -22,14 +22,18 @@ irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install
 npx -y superpipelines-install
 ```
 
-Platform-specific install commands:
+Platform-specific install commands (generated from `bin/install.js` — run `node scripts/generate-install-docs.js` after changing the installer):
 
+<!-- <install_matrix> -->
 | Platform | Install |
 | :--- | :--- |
-| Claude Code | `claude plugin install github:gustavo-meilus/superpipelines` |
-| Codex App/CLI | `codex plugin add github:gustavo-meilus/superpipelines` (syntax pending verification — see RELEASE-NOTES) |
-| Antigravity 2.0 | `agy plugin install github:gustavo-meilus/superpipelines` |
-| Cursor / Windsurf / Cline | `npx -y skills add superpipelines -a <cursor\|windsurf\|cline>` |
+| Claude Code (Tier 1) | `claude plugin marketplace add https://github.com/gustavo-meilus/superpipelines`<br>`claude plugin install superpipelines@superpipelines-marketplace` |
+| Codex App/CLI (Tier 1d) | `codex plugin marketplace add gustavo-meilus/superpipelines`<br>`codex plugin add superpipelines@superpipelines-marketplace` |
+| Cursor (Tier 2) | `npx -y skills add superpipelines -a cursor` |
+| Windsurf (Tier 2) | `npx -y skills add superpipelines -a windsurf` |
+| Cline (Tier 2) | `npx -y skills add superpipelines -a cline` |
+| Antigravity CLI 2.0 (Tier 1c) | `agy plugin install superpipelines@superpipelines` |
+<!-- </install_matrix> -->
 
 Step 2: Create your first pipeline
 
