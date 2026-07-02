@@ -68,6 +68,10 @@ isolation: worktree
 skills: [sk-4d-method, sk-spec-driven-development]
 ```
 
+<invariant>
+Plugin-scope enforcement rule: Claude Code ignores `permissionMode`, `hooks`, and `mcpServers` on subagents loaded from a plugin — only `tools:` and `disallowedTools:` are enforced on that path. Reviewer write-deny for plugin-shipped agents therefore rests entirely on the tool allowlist; `permissionMode` in `agents/*.md` is declarative intent, not a barrier. Project-scope agents (including agents MATERIALIZE writes under `.claude/agents/superpipelines/{P}/`) enforce `permissionMode` normally. No document may claim `permissionMode` enforcement for plugin-shipped agents (auditor BUNDLE-08).
+</invariant>
+
 ## Progressive Disclosure Checklist
 
 <checklist>

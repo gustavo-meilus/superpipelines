@@ -22,14 +22,18 @@ irm https://raw.githubusercontent.com/gustavo-meilus/superpipelines/main/install
 npx -y superpipelines-install
 ```
 
-Platform-specific install commands:
+Platform-specific install commands (generated from `bin/install.js` — run `node scripts/generate-install-docs.js` after changing the installer):
 
+<!-- <install_matrix> -->
 | Platform | Install |
 | :--- | :--- |
-| Claude Code | `claude plugin install github:gustavo-meilus/superpipelines` |
-| Codex App/CLI | `codex plugin add github:gustavo-meilus/superpipelines` (syntax pending verification — see RELEASE-NOTES) |
-| Antigravity 2.0 | `agy plugin install github:gustavo-meilus/superpipelines` |
-| Cursor / Windsurf / Cline | `npx -y skills add superpipelines -a <cursor\|windsurf\|cline>` |
+| Claude Code (Tier 1) | `claude plugin marketplace add https://github.com/gustavo-meilus/superpipelines`<br>`claude plugin install superpipelines@superpipelines-marketplace` |
+| Codex App/CLI (Tier 1d) | `codex plugin marketplace add gustavo-meilus/superpipelines`<br>`codex plugin add superpipelines@superpipelines-marketplace` |
+| Cursor (Tier 2) | `npx -y skills add superpipelines -a cursor` |
+| Windsurf (Tier 2) | `npx -y skills add superpipelines -a windsurf` |
+| Cline (Tier 2) | `npx -y skills add superpipelines -a cline` |
+| Antigravity CLI 2.0 (Tier 1c) | `agy plugin install superpipelines@superpipelines` |
+<!-- </install_matrix> -->
 
 Step 2: Create your first pipeline
 
@@ -133,7 +137,7 @@ The framework selects the optimal pattern based on task complexity:
 
 ## Design Principles
 
-Permission boundaries are enforced at the agent definition level, not by prompt instruction. But the constraint preventing reviewers from modifying code sits in the permission schema, not in a system prompt that a sufficiently confident model can talk itself around. Every agent declares a `permissionMode`, and bypassing it requires explicit documented justification.
+Permission boundaries are enforced at the agent definition level, not by prompt instruction. The constraint preventing reviewers from modifying code sits in the tool allowlist (`tools:` + `disallowedTools:`) — a schema a sufficiently confident model cannot talk itself around. Agents additionally declare a `permissionMode`; on Claude Code this is enforced for the per-pipeline agents materialized into your project, while for the plugin's own bundled agents Claude Code honors only the tool restrictions (a documented platform rule), so the tool allowlist is always the load-bearing barrier.
 
 Pipeline state persists to a deterministic path at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Resumption resets any in-progress phases to their initial state while preserving all completed work, which means a crashed session picks back up without re-running the intake or architecture phases that already passed validation. High-density reference documentation lives in companion `*-references/` directories and loads on demand. This strategy prevents token-heavy reference payloads from bloating the active session window during phases that do not need deep technical detail. Practitioners commonly underestimate how quickly context saturation degrades output quality on long pipelines. Keeping reference data out of the primary context until it is needed is one of the highest-return optimizations available without modifying the underlying model configuration.
 
