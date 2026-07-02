@@ -1,6 +1,6 @@
 {
   "name": "superpipelines",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Design, generate, and run multi-agent AI pipelines — scope-aware, multi-pipeline, spec-driven, write/review-isolated. Codex App/CLI target (Tier 1d: native parallel subagents, up to 6 concurrent).",
   "author": {
     "name": "Gustavo Meilus",

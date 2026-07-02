@@ -102,9 +102,9 @@ and emits a native agent file. This is the normative capability → primitive ma
 |---|---|---|---|---|---|
 | `name` | `name:` | `name:` | agent name | n/a (dynamic) | n/a (inline) |
 | `model_tier` → resolved | `Task(model=…)` override | `model:` (provider-prefixed) | `model = "…"` | orchestrator tier only | omit (host) |
-| `effort_tier` | `effort:` (profile `effort_field_name`; CC values `low..max`, identity map) | `reasoningEffort:` for `opencode*` providers | `model_reasoning_effort` via `effort_emit_map` | — | — |
-| `turn_budget` | `maxTurns:` | maxTurns equiv | turn limit | — | inline cap |
-| `capabilities.write_files: false` | `tools:` excludes Write/Edit/Bash **+** `permissionMode: plan` | `permission: { edit: deny }` | `sandbox_mode = "read-only"` | convention | convention |
+| `effort_tier` | `effort:` (profile `effort_field_name`; CC values `low..max`, identity map) | `reasoningEffort:` for `opencode*` providers | `model_reasoning_effort` via `effort_emit_map` (identity; live Codex rejects `minimal` with exposed tools) | — | — |
+| `turn_budget` | `maxTurns:` | maxTurns equiv | — (live parser rejects `turn_limit`; degrades to prompt guidance) | — | inline cap |
+| `capabilities.write_files: false` | `tools:` excludes Write/Edit/Bash **+** `permissionMode: plan` | `permission: { edit: deny }` | `sandbox_mode = "read-only"` (host-conditional: unenforced on unsandboxed sessions — see tier_1d `isolation_unsandboxed_warning`) | convention | convention |
 | `capabilities.write_files: true` | `tools:` includes Write/Edit | default edit | `sandbox_mode = "workspace-write"` | convention | convention |
 | `capabilities.run_shell` | include/exclude `Bash` | include/exclude shell tool | sandbox/exec policy | convention | convention |
 | `capabilities.network` | include/exclude web tools | include/exclude | exec network policy | convention | convention |

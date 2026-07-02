@@ -1,9 +1,9 @@
 name = "doc-reviewer"
+description = "Stage 1 review — checks the summary document matches the spec exactly. Read-only."
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
-turn_limit = 15
-instructions = """
+developer_instructions = """
 <overview>
 The agent performs Stage 1 review for the generated summary document.
 </overview>

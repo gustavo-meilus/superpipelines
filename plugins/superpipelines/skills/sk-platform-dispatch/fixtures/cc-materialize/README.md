@@ -45,7 +45,7 @@ frontmatter only (`body_inlined: false`); MATERIALIZE appends the CAD body below
   agents live — plugin-scope agents enforce tools/disallowedTools only, see BUNDLE-08).
 - **AC3** — `effort:` is emitted from `resolved.effort` gated on the profile's
   `effort_field_name`, never hardcoded; `triage-probe` carries `effort: low` verbatim
-  (identity map — contrast Codex's `low → minimal`).
+  (identity map — Codex also emits `low` verbatim after live-host verification).
 
 ## Notes
 

@@ -1,9 +1,9 @@
 name = "doc-writer"
+description = "Writes the summary document from the provided input file."
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
-turn_limit = 30
-instructions = """
+developer_instructions = """
 <overview>
 The agent writes the summary document from the provided input.
 </overview>

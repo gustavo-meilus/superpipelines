@@ -399,7 +399,7 @@ Resolved model has prefix `anthropic`, not in the applies-to list.
 
 Effort dropped because Anthropic-family models on OC ignore `reasoningEffort`.
 
-### Branch 6: Effort emit map (Codex `minimal`)
+### Branch 6: Effort emit map (Codex)
 
 **Input:**
 ```yaml
@@ -408,13 +408,13 @@ model_tier: triage
 effort_tier: low
 ```
 
-**Profile:** tier_1d, with `effort_emit_map: { low: "minimal", medium: "medium", high: "high" }`.
+**Profile:** tier_1d, with `effort_emit_map: { low: "low", medium: "medium", high: "high" }` (identity — live Codex 0.142.5 rejects `minimal` when tools are exposed; verified 2026-07).
 
 **Output:**
 ```json
 {
   "model": "gpt-5.4-mini",
-  "effort": "minimal",
+  "effort": "low",
   "effort_field_name": "model_reasoning_effort",
   "model_field_format": "toml_split",
   "source": "profile_default",
@@ -425,7 +425,7 @@ effort_tier: low
 `EMIT` produces:
 ```
 model = "gpt-5.4-mini"
-model_reasoning_effort = "minimal"
+model_reasoning_effort = "low"
 ```
 
 ### Branch 7: Missing user prefs, falls to profile default

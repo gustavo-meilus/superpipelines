@@ -79,7 +79,7 @@ By operating with `disallowedTools: Write, Edit, Bash`, the reviewer agent canno
 | :--- | :--- | :--- | :--- |
 | **1** | Claude Code | Native `Task()` | Structural (`tools:` restriction) |
 | **1b** | OpenCode | `mode: subagent` | Structural (`permission: { edit: deny }`) |
-| **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` (`read-only` structural; `workspace-write` requires Hyper-V) |
+| **1d** | Codex App/CLI | Model-driven, up to 6 concurrent | TOML `sandbox_mode` (`read-only` structural on sandbox-capable hosts; degrades to advisory with a surfaced warning on unsandboxed sessions, e.g. `danger-full-access` / Windows without Hyper-V) |
 | **2** | Cursor, Windsurf, Cline | Single-agent inline loop | Convention-only (advisory) |
 
 Pipelines scaffolded on Tier 1 (Claude Code) or Tier 1d (Codex) run on Tier 2 platforms without modification — `sk-platform-dispatch` rewrites paths at read/write time.

@@ -16,21 +16,21 @@ triple-quoted `instructions` string (TOML has no frontmatter/body split).
   that materializes to CC (#62) and OC (#66) — AC3's "same canonical defs as CC".
 - `input/doc-reviewer.cad.md` — reviewer CAD (`write_files:false`). The structural reviewer.
 - `input/triage-probe.cad.md` — `model_tier: triage` read-only step, present to exercise the
-  **low→minimal** effort map (AC4).
+  effort emit map (identity `low → low`; AC4).
 - `input/resolved-models.json` — `resolved_models` on tier_1d. `effort_emit_map` is applied
-  upstream by `sk-model-resolver` (step 9), so `triage-probe.effort` is already `"minimal"`; the
-  translator emits `resolved.effort` verbatim.
+  upstream by `sk-model-resolver` (step 9); the map is identity so `triage-probe.effort` is `"low"` and the
+  translator emits `resolved.effort` verbatim. (`minimal` was retired: live Codex 0.142.5 fails it with exposed tools.)
 
 ## Expected outputs (`expected-codex/`)
 
 | CAD field | doc-writer | doc-reviewer | triage-probe |
 |---|---|---|---|
 | `model` ← resolved | `gpt-5.4` | `gpt-5.4` | `gpt-5.4-mini` |
-| `model_reasoning_effort` ← resolved.effort | `medium` | `medium` | `minimal` ✅ **low→minimal (AC4)** |
+| `model_reasoning_effort` ← resolved.effort | `medium` | `medium` | `low` ✅ **identity map, emitted verbatim (AC4)** |
 | `sandbox_mode` ← `write_files` | `workspace-write` | `read-only` ✅ **structural reviewer isolation (AC2)** | `read-only` |
 | `[sandbox_workspace_write] network_access` (writer + `network:false`) | `false` | *(absent — reviewer)* | *(absent)* |
-| `turn_limit` ← `turn_budget` | `30` | `15` | `10` |
-| `instructions` | CAD body verbatim | CAD body verbatim | CAD body verbatim |
+| `description` ← cad | verbatim | verbatim | verbatim |
+| `developer_instructions` | CAD body verbatim | CAD body verbatim | CAD body verbatim |
 
 ## Assertions
 
@@ -38,17 +38,18 @@ triple-quoted `instructions` string (TOML has no frontmatter/body split).
   `sandbox_mode` set from capabilities + resolved model.
 - **AC2** — `write_files:false` → `sandbox_mode = "read-only"` (structural; reviewer cannot
   write or shell-write). `read-only` also covers `run_shell:false` + `network:false`.
-- **AC4** — `triage-probe` (low/triage tier) emits `model_reasoning_effort = "minimal"` — the
-  `effort_emit_map` `low → minimal` translation, applied by the resolver and emitted verbatim.
+- **AC4** — `triage-probe` (low/triage tier) emits `model_reasoning_effort = "low"` — the identity
+  `effort_emit_map`, applied by the resolver and emitted verbatim.
 
 ## Notes
 
 - TOML table-ordering: the `[sandbox_workspace_write]` table is emitted **after** all top-level
   keys (TOML rule — bare keys after a table header belong to that table). The golden writer file
   honors this.
-- `turn_limit` and the `[sandbox_workspace_write]` key names follow the Codex agent-config schema
-  (Codex config docs, read 2026-06-14); AC3's live Codex run is the confirmation gate — if Codex's
-  actual keys differ, the goldens and `TRANSLATE_CAD_TO_CODEX` change together.
+- Key names were confirmed against live Codex CLI 0.142.5 (2026-07,
+  `docs/agents/verification/codex-discovery-2026-07.md`): `description` and scalar
+  `developer_instructions` are required, `instructions` and `turn_limit` are rejected. The goldens
+  and `TRANSLATE_CAD_TO_CODEX` changed together per the parity contract.
 - Codex isolates per-thread at the app level (no per-subagent worktree), so `isolation_required`
   carries no extra materialized primitive and no degradation warning is configured for tier_1d.
 - The materialized file is disposable cache: regenerated every run, never read as source. The CAD
