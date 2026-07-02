@@ -40,6 +40,8 @@ jobs:
           node-version: 20
       - name: Validate profiles against schema (+ fixture behavior)
         run: npm run check:profiles
+      - name: Materialization parity (CAD → CC/OC/Codex goldens)
+        run: npm run check:parity
 
   authoring:
     name: Authoring Rules & Preload Budget
