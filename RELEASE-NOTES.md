@@ -3,8 +3,42 @@
 > Canonical record of versioned changes, feature additions, and removals for the Superpipelines framework. This document serves as the primary reference for tracking migration paths and architectural evolution.
 
 <overview>
-Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.4.0 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, the Codex agent TOML schema fix with regression guard in v2.3.1, CAD hygiene hardening in v2.3.2, and refined isolation/delete-step safety guards in v2.4.0.
+Superpipelines release notes document the evolution from legacy Superpowers-era infrastructure to the standalone v2.4.0 architecture. Key milestones include scope-aware deployment, multi-pipeline isolation, the five-tier multi-platform execution model, the Lean Agents zero-body architecture, the brief-hardening grilling gate, the worktree artifact-safety hardening introduced in v2.1.1, the audit-report-ownership and agent `permissionMode` consistency fixes in v2.1.2, the run-safety audit gate (pre-run tripwire, deterministic platform_profile merge, defensive finalization) in v2.1.3, the on-demand pipeline optimizer in v2.2.0, the phase-skip safety hardening in v2.2.1, the Codex native layout migration in v2.2.2, the self-contained Codex marketplace package in v2.2.3, the unified single-root, data-only pipeline architecture with materialize-at-runtime dispatch in v2.3.0, the Codex agent TOML schema fix with regression guard in v2.3.1, CAD hygiene hardening in v2.3.2, refined isolation/delete-step safety guards in v2.4.0, and the trust/CI-enforcement overhaul with Codex live-host verification in v2.5.0.
 </overview>
+
+## v2.5.0 — Trust, CI Enforcement & Codex Live Verification (2026-07-02)
+
+Closes the gap between what the project claims and what is enforced: install commands are generated from the installer and CI-checked, the repository's own guards (profiles, authoring rules, materialization parity, version agreement) run on every PR, and the Codex tier's schema and isolation behavior are now grounded in live-host evidence rather than documentation reading — including an honest host-conditional downgrade of the Codex reviewer-isolation claim on unsandboxed sessions.
+
+<release_entry version="2.5.0" status="STABLE">
+
+### Added
+
+- **v3 spec + execution plan + competitive analysis** (#88) — a 12-gap register with acceptance criteria, an 18-item dependency-ordered fix plan, a Copilot CLI tier proposal, and the Wave 3 live-host handoff.
+- **Five-job CI** (#88) — version agreement (6 targets), profile schema validation with fixture behavior, authoring lints + model-ID drift detection, preload-budget report, materialization-parity gate (all golden fixtures reproduced per PR), and a 3-OS installer smoke matrix. Every job mirrored 1:1 by an npm script (`npm run check:all`).
+- **Install-table generator** (#88) — the README Quick-Start table renders from `bin/install.js` and diverging edits fail CI; Tier 2 gets a documented manual-install fallback.
+- **PRIVACY.md + manifest URL integrity** (#88) — dead marketplace links are now impossible.
+- **Monthly profile-drift review** (#88) — a scheduled workflow opens a re-verification checklist issue; releases gate on it.
+- **Codex live-host verification transcripts** (#89) — install grammar, nested agent discovery, TOML schema, and isolation probes on Codex CLI 0.142.5.
+
+### Safety
+
+- **Codex reviewer isolation is now host-conditional** — live Probe D showed per-agent `sandbox_mode = "read-only"` is NOT enforced when the session runs `danger-full-access` or the host lacks sandbox helpers. tier_1d ships `extensions.isolation_unsandboxed_warning` and dispatch adds a mandatory runtime guard: on unsandboxed sessions reviewer verdicts degrade to advisory with the warning surfaced and stamped into `metadata.isolation_warning`. Structural enforcement stands on sandbox-capable hosts; a re-probe on a Hyper-V-capable machine remains open.
+- **`PERMISSION_MODE` honesty** (#88) — plugin-shipped agents rely structurally on `tools:`/`disallowedTools:` alone (Claude Code ignores `permissionMode` on the plugin path); materialized project-scope agents keep full enforcement. Auditor BUNDLE-08 flags contrary claims.
+
+### Changed
+
+- **Codex agent TOML schema (live-verified)** — translator, goldens, parity harness, and packager now emit/require `description` + scalar `developer_instructions`, drop `turn_limit`, and use an identity effort map (`low → low`).
+- **`PARITY_TESTING`** — `MANUAL_PHASE1` → `TRANSLATION_AUTOMATED_DISPATCH_MANUAL`; the CAD → native translation layer is CI-gated.
+- **Antigravity (Tier 1c)** moved from the headline tier matrices to an honest Roadmap section.
+
+### Fixed
+
+- **CC `effort` capability drift** — tier_1 now emits `effort:` in materialized agents (was silently dropped).
+- **Stale model IDs** — opus-4-7/gemini-3.1-pro references corrected across four skills and lint-enforced against recurrence.
+- **Codex installer syntax** (#89) — verified live; the long-standing "pending verification" caveat is retired.
+
+</release_entry>
 
 ## v2.4.0 — Isolation & Delete-Step Guards (2026-06-28)
 

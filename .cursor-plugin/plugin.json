@@ -1,6 +1,6 @@
 {
   "name": "superpipelines",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Design and run multi-agent AI pipelines on Cursor, Windsurf, and Cline (Tier 2: single-agent inline execution; reviewer isolation is convention-only).",
   "author": {
     "name": "Gustavo Meilus",

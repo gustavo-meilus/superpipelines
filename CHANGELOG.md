@@ -17,6 +17,33 @@ Superpipelines is distributed via the GitHub-hosted marketplace at `gustavo-meil
 /plugin install superpipelines@superpipelines-marketplace --version v1.0.2
 ```
 
+## 2.5.0 — Trust, CI Enforcement & Codex Live Verification (2026-07-02)
+
+### Added
+
+- **Competitive analysis, v3 spec, and execution plan** (#88) — `docs/analysis/competitive-landscape-2026-07.md`, `docs/specs/v3-compatibility-and-growth-spec.md` (12-gap register with severity/evidence/acceptance criteria, tier_1e Copilot proposal), and `docs/plans/fix-plan-2026-07.md` (18 dependency-ordered work items) plus the Wave 3 live-host handoff.
+- **CI overhaul** (#88, WI-07/08/09) — five jobs replace the 26-line manifest check: version agreement across the 6 release targets (`scripts/check-version-agreement.js`), profile schema validation with fixture behavior (`scripts/check-profiles.js`), authoring-rule lints and model-ID drift detection (`scripts/check-authoring-rules.js`), preload-budget report (`scripts/report-preload-budget.js`), the materialization-parity gate (`scripts/check-materialization-parity.js` reproduces all golden fixtures), guard-script chaining, and an installer smoke matrix on ubuntu/macos/windows.
+- **README install table generator** (#88, WI-01) — `scripts/generate-install-docs.js` renders the Quick-Start table from `bin/install.js` `PLATFORMS` with a `--check` CI mode; the unverified `github:` shorthand commands are gone.
+- **CC materialization fixture** (#88, WI-03) — `fixtures/cc-materialize/` goldens prove `TRANSLATE_CAD_TO_CC` including the new `effort:` emission.
+- **PRIVACY.md + manifest URL integrity** (#88, WI-04) — the Codex manifest's dead `privacyPolicyURL` now resolves; the packager validates every manifest URL against the repo.
+- **Monthly profile-drift review** (#88, WI-10) — `.github/workflows/profile-drift.yml` opens a needs-triage checklist issue re-verifying each tier profile; `cutting-a-release` gates on it.
+- **Tier 2 manual-install fallback** (#88, WI-06) — the installer prints a copy-based fallback when the third-party `skills` CLI is unavailable.
+- **Codex live-host verification transcripts** (#89) — `docs/agents/verification/codex-install-2026-07.md` and `codex-discovery-2026-07.md` record WI-11/WI-12 probe evidence on Codex CLI 0.142.5.
+
+### Changed
+
+- **`PARITY_TESTING` invariant** (#88, WI-09) — upgraded from `MANUAL_PHASE1` to `TRANSLATION_AUTOMATED_DISPATCH_MANUAL`; the CAD → native translation layer is now CI-gated.
+- **`PERMISSION_MODE` invariant** (#88, WI-02) — scoped to where Claude Code honors it: plugin-shipped agents enforce `tools:`/`disallowedTools:` only; materialized project-scope agents enforce `permissionMode`. New auditor criterion BUNDLE-08 guards the claim.
+- **Antigravity moved to Roadmap** (#88, WI-05) — the unverified Tier 1c row left the headline tier matrices; GEMINI.md stays (it is the file Antigravity loads at session start).
+- **Codex agent TOML schema (live-verified)** — `TRANSLATE_CAD_TO_CODEX` now emits the required `description` and scalar `developer_instructions` (live parser rejects `instructions`), no longer emits `turn_limit` (rejected as unknown field), and the tier_1d `effort_emit_map` is identity (`low → low`; live Codex fails `minimal` with exposed tools). Goldens, parity harness, packager validator, and references changed together.
+- **Codex reviewer isolation is host-conditional** — Probe D showed `sandbox_mode = "read-only"` unenforced on unsandboxed sessions (`danger-full-access` / hosts without sandbox helpers). tier_1d gains `extensions.isolation_unsandboxed_warning` and dispatch adds a mandatory runtime guard that degrades reviewer verdicts to advisory with the warning surfaced and stamped into `metadata.isolation_warning`; structural claims hold on sandbox-capable hosts.
+
+### Fixed
+
+- **Claude Code `effort` capability drift** (#88, WI-03) — tier_1 claimed CC had no effort field; `effort_tier` silently dropped on CC while Codex/OpenCode honored it. The profile and translator now emit `effort:`.
+- **Stale model IDs in skill bodies** (#88, WI-08) — `claude-opus-4-7` lingering as the current deep model in sk-model-resolver, sk-dynamic-routing, running-a-pipeline's inline fallback, and the conventions table (also fast→haiku per profile); `gemini-3.1-pro` in the visual routing row; a missing ToC in `agent-frontmatter-schema.md`. Now lint-enforced.
+- **Codex installer syntax verified** (#89, WI-11) — `codex plugin marketplace add` + `codex plugin add` confirmed on a live host; the RELEASE-NOTES "unverified" caveat is retired.
+
 ## 2.4.0 — Isolation & Delete-Step Guards (2026-06-28)
 
 ### Added
