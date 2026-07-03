@@ -18,7 +18,7 @@ jobs:
       - name: HOL Plugin Scanner
         uses: hashgraph-online/ai-plugin-scanner-action@b263935982a246107c8597332217ddd87aa684a3 # v1
         with:
-          plugin_dir: "."
+          plugin_dir: "plugins/superpipelines"
           mode: scan
           min_score: 80
           fail_on_severity: high
