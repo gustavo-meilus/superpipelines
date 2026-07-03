@@ -9,6 +9,8 @@ const repoRoot = path.resolve(path.dirname(__filename), '..');
 const packageRoot = path.join(repoRoot, 'plugins', 'superpipelines');
 const sourceSkills = path.join(repoRoot, 'skills');
 const packageSkills = path.join(packageRoot, 'skills');
+const sourceAssets = path.join(repoRoot, 'assets');
+const packageAssets = path.join(packageRoot, 'assets');
 const manifestPath = path.join(packageRoot, '.codex-plugin', 'plugin.json');
 const liveCodexAgents = path.join(repoRoot, '.codex', 'agents');
 
@@ -265,6 +267,9 @@ if (mode === 'sync') {
     fail('missing source skills directory');
   }
   copyDirectory(sourceSkills, packageSkills);
+  if (fs.existsSync(sourceAssets) && fs.statSync(sourceAssets).isDirectory()) {
+    copyDirectory(sourceAssets, packageAssets);
+  }
   copyFileIfPresent('README.md');
   copyFileIfPresent('LICENSE');
 }

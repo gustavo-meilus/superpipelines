@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Superpipelines social preview</title>
+  <desc id="desc">Superpipelines: AI reviewers that cannot edit code, with honest downgrade warnings when hosts cannot enforce isolation.</desc>
+  <rect width="1280" height="640" fill="#101418"/>
+  <rect x="64" y="64" width="1152" height="512" rx="24" fill="#f6f3ee"/>
+  <rect x="104" y="104" width="1072" height="432" rx="16" fill="#ffffff" stroke="#d7d0c6" stroke-width="2"/>
+  <text x="136" y="180" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="42" font-weight="700" fill="#15191d">Superpipelines</text>
+  <text x="136" y="254" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="52" font-weight="800" fill="#15191d">Your AI reviewer cannot edit code.</text>
+  <text x="136" y="318" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="36" font-weight="600" fill="#354049">Structurally. And when a host cannot enforce it, we tell you.</text>
+  <g transform="translate(136 386)">
+    <rect width="390" height="72" rx="12" fill="#101418"/>
+    <text x="22" y="46" font-family="SFMono-Regular, Consolas, monospace" font-size="19" fill="#f6f3ee">npx -y superpipelines-install</text>
+  </g>
+  <g transform="translate(546 386)">
+    <rect width="150" height="72" rx="12" fill="#e6f4ef"/>
+    <text x="24" y="45" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#0f5f4a">Local-only</text>
+  </g>
+  <g transform="translate(716 386)">
+    <rect width="200" height="72" rx="12" fill="#edf2ff"/>
+    <text x="20" y="45" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#274690">Crash-resumable</text>
+  </g>
+  <g transform="translate(936 386)">
+    <rect width="160" height="72" rx="12" fill="#fff1df"/>
+    <text x="24" y="45" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#7a3f00">Honest CI</text>
+  </g>
+</svg>
