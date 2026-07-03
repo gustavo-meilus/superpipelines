@@ -14,6 +14,7 @@
     "displayName": "Superpipelines",
     "shortDescription": "Design and run multi-agent AI pipelines.",
     "longDescription": "Spec-driven, write/review-isolated multi-agent orchestration across Claude Code, OpenCode, Codex, and Cursor/Windsurf/Cline.",
+    "composerIcon": "./assets/superpowers-small.svg",
     "developerName": "Gustavo Meilus",
     "category": "Development",
     "capabilities": [],
