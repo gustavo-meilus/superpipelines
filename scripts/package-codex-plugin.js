@@ -272,6 +272,8 @@ if (mode === 'sync') {
   }
   copyFileIfPresent('README.md');
   copyFileIfPresent('LICENSE');
+  copyFileIfPresent('SECURITY.md');
+  copyFileIfPresent('.codexignore');
 }
 
 validatePackage();
