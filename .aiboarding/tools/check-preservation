@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# aiboarding tool: verify compression byte-preservation invariants.
+#
+#   check-preservation <before> <after>
+#
+# Extracts the protected spans from <before> and asserts each one survives
+# byte-for-byte in <after>. Protected spans:
+#   - fenced code blocks (``` ... ```), checked as one unit including fences
+#   - inline backtick spans (`...`), checked including the backticks
+#   - URL tokens (http:// or https://)
+#   - path-shaped tokens (containing '/' and '.')
+#
+# Compression may rewrite everything else; it must never alter these. The
+# synthesis rule that makes this checker effective: generated onboarding docs
+# backtick-quote every command, identifier, path, and error string.
+#
+# Exit codes: 0 all spans preserved, 1 at least one span missing (listed on
+# stderr), 2 usage error.
+set -euo pipefail
+set -f   # no pathname expansion: $line word-splitting must not glob-expand
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: check-preservation <before> <after>" >&2
+  exit 2
+fi
+before="$1" after="$2"
+if [ ! -f "$before" ] || [ ! -f "$after" ]; then
+  echo "check-preservation: input file not found" >&2
+  exit 2
+fi
+
+after_content="$(cat "$after")"
+fail=0
+
+check_span() {
+  # check_span <span> <kind>
+  local span="$1" kind="$2"
+  [ -n "$span" ] || return 0
+  case "$after_content" in
+    *"$span"*) ;;
+    *)
+      fail=1
+      printf 'MISSING %s span:\n%s\n' "$kind" "$span" >&2
+      ;;
+  esac
+}
+
+in_fence=0
+fence_buf=""
+while IFS= read -r line || [ -n "$line" ]; do
+  case "$line" in
+    '```'*)
+      if [ "$in_fence" -eq 0 ]; then
+        in_fence=1
+        fence_buf="$line"
+      else
+        fence_buf="${fence_buf}
+${line}"
+        check_span "$fence_buf" "code-fence"
+        in_fence=0
+        fence_buf=""
+      fi
+      continue
+      ;;
+  esac
+  if [ "$in_fence" -eq 1 ]; then
+    fence_buf="${fence_buf}
+${line}"
+    continue
+  fi
+
+  # Inline backtick spans, including the backticks.
+  rest="$line"
+  while :; do
+    case "$rest" in
+      *\`*\`*)
+        rest="${rest#*\`}"
+        span="${rest%%\`*}"
+        rest="${rest#*\`}"
+        check_span "\`${span}\`" "inline-code"
+        ;;
+      *) break ;;
+    esac
+  done
+
+  # URL and path-shaped tokens (whitespace-split; common trailing punctuation
+  # stripped so prose like "see src/app.ts." still protects src/app.ts).
+  for tok in $line; do
+    tok="${tok%,}"; tok="${tok%.}"; tok="${tok%;}"; tok="${tok%:}"
+    tok="${tok%)}"; tok="${tok#(}"
+    case "$tok" in
+      http://*|https://*) check_span "$tok" "url" ;;
+      */*.*)              check_span "$tok" "path" ;;
+    esac
+  done
+done < "$before"
+
+if [ "$in_fence" -eq 1 ]; then
+  echo "check-preservation: unclosed code fence in $before" >&2
+  exit 2
+fi
+
+exit "$fail"

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# aiboarding tool: enforce the onboarding-file size budget.
+#
+#   check-size-budget <file> [max-lines] [max-bytes] [strict-max-bytes]
+#
+# Defaults: 220 lines / 24000 bytes (warn), 32768 bytes (hard fail — the
+# OpenAI Codex project_doc_max_bytes default; instruction files past it are
+# silently truncated by Codex).
+#
+# Exit codes: 0 within budget (WARN lines on stdout when over the soft
+# budget), 1 over the strict cap, 2 usage error.
+set -euo pipefail
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 4 ]; then
+  echo "usage: check-size-budget <file> [max-lines] [max-bytes] [strict-max-bytes]" >&2
+  exit 2
+fi
+
+file="$1"
+max_lines="${2:-220}"
+max_bytes="${3:-24000}"
+strict_bytes="${4:-32768}"
+
+if [ ! -f "$file" ]; then
+  echo "check-size-budget: file not found: $file" >&2
+  exit 2
+fi
+
+lines="$(wc -l < "$file")"
+bytes="$(wc -c < "$file")"
+# Trim wc padding (BSD/macOS wc left-pads).
+lines="${lines//[[:space:]]/}"
+bytes="${bytes//[[:space:]]/}"
+
+if [ "$bytes" -gt "$strict_bytes" ]; then
+  echo "FAIL: ${file} is ${bytes} bytes > strict cap ${strict_bytes} (Codex project_doc_max_bytes default; content past the cap is silently truncated). Split into nested AGENTS.md files or .claude/rules/, or compress harder." >&2
+  exit 1
+fi
+if [ "$lines" -gt "$max_lines" ]; then
+  echo "WARN: ${file} is ${lines} lines > budget ${max_lines}. Adherence drops with length; consider compressing or moving detail to .claude/rules/ or nested AGENTS.md files."
+fi
+if [ "$bytes" -gt "$max_bytes" ]; then
+  echo "WARN: ${file} is ${bytes} bytes > budget ${max_bytes}."
+fi
+exit 0
