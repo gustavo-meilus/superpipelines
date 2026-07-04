@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# aiboarding InstructionsLoaded hook: debug-only load diagnostics.
+#
+# InstructionsLoaded fires when Claude Code loads an instruction file
+# (CLAUDE.md, .claude/rules/*.md); the payload carries file_path and
+# load_reason. This turns "did the context actually load?" into a checkable
+# log instead of a manual protocol. Inert unless AIBOARDING_DEBUG=1; the only
+# aiboarding hook allowed to write files, and only under untracked
+# .aiboarding/logs/.
+set -euo pipefail
+
+if [ "${AIBOARDING_DEBUG:-0}" != "1" ]; then
+  [ -t 0 ] || cat > /dev/null 2>&1 || true
+  exit 0
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib"
+resolve_paths
+
+mkdir -p "${PROJECT_DIR}/.aiboarding/logs"
+{
+  printf '%s instructions-loaded ' "$(date -u +%FT%TZ)"
+  [ -t 0 ] || cat
+  printf '\n'
+} >> "${PROJECT_DIR}/.aiboarding/logs/hooks.log"
+exit 0

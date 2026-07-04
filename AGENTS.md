@@ -1,72 +1,174 @@
-# Superpipelines — Agent Context
+# Superpipelines Agent Onboarding
 
-> Universal context file for any AGENTS.md-aware tool (OpenCode, Codex, Cursor, Windsurf, Cline, others). Introduces the Superpipelines commands and pipeline concepts so the active agent recognizes user intent.
+## Project Purpose
 
-## What this plugin does
+`superpipelines` is a multi-agent pipeline orchestration framework distributed as a cross-platform AI tooling plugin. It helps users design, scaffold, audit, mutate, optimize, and run named workflows made of specs, plans, tasks, parallel branches, iterative loops, and human gates.
 
-Superpipelines is a multi-agent pipeline orchestration framework. It lets users design, scaffold, and execute named multi-step AI workflows (specs, plans, tasks, parallel branches, iterative loops, human gates).
+The core product promise is repeatable AI process: define a workflow once, let tier-aware agents or inline protocols execute it, preserve reviewer isolation where the host supports it, and keep generated pipelines portable across supported tools.
 
-## Commands
+Primary user commands are `/superpipelines:new-pipeline`, `/superpipelines:run-pipeline`, `/superpipelines:audit-steps`, `/superpipelines:new-step`, `/superpipelines:update-step`, `/superpipelines:delete-step`, `/superpipelines:change-models`, `/superpipelines:init-deep`, and direct `/superpipelines:{P}` launchers.
 
-| Command | Purpose |
-|---------|---------|
-| `/superpipelines:new-pipeline` | Design a new pipeline end-to-end (brief → spec → topology → audit → scaffold). |
-| `/superpipelines:run-pipeline` | List installed pipelines and execute one. |
-| `/superpipelines:audit-steps` | Audit an existing pipeline's spec/plan/topology. |
-| `/superpipelines:new-step` | Add a step to an existing pipeline. |
-| `/superpipelines:update-step` | Modify an existing step. |
-| `/superpipelines:delete-step` | Remove a step. |
-| `/superpipelines:change-models` | Reassign model tiers across pipeline steps. |
-| `/superpipelines:init-deep` | Deep project initialization (full architecture analysis). |
-| `/superpipelines:{P}` | Direct invocation of a scaffolded pipeline named `{P}`. |
+## Stack and Runtime
 
-## Trigger phrases
+This repo is mostly declarative plugin source: Markdown skills, agent frontmatter, JSON manifests, shell hooks, and Node.js guard scripts. There is no compile step and no app server.
 
-The active agent should invoke a Superpipelines command when the user requests:
+Runtime requirements: `Node >=18` for `bin/install.js` and repository checks. The package is ESM via `"type": "module"` in `package.json`.
 
-- "design a workflow / pipeline for X" → `/superpipelines:new-pipeline`
-- "run the {name} pipeline" / "execute X" → `/superpipelines:run-pipeline` or `/superpipelines:{P}`
-- "audit pipeline X" → `/superpipelines:audit-steps`
-- "plan multi-step feature work" → `/superpipelines:new-pipeline`
+Supported host tiers are `Tier 1` Claude Code, `Tier 1b` OpenCode, `Tier 1c` Antigravity CLI 2.0 best-effort, `Tier 1d` Codex App/CLI, and `Tier 2` Cursor/Windsurf/Cline. Gemini CLI is retired as of `2026-06-18`.
 
-## Execution tier
+Windows development is common. Use PowerShell-compatible commands when practical. Do not write JSON with `Set-Content -Encoding UTF8` in ways that introduce a UTF-8 BOM; Claude Code JSON parsing can fail on BOM-prefixed files.
 
-Superpipelines runs on five tiers. The active platform's tier determines parallelism and reviewer-isolation strength:
+## Build, Test, Run
 
-| Tier | Platform | Subagents | Reviewer isolation |
-|------|----------|-----------|--------------------|
-| 1 | Claude Code | Skill-callable `Task()` (true parallel) | Structural |
-| 1b | OpenCode | `mode: subagent` agents | Structural |
-| 1d | Codex App/CLI | Model-driven, TOML agents (up to 6 concurrent) | Structural on sandbox-capable hosts (`sandbox_mode = "read-only"`); advisory + surfaced warning on unsandboxed sessions |
-| 2 | Cursor / Windsurf / Cline | None — single-agent inline | Convention-only (advisory) |
+Install locally or globally through the universal installer:
 
-Roadmap: Tier 1c (Antigravity CLI 2.0, Dynamic Subagents) is implemented best-effort and unverified on a live host; it degrades safely to the Tier 2 inline loop with surfaced warnings.
+```powershell
+npx -y superpipelines-install
+.\install.ps1
+```
 
-**Tier 2 caveat:** On Cursor, Windsurf, and Cline, the orchestrator executes both writer and reviewer protocols with its own full toolset. Reviews are advisory, not structurally enforced.
+POSIX install path:
 
-## Pipeline artifacts
+```bash
+./install.sh
+```
 
-All pipelines produce these files under the active scope root. Roots vary per tier (resolved by `sk-pipeline-paths`):
+Repository checks:
 
-- Tier 1 (Claude Code): `<workspace>/.claude/` → `~/.claude/`
-- Tier 1b (OpenCode): `<workspace>/.opencode/` → `~/.config/opencode/`
-- Tier 1c (Antigravity): `<workspace>/.agents/` → `~/.antigravity/`
-- Tier 1d (Codex): `<workspace>/.codex/` → `~/.codex/`
-- Tier 2 (Cursor/Windsurf/Cline): `<workspace>/.superpipelines/` (universal fallback)
+```bash
+npm run check:versions
+npm run check:profiles
+npm run check:authoring
+npm run check:parity
+npm run report:preload
+npm run check:install-docs
+npm run check:codex-plugin
+npm run check:all
+```
 
-The artifacts below appear under whichever root the active tier resolves:
+Useful packaging/docs commands:
 
-- `superpipelines/pipelines/{P}/spec.md` — Approved specification.
-- `superpipelines/pipelines/{P}/plan.md` — Implementation plan.
-- `superpipelines/pipelines/{P}/tasks.md` — Task list with dependencies.
-- `superpipelines/pipelines/{P}/topology.json` — Step graph.
-- `superpipelines/pipelines/{P}/{P}.md` — Single-page launcher (direct-invocation entry).
-- `superpipelines/temp/{P}/{runId}/pipeline-state.json` — Live run state.
+```bash
+npm run package:codex
+npm run check:codex-plugin
+npm run docs:install-table
+npm run check:install-docs
+node bin/install.js --list
+node bin/install.js --dry-run --non-interactive --only claude-code --only codex --only cursor --only windsurf --only cline --only antigravity
+```
 
-## Skill primacy
+CI in `.github/workflows/ci.yml` validates JSON manifests, required files, version agreement, platform profiles, materialization parity, authoring rules, preload budget, packaged plugin guards, installer detection, installer dry-runs, and README install-table sync.
 
-Intelligence lives in `skills/*/SKILL.md`. Platform manifests (`.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`) are discovery-only — they declare where skills/agents/commands live, not what they do.
+## Architecture Map
 
-## More
+Root source directories:
 
-- Repo: https://github.com/gustavo-meilus/superpipelines
+- `agents/`: Claude Code zero-body agent definitions; behavior lives in protocol skills.
+- `skills/`: operational intelligence. Each user-facing workflow and reusable method is a `SKILL.md`.
+- `commands/`: slash-command wrappers that route into skills.
+- `hooks/`: shipped Claude Code hook scripts, including optional subagent telemetry.
+- `bin/`: installer entrypoints.
+- `scripts/`: repository guard, packaging, parity, authoring, version, and docs checks.
+- `plugins/superpipelines/`: packaged Codex plugin bundle regenerated by `npm run package:codex`; never hand-edit.
+- `docs/`: ADRs, agent docs, and archived context.
+- `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, `gemini-extension.json`: discovery manifests, not behavior sources.
+- `.superpipelines/`: portable generated pipeline data and temp state.
+- `.claude/`, `.opencode/`, `.codex/`, `.agents/`: platform-specific examples, generated artifacts, or native materialization targets depending on tier.
+
+Architectural source of truth is `CLAUDE.md` plus `docs/adr/` and focused docs under `docs/agents/`. `AGENTS.md` is the cross-agent onboarding summary and must stay compressed.
+
+Dependency direction is profile-driven. Skill bodies depend on abstract `platform_profile.<field>` values from `skills/sk-platform-dispatch/profiles/{tier_id}.json`; concrete per-platform model IDs, dispatch mechanisms, scope roots, and isolation recipes must not be duplicated into workflow bodies.
+
+## Domain Model
+
+The core entity is a `pipeline`: a named multi-step AI workflow with spec, plan, task graph, topology, generated agents/protocols, and live run state.
+
+Canonical lifecycle phases are `DECONSTRUCT`, `DIAGNOSE`, `DEVELOP`, `HARD GATE`, `IMPLEMENT`, `STAGE1`, `STAGE2`, `COMMIT`, and `DONE`.
+
+Canonical execution patterns are `Sequential`, `Parallel Fan-Out`, `Iterative Loop` with max `3` iterations, `Human-Gated`, `Spec-Driven Dev`, and `4D Wrapper`.
+
+Generated pipeline state lives at `<workspace-or-user>/.superpipelines/temp/{P}/{runId}/pipeline-state.json` and carries `plugin_version`, `metadata.source_tier`, `metadata.runtime_tier`, phase ledger data, resolved models, and crash-resume checkpoints.
+
+Portable generated artifacts live under `.superpipelines/` as tool-neutral data. Runtime dispatch materializes host-native agent files for Claude Code, OpenCode, Codex, Antigravity, or inline Tier 2 execution.
+
+Model selection is tier-based and runtime-resolved. Agent frontmatter writes `model_tier:` and optional `effort_tier:`. Runtime resolution uses `sk-model-resolver` precedence: explicit override, workspace prefs, user prefs, profile default, then native host inherit.
+
+## Agent Guardrails
+
+Read `CLAUDE.md` before editing architecture, skills, agents, manifests, pipeline dispatch, model resolution, or generated artifact rules.
+
+Keep `SUB_AGENT_SPAWNING: FALSE`: subagents never spawn children. Orchestration belongs in top-level skills or the parent session.
+
+Preserve `WRITE_REVIEW_ISOLATION`: writer agents must not review their own work. Stage 1 spec compliance gates Stage 2 quality review. Tier 2 isolation is convention-only and must be surfaced as a degradation.
+
+Preserve `DEPENDENCY_INVERSION: PROFILE_DRIVEN`: platform facts belong in `skills/sk-platform-dispatch/profiles/{tier_id}.json`, not copied into skill bodies.
+
+Use `model_tier:` instead of `model:` in agent frontmatter unless deliberately handling a documented override path.
+
+Do not put behavior in platform manifests. `.claude-plugin/`, `.codex-plugin/`, `.cursor-plugin/`, and `gemini-extension.json` are discovery-only.
+
+Do not add bodies to Claude Code plugin agents. `agents/*.md` should stay frontmatter-only; companion `{agent}-protocol/SKILL.md` files hold behavior.
+
+Use `disable-model-invocation: true` only for protocol skills loaded through agent `skills:` lists. Skills loaded through the Skill tool must remain loadable and should use `user-invocable: false` alone when hiding from slash menus.
+
+Do not rename, flatten, or "simplify" lifecycle phase ordering without updating the explicit phase contract, state ledger, and guards.
+
+Do not treat `permissionMode: plan` as an enforcement boundary for dispatched subagents. Structural write barriers come from `tools:` and `disallowedTools:` allowlists.
+
+## Known Failure Modes
+
+Worktree artifact loss: data-only agents in isolated worktrees can write only gitignored temp files, then lose artifacts when the worktree is cleaned. Data/artifact-only agents should omit `isolation`; tracked-code writers may use `isolation: worktree` and must host-anchor artifacts.
+
+Audit ownership split: read-only reviewers/auditors must render reports inline or return content; the orchestrator persists files. A read-only protocol instructing an agent to write is a defect.
+
+Phase drift: live orchestration previously skipped pre-dispatch phases and invented fake phases. `running-a-pipeline` must maintain the ordered phase manifest and hard-stop if required pre-run gates are absent.
+
+Invocation-flag trap: `disable-model-invocation: true` on a Skill-tool-loaded skill blocks runtime loading. Use it only when the skill is loaded through an agent skills list.
+
+Profile drift: concrete tier values duplicated in skill bodies drift away from `skills/sk-platform-dispatch/profiles/{tier_id}.json`.
+
+Claude plugin-scope caveat: Claude Code ignores some plugin-shipped subagent settings such as `permissionMode`; plugin agents rely on `tools:` and `disallowedTools:` for real barriers.
+
+Subagent telemetry blind spot: orchestrators cannot see per-subagent token counts directly. Cost/latency signals require hook-authored telemetry and must degrade gracefully when unavailable.
+
+Cross-platform parity remains partly manual. CI checks materialization translators and goldens, but live host dispatch still needs manual release verification.
+
+## Verification Before Completion
+
+For ordinary code, docs, manifests, or skill changes, run the narrowest relevant checks plus `npm run check:all` when the change can affect release integrity.
+
+Before claiming repository-wide completion, run:
+
+```bash
+npm run check:all
+```
+
+Before topology edits or pipeline workflow changes, run `/superpipelines:audit-steps` or the equivalent audit workflow.
+
+Before release or installer changes, run:
+
+```bash
+node bin/install.js --list
+node bin/install.js --dry-run --non-interactive --only claude-code --only codex --only cursor --only windsurf --only cline --only antigravity
+npm run check:install-docs
+```
+
+Before modifying onboarding, run the aiboarding size check when installed:
+
+```bash
+.aiboarding/tools/check-size-budget AGENTS.md
+```
+
+## Escalation - Ask the User When
+
+Ask before deleting or rewriting generated pipeline examples, parity fixtures, release artifacts, or archived onboarding context.
+
+Ask before changing public command names, lifecycle phase names/order, artifact locations, model-tier semantics, or tier support claims.
+
+Ask when a fix would weaken reviewer isolation, dependency inversion, phase gating, or write permission boundaries.
+
+Ask when CI and `CLAUDE.md` disagree about the intended architecture.
+
+Ask before replacing manual parity requirements with an automated claim that has not been verified on live hosts.
+
+Ask when onboarding sources conflict and the authoritative file is unclear.

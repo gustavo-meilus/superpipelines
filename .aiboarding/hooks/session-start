@@ -1,16 +1,40 @@
 #!/usr/bin/env bash
-# aiboarding SessionStart hook: inject AIBOARDING.md into agent context.
+# aiboarding SessionStart hook: missing-file fallback only.
+#
+# Delivery is native: Claude Code loads CLAUDE.md (and its @AGENTS.md import)
+# at session start and re-injects the project-root CLAUDE.md after /compact.
+# This hook never emits file bodies - it only warns when the native loading
+# path is broken (a file missing, or the wrapper not importing AGENTS.md) and
+# nudges migration on the legacy layout.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "${SCRIPT_DIR}/_lib"
 
-resolve_doc_path
+resolve_paths
 
-if [ -f "$DOC_PATH" ] && body="$(cat "$DOC_PATH")"; then
-  raw="$(printf '<aiboarding-context>\n%s\n</aiboarding-context>' "$body")"
-else
-  raw='<aiboarding-missing>No AIBOARDING.md found in this repo. Offer to run the create-aiboarding skill to generate one.</aiboarding-missing>'
+if [ -f "$AGENTS_PATH" ] && [ -f "$CLAUDE_MD_PATH" ]; then
+  wrapper="$(cat "$CLAUDE_MD_PATH")"
+  case "$wrapper" in
+    *"@AGENTS.md"*)
+      exit 0   # native loading covers everything; stay silent
+      ;;
+    *)
+      emit_cc_context "SessionStart" '<aiboarding-missing>CLAUDE.md exists but does not import the canonical onboarding doc: add a line containing exactly "@AGENTS.md" (or run the create-agent-onboarding skill to repair the wrapper).</aiboarding-missing>'
+      exit 0
+      ;;
+  esac
 fi
 
+if [ -f "$LEGACY_DOC_PATH" ] && [ ! -f "$AGENTS_PATH" ]; then
+  emit_cc_context "SessionStart" '<aiboarding-legacy>Legacy AIBOARDING.md layout detected. Run the migrate-aiboarding skill to move to the standard AGENTS.md + CLAUDE.md layout (native loading, cross-agent support).</aiboarding-legacy>'
+  exit 0
+fi
+
+missing=""
+[ -f "$AGENTS_PATH" ] || missing="AGENTS.md"
+if [ ! -f "$CLAUDE_MD_PATH" ]; then
+  if [ -n "$missing" ]; then missing="${missing} and CLAUDE.md"; else missing="CLAUDE.md"; fi
+fi
+raw="$(printf '<aiboarding-missing>No %s found in this repo. Offer to run the create-agent-onboarding skill to generate the agent onboarding files.</aiboarding-missing>' "$missing")"
 emit_cc_context "SessionStart" "$raw"
 exit 0

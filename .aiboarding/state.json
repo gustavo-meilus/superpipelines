@@ -1,0 +1,17 @@
+{
+  "aiboarding_version": 2,
+  "canonical_file": "AGENTS.md",
+  "claude_wrapper": "CLAUDE.md",
+  "generated": "2026-07-02",
+  "last_synced_commit": "fc42d24cd93c4f5822c18de5a8bb517325f7ded2",
+  "receipts": [
+    {
+      "date": "2026-07-04",
+      "action": "targeted-delta",
+      "sections": [
+        "Architecture Map"
+      ],
+      "note": "added plugins/superpipelines packaged bundle line"
+    }
+  ]
+}

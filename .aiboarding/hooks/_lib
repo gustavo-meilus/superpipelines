@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Shared helpers for aiboarding hook scripts. Source, do not execute.
 
-# Out-parameter convention: resolve_doc_path sets globals PROJECT_DIR and
-# DOC_PATH; read_frontmatter sets REPLY. Callers must not shadow these with
-# `local` before calling, and should read them immediately after the call.
+# Out-parameter convention: resolve_paths sets the path globals listed below;
+# read_frontmatter, json_get, and json_get_array_items set REPLY. Callers must
+# not shadow these with `local` before calling, and should read them
+# immediately after the call.
 
 # Escape a string for embedding in a JSON string literal, using only bash
 # parameter substitution (no sed/awk/jq; safe under Git Bash).
@@ -19,12 +20,21 @@ escape_for_json() {
   printf '%s' "$s"
 }
 
-# Resolve the AIBOARDING.md path into DOC_PATH and the project dir into PROJECT_DIR.
-resolve_doc_path() {
+# Resolve the aiboarding file layout for the current project:
+#   PROJECT_DIR      project root (CLAUDE_PROJECT_DIR or $PWD)
+#   AGENTS_PATH      canonical cross-agent onboarding doc
+#   CLAUDE_MD_PATH   Claude Code wrapper (imports AGENTS.md)
+#   STATE_PATH       operational state sidecar (sync pointer, receipts)
+#   CONFIG_PATH      user/project preferences
+#   LEGACY_DOC_PATH  v1 AIBOARDING.md (legacy mode / migration source)
+resolve_paths() {
   PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$PWD}"
-  DOC_PATH="${PROJECT_DIR}/AIBOARDING.md"
+  AGENTS_PATH="${PROJECT_DIR}/AGENTS.md"
+  CLAUDE_MD_PATH="${PROJECT_DIR}/CLAUDE.md"
+  STATE_PATH="${PROJECT_DIR}/.aiboarding/state.json"
+  CONFIG_PATH="${PROJECT_DIR}/.aiboarding/config.json"
+  LEGACY_DOC_PATH="${PROJECT_DIR}/AIBOARDING.md"
 }
-
 # Read the value of a top-level frontmatter key from a file into REPLY.
 # Pure bash; trims surrounding spaces. Stops at the closing '---'.
 read_frontmatter() {
@@ -45,6 +55,89 @@ read_frontmatter() {
         ;;
     esac
   done < "$file"
+}
+
+# Read the value of a top-level scalar key from an aiboarding JSON file into
+# REPLY. NOT a JSON parser: a line scanner that relies on the aiboarding write
+# contract — skills write state.json/config.json pretty-printed with one
+# top-level key per line ("key": value). First match wins; nested objects must
+# not reuse a hook-read key name. Strips the trailing comma and surrounding
+# quotes; unescapes \" and \\ only.
+json_get() {
+  # json_get <file> <key>
+  local file="$1" key="$2" line
+  REPLY=""
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      *"\"${key}\""*:*)
+        REPLY="${line#*\"${key}\"}"
+        REPLY="${REPLY#*:}"
+        REPLY="${REPLY#"${REPLY%%[![:space:]]*}"}"   # ltrim
+        REPLY="${REPLY%"${REPLY##*[![:space:]]}"}"   # rtrim
+        REPLY="${REPLY%,}"                            # trailing comma
+        REPLY="${REPLY%"${REPLY##*[![:space:]]}"}"   # rtrim again
+        case "$REPLY" in
+          \"*\") REPLY="${REPLY#\"}"; REPLY="${REPLY%\"}" ;;
+        esac
+        REPLY="${REPLY//\\\"/\"}"
+        REPLY="${REPLY//\\\\/\\}"
+        return 0
+        ;;
+    esac
+  done < "$file"
+}
+
+# Read the items of a flat string array from an aiboarding JSON file into
+# REPLY as a newline-separated list. Same write contract as json_get: the
+# array is written one quoted item per line, closed by a line containing ']'.
+# An inline empty array ("key": []) yields an empty REPLY.
+json_get_array_items() {
+  # json_get_array_items <file> <key>
+  local file="$1" key="$2" line item in_arr=0 items=""
+  REPLY=""
+  [ -f "$file" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ "$in_arr" -eq 0 ]; then
+      case "$line" in
+        *"\"${key}\""*:*\[*)
+          case "$line" in *\]*) return 0 ;; esac
+          in_arr=1
+          ;;
+      esac
+    else
+      case "$line" in
+        *\]*) break ;;
+      esac
+      case "$line" in
+        *\"*\"*)
+          item="${line#*\"}"
+          item="${item%\"*}"
+          items="${items}${item}
+"
+          ;;
+      esac
+    fi
+  done < "$file"
+  REPLY="$items"
+}
+
+# Return 0 if <path> matches any glob in the newline-separated <globs> list.
+# Uses bash `case` matching, where * also crosses '/' — so "docs/archive/*"
+# matches the whole subtree.
+path_matches_any() {
+  # path_matches_any <path> <globs>
+  local p="$1" globs="$2" g
+  while IFS= read -r g; do
+    [ -n "$g" ] || continue
+    # shellcheck disable=SC2254  # unquoted on purpose: glob match
+    case "$p" in
+      $g) return 0 ;;
+    esac
+  done <<EOF
+$globs
+EOF
+  return 1
 }
 
 # Emit a Claude Code hookSpecificOutput JSON object.

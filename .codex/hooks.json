@@ -22,30 +22,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "if": "Bash(git *)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PROJECT_DIR}/.aiboarding/hooks/run-hook.cmd\" drift-check",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
-    "InstructionsLoaded": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"${CLAUDE_PROJECT_DIR}/.aiboarding/hooks/run-hook.cmd\" instructions-loaded",
-            "timeout": 5
-          }
-        ]
-      }
     ]
   }
 }

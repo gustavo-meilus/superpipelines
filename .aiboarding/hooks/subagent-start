@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# aiboarding SubagentStart hook: point spawned sub-agents at the onboarding doc.
+#
+# A short pointer, never the document body - subagent context is the scarcest
+# context, and the doc is already on disk for the sub-agent to read. Replaces
+# the retired PreToolUse[Task] full-document injection (pre-task).
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib"
+
+resolve_paths
+
+[ -f "$AGENTS_PATH" ] || exit 0
+
+emit_cc_context "SubagentStart" '<aiboarding-pointer>Project onboarding: read AGENTS.md at the repo root before working (imported by CLAUDE.md). Its "Agent Guardrails", "Known Failure Modes", and "Verification Before Completion" sections are binding.</aiboarding-pointer>'
+exit 0

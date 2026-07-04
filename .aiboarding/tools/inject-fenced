@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# aiboarding tool: idempotent marker-fenced block injection into shared files.
+#
+#   inject-fenced <file> <block-id> <content-file>   install/update the block
+#   inject-fenced <file> <block-id> --remove         remove the block
+#
+# The managed region is delimited by:
+#   <!-- aiboarding-begin:<block-id> -->
+#   ...content...
+#   <!-- aiboarding-end:<block-id> -->
+#
+# Guarantees (tested):
+# - Re-running with identical content leaves the file byte-identical.
+# - Updating content touches only the fenced region; surrounding user
+#   content is preserved byte-for-byte.
+# - --remove strips the block (and its markers) and nothing else.
+# - Injecting into a missing file creates it containing only the block.
+set -euo pipefail
+
+if [ "$#" -ne 3 ]; then
+  echo "usage: inject-fenced <file> <block-id> <content-file|--remove>" >&2
+  exit 2
+fi
+
+file="$1" block_id="$2" content_src="$3"
+begin_marker="<!-- aiboarding-begin:${block_id} -->"
+end_marker="<!-- aiboarding-end:${block_id} -->"
+
+remove=0
+if [ "$content_src" = "--remove" ]; then
+  remove=1
+elif [ ! -f "$content_src" ]; then
+  echo "inject-fenced: content file not found: $content_src" >&2
+  exit 2
+fi
+
+# Build the replacement block (empty when removing).
+block=""
+if [ "$remove" -eq 0 ]; then
+  block="${begin_marker}
+$(cat "$content_src")
+${end_marker}"
+fi
+
+if [ ! -f "$file" ]; then
+  [ "$remove" -eq 1 ] && exit 0
+  printf '%s\n' "$block" > "$file"
+  exit 0
+fi
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+in_block=0 seen_block=0
+while IFS= read -r line || [ -n "$line" ]; do
+  if [ "$in_block" -eq 0 ] && [ "$line" = "$begin_marker" ]; then
+    in_block=1 seen_block=1
+    [ "$remove" -eq 0 ] && printf '%s\n' "$block" >> "$tmp"
+    continue
+  fi
+  if [ "$in_block" -eq 1 ]; then
+    [ "$line" = "$end_marker" ] && in_block=0
+    continue
+  fi
+  printf '%s\n' "$line" >> "$tmp"
+done < "$file"
+
+if [ "$seen_block" -eq 0 ] && [ "$remove" -eq 0 ]; then
+  # Append, separated by one blank line unless the file is empty.
+  if [ -s "$tmp" ]; then printf '\n' >> "$tmp"; fi
+  printf '%s\n' "$block" >> "$tmp"
+fi
+
+# Only rewrite when something actually changed (idempotency).
+if ! cmp -s "$tmp" "$file"; then
+  cat "$tmp" > "$file"
+fi
+exit 0
