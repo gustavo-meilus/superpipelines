@@ -14,6 +14,15 @@
 - **Pipeline State** — JSON file at `<scope-root>/superpipelines/temp/{P}/{runId}/pipeline-state.json`. Carries `plugin_version`, `metadata.source_tier`, `metadata.runtime_tier`, `metadata.resolved_models[step_id]`.
 - **Scope** — where artifacts live: `local` (per-workspace `.claude/`), `project` (committed `<repo>/.claude-pipelines/`), or `user` (`~/.claude/`).
 
+## Benchmark observation
+
+- **Benchmark Event Trace** — an ordered, platform-neutral record of an operation's phase context, work spans, waits, tool processes, activity observations, audit iterations, and failures. Optional host telemetry may enrich it but is not required for correctness.
+- **Active Elapsed Time** — the union of orchestration and model-dispatch work spans. Overlap is counted once; external tool runtime and human waiting are excluded.
+- **Waiting Time** — the union of explicit human or external-dependency wait spans. It does not include an external process's own runtime.
+- **Tool-Process Duration** — elapsed runtime of an external process, reported separately from active and waiting time.
+- **Activity Observation** — evidence that an open external process remains observable. It is liveness evidence, not a lifecycle phase or active-work interval.
+- **Operation Phase** — phase context local to a benchmarked mutation or run. It must not introduce, rename, or substitute a canonical pipeline lifecycle phase.
+
 ## Tiers and platforms
 
 - **Tier** — execution capability class:

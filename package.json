@@ -6,6 +6,7 @@
     "superpipelines-install": "./bin/install.js"
   },
   "scripts": {
+    "prototype:benchmark-contract": "node scripts/prototypes/benchmark-contract/prototype.js",
     "package:codex": "node scripts/package-codex-plugin.js",
     "check:codex-plugin": "node scripts/package-codex-plugin.js --check",
     "docs:install-table": "node scripts/generate-install-docs.js",
